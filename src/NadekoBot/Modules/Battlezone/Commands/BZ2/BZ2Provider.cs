@@ -79,6 +79,29 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
         }
     }
 
+    ///// All possible types of NATs (except NAT_TYPE_COUNT, which is an internal value) 
+    //enum NATTypeDetectionResult
+    //{
+    //    /// Works with anyone
+    //    NAT_TYPE_NONE,
+    //    /// Accepts any datagrams to a port that has been previously used. Will accept the first datagram from the remote peer.
+    //    NAT_TYPE_FULL_CONE,
+    //    /// Accepts datagrams to a port as long as the datagram source IP address is a system we have already sent to. Will accept the first datagram if both systems send simultaneously. Otherwise, will accept the first datagram after we have sent one datagram.
+    //    NAT_TYPE_ADDRESS_RESTRICTED,
+    //    /// Same as address-restricted cone NAT, but we had to send to both the correct remote IP address and correct remote port. The same source address and port to a different destination uses the same mapping.
+    //    NAT_TYPE_PORT_RESTRICTED,
+    //    /// A different port is chosen for every remote destination. The same source address and port to a different destination uses a different mapping. Since the port will be different, the first external punchthrough attempt will fail. For this to work it requires port-prediction (MAX_PREDICTIVE_PORT_RANGE>1) and that the router chooses ports sequentially.
+    //    NAT_TYPE_SYMMETRIC,
+    //    /// Hasn't been determined. NATTypeDetectionClient does not use this, but other plugins might
+    //    NAT_TYPE_UNKNOWN,
+    //    /// In progress. NATTypeDetectionClient does not use this, but other plugins might
+    //    NAT_TYPE_DETECTION_IN_PROGRESS,
+    //    /// Didn't bother figuring it out, as we support UPNP, so it is equivalent to NAT_TYPE_NONE. NATTypeDetectionClient does not use this, but other plugins might
+    //    NAT_TYPE_SUPPORTS_UPNP,
+    //    /// \internal Must be last
+    //    NAT_TYPE_COUNT
+    //};
+
     public class BZ2Game
     {
         public string __addr { get; set; }
@@ -127,7 +150,8 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithDescription(ToString())
                 .WithFooter(efb => efb.WithText($"[{idx}/{total}] ({m}.bzn)"));
 
-            embed.WithThumbnailUrl("http://vignette1.wikia.nocookie.net/battlezone/images/e/ef/Nomapbz1.png/revision/latest");
+            string prop = Battlezone.GetBZ2GameProperty("shell", m);
+            embed.WithThumbnailUrl(prop ?? "http://vignette1.wikia.nocookie.net/battlezone/images/e/ef/Nomapbz1.png/revision/latest");
 
             if (l == "1")
             {
@@ -156,11 +180,42 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine(@"```");
+            builder.AppendLine(@"```css");
             builder.AppendLine(@"Map:     {" + m + ".bzn}");
             builder.AppendLine(@"Version: {" + v + "}");
             builder.AppendLine(@"Mod:     {" + d + "}");
-            builder.AppendLine(@"NAT:     {" + t + "}");
+
+            switch (t)
+            {
+                case "0":
+                    builder.AppendLine(@"NAT:     NONE"); /// Works with anyone
+                    break;
+                case "1":
+                    builder.AppendLine(@"NAT:     FULL CONE"); /// Accepts any datagrams to a port that has been previously used. Will accept the first datagram from the remote peer.
+                    break;
+                case "2":
+                    builder.AppendLine(@"NAT:     ADDRESS RESTRICTED"); /// Accepts datagrams to a port as long as the datagram source IP address is a system we have already sent to. Will accept the first datagram if both systems send simultaneously. Otherwise, will accept the first datagram after we have sent one datagram.
+                    break;
+                case "3":
+                    builder.AppendLine(@"NAT:     PORT RESTRICTED"); /// Same as address-restricted cone NAT, but we had to send to both the correct remote IP address and correct remote port. The same source address and port to a different destination uses the same mapping.
+                    break;
+                case "4":
+                    builder.AppendLine(@"NAT:     SYMMETRIC"); /// A different port is chosen for every remote destination. The same source address and port to a different destination uses a different mapping. Since the port will be different, the first external punchthrough attempt will fail. For this to work it requires port-prediction (MAX_PREDICTIVE_PORT_RANGE>1) and that the router chooses ports sequentially.
+                    break;
+                case "5":
+                    builder.AppendLine(@"NAT:     UNKNOWN"); /// Hasn't been determined. NATTypeDetectionClient does not use this, but other plugins might
+                    break;
+                case "6":
+                    builder.AppendLine(@"NAT:     DETECTION IN PROGRESS"); /// In progress. NATTypeDetectionClient does not use this, but other plugins might
+                    break;
+                case "7":
+                    builder.AppendLine(@"NAT:     SUPPORTS UPNP"); /// Didn't bother figuring it out, as we support UPNP, so it is equivalent to NAT_TYPE_NONE. NATTypeDetectionClient does not use this, but other plugins might
+                    break;
+                default:
+                    builder.AppendLine(@"NAT:     {" + t + "}");
+                    break;
+            }
+
             switch (proxySource)
             {
                 case "masterserver.matesfamily.org":
@@ -173,6 +228,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                     builder.AppendLine(@"List:    IonDriver");
                     break;
             }
+
             builder.AppendLine(@"```");
             return builder.ToString();
         }

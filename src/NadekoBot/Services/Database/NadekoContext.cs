@@ -51,6 +51,9 @@ namespace NadekoBot.Services.Database
         public DbSet<RaceAnimal> RaceAnimals { get; set; }
         public DbSet<ModulePrefix> ModulePrefixes { get; set; }
 
+        //custom
+        public DbSet<BZ2GameProperty> BZ2GameProperties { get; set; }
+
         public NadekoContext() : base()
         {
 
