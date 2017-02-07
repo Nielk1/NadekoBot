@@ -84,12 +84,13 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
         public string __addr { get; set; }
         public string proxySource { get; set; }
 
+        public string g { get; set; } // ex "4M-CB73@GX" (seems to go with NAT type 5???)
         public string n { get; set; } // varchar(256) | Name of client game session.
         public string m { get; set; } // varchar(68)  | Name of client map, no bzn extension.
         public string k { get; set; } // tinyint      | Password Flag.
         public string d { get; set; } // varchar(16)  | MODSLISTCRC_KEY
-        public string t { get; set; } // tinyint      | NATTYPE_KEY
-        public string r { get; set; } // varchar(16)  | PRIVATEADDRESS_KEY
+        public string t { get; set; } // tinyint      | NATTYPE_KEY //nat type 5 seems bad, 7 seems to mean direct connect
+        public string r { get; set; } // varchar(16)  | PRIVATEADDRESS_KEY  // ex "@Zg@w"
         public string v { get; set; } // varchar(8)   | GAMEVERSION_KEY
         public string p { get; set; } // varchar(16)  | GAMEPORT_KEY
         public string l { get; set; }
@@ -126,16 +127,26 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithDescription(ToString())
                 .WithFooter(efb => efb.WithText($"[{idx}/{total}] ({m}.bzn)"));
 
-            if (k == "1")
+            if (l == "1")
             {
                 embed.WithColor(new Color(0xff, 0xac, 0x33))
                      .WithTitle("⛔ " + n);
             }
-            else if (k == "2")
+            else if (k == "1")
             {
                 embed.WithColor(new Color(0xbe, 0x19, 0x31))
                      .WithTitle("🔐 " + n);
-            }else
+            }
+            else if(t == "5")
+            {
+                embed.WithColor(new Color(0xbe, 0x19, 0x31))
+                     .WithTitle("⚠ " + n);
+            }
+            else
+            {
+                embed.WithOkColor()
+                     .WithTitle(n);
+            }
             {
                 embed.WithOkColor()
                      .WithTitle(n);
