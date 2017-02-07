@@ -25,38 +25,28 @@ namespace NadekoBot.Modules.Battlezone
     public partial class Battlezone : DiscordModule
     {
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task Games([Remainder] string type)
+        public async Task GamesBZ2()
         {
-            type = type.Trim();
-            if (string.IsNullOrWhiteSpace(type))
+            await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
+
+            var gamelist = await BZ2Provider.GetGames();
+            if (gamelist == null)
+            {
+                await Context.Channel.SendErrorAsync("Failed to get game list.").ConfigureAwait(false);
                 return;
-            if(type.ToLowerInvariant() == "bz2")
-            {
-                await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
-
-                var gamelist = await BZ2Provider.GetGames();
-                if (gamelist == null)
-                {
-                    await Context.Channel.SendErrorAsync("Failed to get game list.").ConfigureAwait(false);
-                    return;
-                }
-
-                EmbedBuilder top = gamelist.GetTopEmbed();
-                await Context.Channel.EmbedAsync(top).ConfigureAwait(false);
-                
-                var games = gamelist.GET.Where(dr => !dr.IsMarker());
-                int itr = 1;
-                int cnt = games.Count();
-                var gamesIter = games.Select(dr => dr.GetEmbed(itr++, cnt)).ToList();
-
-                foreach (var game in gamesIter)
-                {
-                    await Context.Channel.EmbedAsync(game).ConfigureAwait(false);
-                }
             }
-            else
+
+            EmbedBuilder top = gamelist.GetTopEmbed();
+            await Context.Channel.EmbedAsync(top).ConfigureAwait(false);
+                
+            var games = gamelist.GET.Where(dr => !dr.IsMarker());
+            int itr = 1;
+            int cnt = games.Count();
+            var gamesIter = games.Select(dr => dr.GetEmbed(itr++, cnt)).ToList();
+
+            foreach (var game in gamesIter)
             {
-                await Context.Channel.SendErrorAsync($"Unknown game `{type}`.").ConfigureAwait(false);
+                await Context.Channel.EmbedAsync(game).ConfigureAwait(false);
             }
         }
     }

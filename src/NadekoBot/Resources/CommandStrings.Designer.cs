@@ -2814,6 +2814,33 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to gamesbz2.
+        /// </summary>
+        public static string gamesbz2_cmd {
+            get {
+                return ResourceManager.GetString("gamesbz2_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Lists current BZ2 MultiPlayer Games.
+        /// </summary>
+        public static string gamesbz2_desc {
+            get {
+                return ResourceManager.GetString("gamesbz2_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to gamesbz2.
+        /// </summary>
+        public static string gamesbz2_usage {
+            get {
+                return ResourceManager.GetString("gamesbz2_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to gelbooru.
         /// </summary>
         public static string gelbooru_cmd {
