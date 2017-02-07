@@ -25,7 +25,7 @@ namespace NadekoBot.Modules.Battlezone
     public partial class Battlezone : DiscordModule
     {
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task Games(string type)
+        public async Task Games([Remainder] string type)
         {
             type = type.Trim();
             if (string.IsNullOrWhiteSpace(type))
@@ -53,6 +53,10 @@ namespace NadekoBot.Modules.Battlezone
                 {
                     await Context.Channel.EmbedAsync(game).ConfigureAwait(false);
                 }
+            }
+            else
+            {
+                await Context.Channel.SendErrorAsync($"Unknown game `{type}`.").ConfigureAwait(false);
             }
         }
     }
