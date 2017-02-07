@@ -43,9 +43,9 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithColor(new Color(255, 255, 255))
                 .WithTitle("Battlezone II Game List")
                 //.WithUrl()
-                .WithDescription("List of games currently on Battlezone II Raknet matchmaking servers")
-                .WithThumbnailUrl("http://vignette2.wikia.nocookie.net/battlezone/images/4/41/Chronicles_icon.png/revision/latest/scale-to-width-down/80")
-                .WithFooter(efb => efb.WithText("Brought to you by Nielk1's Raknet Bot").WithIconUrl("http://vignette2.wikia.nocookie.net/battlezone/images/4/41/Chronicles_icon.png/revision/latest/scale-to-width-down/32"));
+                .WithDescription($"List of games currently on Battlezone II Raknet matchmaking servers\n```css\n{GET.Where(game => !game.IsMarker()).Count()} Games\n```")
+                .WithThumbnailUrl("http://vignette1.wikia.nocookie.net/battlezone/images/3/30/Isdf_logo.png/revision/latest/scale-to-width-down/80")
+                .WithFooter(efb => efb.WithText("Brought to you by Nielk1's Raknet Bot"));
 
             if (isMatesFamily)
             {
@@ -128,13 +128,17 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
             if (k == "1")
             {
-                embed.WithColor(new Color(0xffac33))
+                embed.WithColor(new Color(0xff, 0xac, 0x33))
                      .WithTitle("⛔ " + n);
             }
-            if (k == "2")
+            else if (k == "2")
             {
-                embed.WithColor(new Color(0xbe1931))
+                embed.WithColor(new Color(0xbe, 0x19, 0x31))
                      .WithTitle("🔐 " + n);
+            }else
+            {
+                embed.WithOkColor()
+                     .WithTitle(n);
             }
 
             return embed;
