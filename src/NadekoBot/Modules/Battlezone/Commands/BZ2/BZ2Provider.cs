@@ -43,7 +43,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithColor(new Color(255, 255, 255))
                 .WithTitle("Battlezone II Game List")
                 //.WithUrl()
-                .WithDescription($"List of games currently on Battlezone II Raknet matchmaking servers\n`{GET.Where(game => !game.IsMarker()).Count()} Games`")
+                .WithDescription($"List of games currently on Battlezone II Raknet matchmaking servers\n`{GET.Where(game => !game.IsMarker()).Count()} Game(s)`")
                 .WithThumbnailUrl("http://vignette1.wikia.nocookie.net/battlezone/images/3/30/Isdf_logo.png/revision/latest")
                 .WithFooter(efb => efb.WithText("Brought to you by Nielk1's Raknet Bot"));
 
@@ -139,11 +139,11 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 embed.WithColor(new Color(0xff, 0xac, 0x33))
                      .WithTitle("🔐 " + n);
             }
-            else if(t == "5" && !string.IsNullOrWhiteSpace(r))
-            {
-                embed.WithColor(new Color(0xff, 0xff, 0x00))
-                     .WithTitle("⚠ " + n);
-            }
+            //else if(t == "5" && !string.IsNullOrWhiteSpace(r))
+            //{
+            //    embed.WithColor(new Color(0xff, 0xff, 0x00))
+            //         .WithTitle("⚠ " + n);
+            //}
             else
             {
                 embed.WithOkColor()
