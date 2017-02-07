@@ -131,12 +131,12 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
             if (l == "1")
             {
-                embed.WithColor(new Color(0xff, 0xac, 0x33))
+                embed.WithColor(new Color(0xbe, 0x19, 0x31))
                      .WithTitle("⛔ " + n);
             }
             else if (k == "1")
             {
-                embed.WithColor(new Color(0xbe, 0x19, 0x31))
+                embed.WithColor(new Color(0xff, 0xac, 0x33))
                      .WithTitle("🔐 " + n);
             }
             else if(t == "5")
