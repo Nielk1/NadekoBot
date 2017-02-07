@@ -139,7 +139,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 embed.WithColor(new Color(0xff, 0xac, 0x33))
                      .WithTitle("🔐 " + n);
             }
-            else if(t == "5")
+            else if(t == "5" && !string.IsNullOrWhiteSpace(r))
             {
                 embed.WithColor(new Color(0xff, 0xff, 0x00))
                      .WithTitle("⚠ " + n);
