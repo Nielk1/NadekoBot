@@ -44,13 +44,13 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithTitle("Battlezone II Game List")
                 //.WithUrl()
                 .WithDescription($"List of games currently on Battlezone II Raknet matchmaking servers\n`{GET.Where(game => !game.IsMarker()).Count()} Game(s)`")
-                .WithThumbnailUrl("http://vignette1.wikia.nocookie.net/battlezone/images/3/30/Isdf_logo.png/revision/latest")
+                .WithThumbnailUrl("http://vignette1.wikia.nocookie.net/battlezone/images/3/30/Isdf_logo.png/revision/latest/scale-to-width-down/80")
                 .WithFooter(efb => efb.WithText("Brought to you by Nielk1's Raknet Bot"));
 
             if (isMatesFamily)
             {
                 embed.AddField(efb => efb.WithName("MatesFamily").WithValue("✅ Online (Primary)").WithIsInline(true));
-            }else
+            } else
             {
                 embed.AddField(efb => efb.WithName("MatesFamily").WithValue("⚠ Unknown (Primary)").WithIsInline(true));
             }
@@ -74,7 +74,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             {
                 embed.AddField(efb => efb.WithName("IonDriver").WithValue("⚠ Unknown").WithIsInline(true));
             }
-            
+
             return embed;
         }
     }
@@ -116,7 +116,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
         public string r { get; set; } // varchar(16)  | PRIVATEADDRESS_KEY  // ex "@Zg@w"
         public string v { get; set; } // varchar(8)   | GAMEVERSION_KEY
         public string p { get; set; } // varchar(16)  | GAMEPORT_KEY
-        public string l { get; set; }
+        public string l { get; set; } // locked
 
         public bool IsMatesFamilyMarker()
         {
@@ -151,7 +151,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithFooter(efb => efb.WithText($"[{idx}/{total}] ({m}.bzn)"));
 
             string prop = Battlezone.GetBZ2GameProperty("shell", m);
-            embed.WithThumbnailUrl(prop ?? "http://vignette1.wikia.nocookie.net/battlezone/images/e/ef/Nomapbz1.png/revision/latest");
+            embed.WithThumbnailUrl(prop ?? "http://vignette1.wikia.nocookie.net/battlezone/images/e/ef/Nomapbz1.png/revision/latest/scale-to-width-down/80");
 
             if (l == "1")
             {
@@ -179,11 +179,41 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
         public override string ToString()
         {
+            string name = Battlezone.GetBZ2GameProperty("name", m);
+            string version = Battlezone.GetBZ2GameProperty("version", m);
+            string mod = Battlezone.GetBZ2GameProperty("mod", m);
+
+
             StringBuilder builder = new StringBuilder();
             builder.AppendLine(@"```css");
-            builder.AppendLine(@"Map:     {" + m + ".bzn}");
-            builder.AppendLine(@"Version: {" + v + "}");
-            builder.AppendLine(@"Mod:     {" + d + "}");
+
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                builder.AppendLine($@"Map:     [{m}]");
+            }
+            else
+            {
+                builder.AppendLine($@"Map:     {name}");
+            }
+
+            if (string.IsNullOrWhiteSpace(version))
+            {
+                builder.AppendLine($@"Version: [{v}]");
+            }
+            else
+            {
+                builder.AppendLine($@"Version: {version}");
+            }
+
+            if (string.IsNullOrWhiteSpace(mod))
+            {
+                builder.AppendLine($@"Mod:     [{d}]");
+            }
+            else
+            {
+                builder.AppendLine($@"Mod:     {mod}");
+            }
 
             switch (t)
             {
@@ -212,7 +242,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                     builder.AppendLine(@"NAT:     SUPPORTS UPNP"); /// Didn't bother figuring it out, as we support UPNP, so it is equivalent to NAT_TYPE_NONE. NATTypeDetectionClient does not use this, but other plugins might
                     break;
                 default:
-                    builder.AppendLine(@"NAT:     {" + t + "}");
+                    builder.AppendLine(@"NAT:     [" + t + "]");
                     break;
             }
 

@@ -81,28 +81,131 @@ namespace NadekoBot.Modules.Battlezone
         }
 
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task AddBZ2ShellMap(string key, [Remainder] string message)
+        public async Task AddBZ2GameProperty(string type, string key, [Remainder] string message)
         {
             var channel = Context.Channel as ITextChannel;
             if (string.IsNullOrWhiteSpace(message) || string.IsNullOrWhiteSpace(key))
                 return;
 
-            key = key.ToLowerInvariant(); // only for bzn based stuff
+            type = type.ToLowerInvariant();
 
-            //if ((channel == null && !NadekoBot.Credentials.IsOwner(Context.User)) || (channel != null && !((IGuildUser)Context.User).GuildPermissions.Administrator))
-            if (!NadekoBot.Credentials.IsOwner(Context.User))
+            if (!new[] { "name", "shell", "version", "mod" }.Contains(type))
             {
-                try { await Context.Channel.SendErrorAsync("Insufficient permissions. Requires Bot ownership as I don't have custom role logic yet for this command."); } catch { }
+                await Context.Channel.SendErrorAsync($"Unknown term type '{type}'").ConfigureAwait(false);
                 return;
+            }
+
+            if (type == "name")
+            {
+                key = key.ToLowerInvariant(); // only for bzn based stuff
+            }
+
+            if (type == "shell")
+            {
+                key = key.ToLowerInvariant(); // only for bzn based stuff
+                Uri uriResult;
+                if (!Uri.TryCreate(message, UriKind.Absolute, out uriResult))
+                {
+                    try { await Context.Channel.SendErrorAsync("Could not parse URL."); } catch { }
+                    return;
+                }
             }
 
             var sm = new BZ2GameProperty()
             {
-                TermType = "shell",
+                TermType = type,
                 Term = key,
                 Value = message,
             };
 
+            await AddBZ2GameProperty(sm).ConfigureAwait(false);
+
+            await Context.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
+                .WithTitle("New BZ2 Shell Map")
+                .WithDescription($"#{sm.Id}")
+                .WithThumbnailUrl(sm.Value)
+                .AddField(efb => efb.WithName("Term").WithValue(sm.Term))
+                .AddField(efb => efb.WithName("Value").WithValue(sm.Value))
+                ).ConfigureAwait(false);
+        }
+
+        [NadekoCommand, Usage, Description, Aliases]
+        public async Task RemoveBZ2GameProperty(string type, string key)
+        {
+            type = type.ToLowerInvariant();
+
+            if (!new[] { "name", "shell", "version", "mod" }.Contains(type))
+            {
+                await Context.Channel.SendErrorAsync($"Unknown term type '{type}'").ConfigureAwait(false);
+                return;
+            }
+
+            if (type == "name")
+            {
+                key = key.ToLowerInvariant(); // only for bzn based stuff
+            }
+
+            using (var uow = DbHandler.UnitOfWork())
+            {
+                if (BZ2GameProperties.ContainsKey(type) && BZ2GameProperties[type].ContainsKey(key))
+                {
+
+                    BZ2GameProperty deadProp = null;
+                    if (BZ2GameProperties[type].TryRemove(key, out deadProp))
+                    {
+                        uow.BZ2GameProperties.Remove(deadProp.Id);
+                        await uow.CompleteAsync().ConfigureAwait(false);
+                        await Context.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
+                            .WithTitle("Removed BZ2 Term")
+                            .WithDescription($"#{deadProp.Id}")
+                            .WithThumbnailUrl(deadProp.Value)
+                            .AddField(efb => efb.WithName("Term").WithValue(deadProp.Term))
+                            .AddField(efb => efb.WithName("Value").WithValue(deadProp.Value))
+                            ).ConfigureAwait(false);
+                        return;
+                    }
+                }
+            }
+
+            await Context.Channel.SendErrorAsync($"Unknown term type '{type}' with key '{key}'.").ConfigureAwait(false);
+        }
+
+        [NadekoCommand, Usage, Description, Aliases]
+        public async Task ListBZ2GameProperties(string type, int page = 1)
+        {
+            if (string.IsNullOrWhiteSpace(type))
+            {
+                string types = string.Join(", ", BZ2GameProperties.Keys.Select(dr => $"\"{dr}\" {BZ2GameProperties[dr].Count}``"));
+                await Context.Channel.SendMessageAsync($"📄 TermTypes: {types}").ConfigureAwait(false);
+            }
+            else
+            {
+
+                if (BZ2GameProperties.ContainsKey(type))
+                {
+                    var gameProps = BZ2GameProperties[type];
+
+                    if (page < 1 || ((page - 1) > (gameProps.Count / 20)))
+                        return;
+                    string toSend = "";
+
+                    using (var uow = DbHandler.UnitOfWork())
+                    {
+                        var i = 1 + 20 * (page - 1);
+                        toSend = Format.Code($"📄 Term '{type}' page {page}") + "\n\n" + String.Join("\n", gameProps.AsEnumerable().Skip((page - 1) * 20).Take(20).Select(p => $"`{(i++)}.` '{p.Value.Term.PadRight(10)}' '{p.Value.Value}'"));
+                    }
+
+                    await Context.Channel.SendMessageAsync(toSend).ConfigureAwait(false);
+                }
+                else
+                {
+                    await Context.Channel.SendErrorAsync($"Unknown term type '{type}'").ConfigureAwait(false);
+                }
+            }
+        }
+
+        private async Task AddBZ2GameProperty(BZ2GameProperty sm)
+        {
             using (var uow = DbHandler.UnitOfWork())
             {
                 if (BZ2GameProperties.ContainsKey(sm.TermType) && BZ2GameProperties[sm.TermType].ContainsKey(sm.Term))
@@ -122,14 +225,6 @@ namespace NadekoBot.Modules.Battlezone
                     BZ2GameProperties[sm.TermType][sm.Term] = sm;
                 }
             }
-
-            await Context.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
-                .WithTitle("New BZ2 Shell Map")
-                .WithDescription($"#{sm.Id}")
-                .WithThumbnailUrl(sm.Value)
-                .AddField(efb => efb.WithName("Term").WithValue(sm.Term))
-                .AddField(efb => efb.WithName("Value").WithValue(sm.Value))
-                ).ConfigureAwait(false);
         }
 
         public static string GetBZ2GameProperty(string termType, string term)

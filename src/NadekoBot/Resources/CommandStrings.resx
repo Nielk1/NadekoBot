@@ -3049,6 +3049,33 @@
     <value>Lists current BZ2 MultiPlayer Games</value>
   </data>
   <data name="gamesbz2_usage" xml:space="preserve">
-    <value>gamesbz2</value>
+    <value>`{0}gamesbz2`</value>
+  </data>
+  <data name="addbz2gameproperty_cmd" xml:space="preserve">
+    <value>addbz2gameproperty</value>
+  </data>
+  <data name="addbz2gameproperty_desc" xml:space="preserve">
+    <value>Add a term mapping for the game list</value>
+  </data>
+  <data name="addbz2gameproperty_usage" xml:space="preserve">
+    <value>`{0}addbz2gameproperty type term value`</value>
+  </data>
+  <data name="listbz2gameproperties_cmd" xml:space="preserve">
+    <value>listbz2gameproperties</value>
+  </data>
+  <data name="listbz2gameproperties_desc" xml:space="preserve">
+    <value>Get paginated list of properties, omit type and page paramaters for a type list</value>
+  </data>
+  <data name="listbz2gameproperties_usage" xml:space="preserve">
+    <value>`{0}listbz2gameproperties type page`</value>
+  </data>
+  <data name="removebz2gameproperty_cmd" xml:space="preserve">
+    <value>removebz2gameproperty</value>
+  </data>
+  <data name="removebz2gameproperty_desc" xml:space="preserve">
+    <value>Remove a term mapping for the game list</value>
+  </data>
+  <data name="removebz2gameproperty_usage" xml:space="preserve">
+    <value>`{0}removebz2gameproperty type term`</value>
   </data>
 </root>
