@@ -188,16 +188,16 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                builder.AppendLine($@"Map      | [{m}]");
+                builder.AppendLine($@"Map     | [{m}]");
             }
             else
             {
-                builder.AppendLine($@"Map      | {name}");
+                builder.AppendLine($@"Map     | {name}");
             }
 
             if (string.IsNullOrWhiteSpace(version))
             {
-                builder.AppendLine($@"Version  | [{v}]");
+                builder.AppendLine($@"Version | [{v}]");
             }
             else
             {
