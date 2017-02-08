@@ -51,6 +51,9 @@ namespace NadekoBot.Services.Database
         public DbSet<RaceAnimal> RaceAnimals { get; set; }
         public DbSet<ModulePrefix> ModulePrefixes { get; set; }
 
+        //custom
+        public DbSet<BZ2GameProperty> BZ2GameProperties { get; set; }
+
         public NadekoContext() : base()
         {
 
@@ -82,7 +85,8 @@ namespace NadekoBot.Services.Database
                     new ModulePrefix() { ModuleName = "Pokemon", Prefix = ">" },
                     new ModulePrefix() { ModuleName = "Utility", Prefix = "." },
                     new ModulePrefix() { ModuleName = "CustomReactions", Prefix = "." },
-                    new ModulePrefix() { ModuleName = "PokeGame", Prefix = ">" }
+                    new ModulePrefix() { ModuleName = "PokeGame", Prefix = ">" },
+                    new ModulePrefix() { ModuleName = "Battlezone", Prefix = "!" }
                 });
                 bc.RaceAnimals.AddRange(new HashSet<RaceAnimal>
                 {

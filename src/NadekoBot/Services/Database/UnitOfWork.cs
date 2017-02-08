@@ -54,6 +54,9 @@ namespace NadekoBot.Services.Database
         private IDiscordUserRepository _discordUsers;
         public IDiscordUserRepository DiscordUsers => _discordUsers ?? (_discordUsers = new DiscordUserRepository(_context));
 
+        private IBZ2GamePropertyRepository _bZ2GameProperties;
+        public IBZ2GamePropertyRepository BZ2GameProperties => _bZ2GameProperties ?? (_bZ2GameProperties = new BZ2GamePropertyRepository(_context));
+
         public UnitOfWork(NadekoContext context)
         {
             _context = context;
