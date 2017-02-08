@@ -171,7 +171,7 @@ namespace NadekoBot.Modules.Battlezone
         }
 
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task ListBZ2GameProperties(string type, int page = 1)
+        public async Task ListBZ2GameProperties(string type = null, int page = 1)
         {
             if (string.IsNullOrWhiteSpace(type))
             {
@@ -192,7 +192,7 @@ namespace NadekoBot.Modules.Battlezone
                     using (var uow = DbHandler.UnitOfWork())
                     {
                         var i = 1 + 20 * (page - 1);
-                        toSend = Format.Code($"📄 Term '{type}' page {page}") + "\n\n" + String.Join("\n", gameProps.AsEnumerable().Skip((page - 1) * 20).Take(20).Select(p => $"`{(i++)}.` '{p.Value.Term.PadRight(10)}' '{p.Value.Value}'"));
+                        toSend = Format.Code($"📄 Term '{type}' page {page}") + "\n\n" + String.Join("\n", gameProps.AsEnumerable().Skip((page - 1) * 20).Take(20).Select(p => $"`{(i++).ToString().PadRight(gameProps.Count.ToString().Length)}. {p.Value.Term.PadRight(10)} | {p.Value.Value}'"));
                     }
 
                     await Context.Channel.SendMessageAsync(toSend).ConfigureAwait(false);
