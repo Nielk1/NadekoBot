@@ -185,82 +185,79 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
 
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine(@"```css");
-
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                builder.AppendLine($@"Map:     [{m}]");
+                builder.AppendLine($@"Map      | [{m}]");
             }
             else
             {
-                builder.AppendLine($@"Map:     {name}");
+                builder.AppendLine($@"Map      | {name}");
             }
 
             if (string.IsNullOrWhiteSpace(version))
             {
-                builder.AppendLine($@"Version: [{v}]");
+                builder.AppendLine($@"Version  | [{v}]");
             }
             else
             {
-                builder.AppendLine($@"Version: {version}");
+                builder.AppendLine($@"Version | {version}");
             }
 
             if (string.IsNullOrWhiteSpace(mod))
             {
-                builder.AppendLine($@"Mod:     [{d}]");
+                builder.AppendLine($@"Mod     | [{d}]");
             }
             else
             {
-                builder.AppendLine($@"Mod:     {mod}");
+                builder.AppendLine($@"Mod     | {mod}");
             }
 
             switch (t)
             {
                 case "0":
-                    builder.AppendLine(@"NAT:     NONE"); /// Works with anyone
+                    builder.AppendLine(@"NAT     | NONE"); /// Works with anyone
                     break;
                 case "1":
-                    builder.AppendLine(@"NAT:     FULL CONE"); /// Accepts any datagrams to a port that has been previously used. Will accept the first datagram from the remote peer.
+                    builder.AppendLine(@"NAT     | FULL CONE"); /// Accepts any datagrams to a port that has been previously used. Will accept the first datagram from the remote peer.
                     break;
                 case "2":
-                    builder.AppendLine(@"NAT:     ADDRESS RESTRICTED"); /// Accepts datagrams to a port as long as the datagram source IP address is a system we have already sent to. Will accept the first datagram if both systems send simultaneously. Otherwise, will accept the first datagram after we have sent one datagram.
+                    builder.AppendLine(@"NAT     | ADDRESS RESTRICTED"); /// Accepts datagrams to a port as long as the datagram source IP address is a system we have already sent to. Will accept the first datagram if both systems send simultaneously. Otherwise, will accept the first datagram after we have sent one datagram.
                     break;
                 case "3":
-                    builder.AppendLine(@"NAT:     PORT RESTRICTED"); /// Same as address-restricted cone NAT, but we had to send to both the correct remote IP address and correct remote port. The same source address and port to a different destination uses the same mapping.
+                    builder.AppendLine(@"NAT     | PORT RESTRICTED"); /// Same as address-restricted cone NAT, but we had to send to both the correct remote IP address and correct remote port. The same source address and port to a different destination uses the same mapping.
                     break;
                 case "4":
-                    builder.AppendLine(@"NAT:     SYMMETRIC"); /// A different port is chosen for every remote destination. The same source address and port to a different destination uses a different mapping. Since the port will be different, the first external punchthrough attempt will fail. For this to work it requires port-prediction (MAX_PREDICTIVE_PORT_RANGE>1) and that the router chooses ports sequentially.
+                    builder.AppendLine(@"NAT     | SYMMETRIC"); /// A different port is chosen for every remote destination. The same source address and port to a different destination uses a different mapping. Since the port will be different, the first external punchthrough attempt will fail. For this to work it requires port-prediction (MAX_PREDICTIVE_PORT_RANGE>1) and that the router chooses ports sequentially.
                     break;
                 case "5":
-                    builder.AppendLine(@"NAT:     UNKNOWN"); /// Hasn't been determined. NATTypeDetectionClient does not use this, but other plugins might
+                    builder.AppendLine(@"NAT     | UNKNOWN"); /// Hasn't been determined. NATTypeDetectionClient does not use this, but other plugins might
                     break;
                 case "6":
-                    builder.AppendLine(@"NAT:     DETECTION IN PROGRESS"); /// In progress. NATTypeDetectionClient does not use this, but other plugins might
+                    builder.AppendLine(@"NAT     | DETECTION IN PROGRESS"); /// In progress. NATTypeDetectionClient does not use this, but other plugins might
                     break;
                 case "7":
-                    builder.AppendLine(@"NAT:     SUPPORTS UPNP"); /// Didn't bother figuring it out, as we support UPNP, so it is equivalent to NAT_TYPE_NONE. NATTypeDetectionClient does not use this, but other plugins might
+                    builder.AppendLine(@"NAT     | SUPPORTS UPNP"); /// Didn't bother figuring it out, as we support UPNP, so it is equivalent to NAT_TYPE_NONE. NATTypeDetectionClient does not use this, but other plugins might
                     break;
                 default:
-                    builder.AppendLine(@"NAT:     [" + t + "]");
+                    builder.AppendLine(@"NAT     | [" + t + "]");
                     break;
             }
 
             switch (proxySource)
             {
                 case "masterserver.matesfamily.org":
-                    builder.AppendLine(@"List:    MatesFamily");
+                    builder.AppendLine(@"List    | MatesFamily");
                     break;
                 case "gamelist.kebbz.com":
-                    builder.AppendLine(@"List:    KebbzNet");
+                    builder.AppendLine(@"List    | KebbzNet");
                     break;
                 default:
-                    builder.AppendLine(@"List:    IonDriver");
+                    builder.AppendLine(@"List    | IonDriver");
                     break;
             }
 
-            builder.AppendLine(@"```");
-            return builder.ToString();
+            return Format.Code(builder.ToString(), "css");
         }
     }
 }

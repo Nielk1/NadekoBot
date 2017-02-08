@@ -120,13 +120,7 @@ namespace NadekoBot.Modules.Battlezone
 
             await AddBZ2GameProperty(sm).ConfigureAwait(false);
 
-            await Context.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
-                .WithTitle("New BZ2 Shell Map")
-                .WithDescription($"#{sm.Id}")
-                .WithThumbnailUrl(sm.Value)
-                .AddField(efb => efb.WithName("Term").WithValue(sm.Term))
-                .AddField(efb => efb.WithName("Value").WithValue(sm.Value))
-                ).ConfigureAwait(false);
+            await Context.Channel.SendConfirmAsync($"Added #{sm.Id} '{sm.TermType}' : '{sm.Term}' = '{sm.Value}'").ConfigureAwait(false);
         }
 
         [NadekoCommand, Usage, Description, Aliases]
@@ -155,15 +149,11 @@ namespace NadekoBot.Modules.Battlezone
                     {
                         uow.BZ2GameProperties.Remove(deadProp.Id);
                         await uow.CompleteAsync().ConfigureAwait(false);
-                        await Context.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
-                            .WithTitle("Removed BZ2 Term")
-                            .WithDescription($"#{deadProp.Id}")
-                            .WithThumbnailUrl(deadProp.Value)
-                            .AddField(efb => efb.WithName("Term").WithValue(deadProp.Term))
-                            .AddField(efb => efb.WithName("Value").WithValue(deadProp.Value))
-                            ).ConfigureAwait(false);
+                        await Context.Channel.SendConfirmAsync($"Removed #{deadProp.Id} '{deadProp.TermType}' : '{deadProp.Term}'  = '{deadProp.Value}'").ConfigureAwait(false);
                         return;
                     }
+                    await Context.Channel.SendErrorAsync($"Failed to Remove #{deadProp.Id} '{deadProp.TermType}' : '{deadProp.Term}'  = '{deadProp.Value}'").ConfigureAwait(false);
+                    return;
                 }
             }
 
@@ -175,12 +165,11 @@ namespace NadekoBot.Modules.Battlezone
         {
             if (string.IsNullOrWhiteSpace(type))
             {
-                string types = string.Join(", ", BZ2GameProperties.Keys.Select(dr => $"\"{dr}\" {BZ2GameProperties[dr].Count}``"));
+                string types = string.Join(", ", BZ2GameProperties.Keys.Select(dr => $"\"{dr}\" `{BZ2GameProperties[dr].Count}`"));
                 await Context.Channel.SendMessageAsync($"📄 TermTypes: {types}").ConfigureAwait(false);
             }
             else
             {
-
                 if (BZ2GameProperties.ContainsKey(type))
                 {
                     var gameProps = BZ2GameProperties[type];
@@ -192,7 +181,9 @@ namespace NadekoBot.Modules.Battlezone
                     using (var uow = DbHandler.UnitOfWork())
                     {
                         var i = 1 + 20 * (page - 1);
-                        toSend = Format.Code($"📄 Term '{type}' page {page}") + "\n\n" + String.Join("\n", gameProps.AsEnumerable().Skip((page - 1) * 20).Take(20).Select(p => $"`{(i++).ToString().PadRight(gameProps.Count.ToString().Length)}. {p.Value.Term.PadRight(10)} | {p.Value.Value}'"));
+                        int NumWidth = gameProps.Count.ToString().Length;
+                        int TermWidth = gameProps.AsEnumerable().Skip((page - 1) * 20).Take(20).Max(dr => dr.Key.Length);
+                        toSend = Format.Code($"📄 Term '{type}' page {page}") + "\n\n" + Format.Code(String.Join("\n", gameProps.AsEnumerable().Skip((page - 1) * 20).Take(20).Select(p => $"{(i++).ToString().PadLeft(NumWidth)} | {p.Value.Term.PadRight(TermWidth)} | {p.Value.Value}")));
                     }
 
                     await Context.Channel.SendMessageAsync(toSend).ConfigureAwait(false);
