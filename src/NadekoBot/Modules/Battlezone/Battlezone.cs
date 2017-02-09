@@ -89,6 +89,12 @@ namespace NadekoBot.Modules.Battlezone
 
             type = type.ToLowerInvariant();
 
+            if (channel == null && !NadekoBot.Credentials.IsOwner(Context.User))
+            {
+                try { await Context.Channel.SendErrorAsync("Insufficient permissions. Requires Bot ownership for global access."); } catch { }
+                return;
+            }
+
             if (!new[] { "name", "shell", "version", "mod" }.Contains(type))
             {
                 await Context.Channel.SendErrorAsync($"Unknown term type '{type}'").ConfigureAwait(false);
@@ -126,7 +132,15 @@ namespace NadekoBot.Modules.Battlezone
         [NadekoCommand, Usage, Description, Aliases]
         public async Task RemoveBZ2GameProperty(string type, string key)
         {
+            var channel = Context.Channel as ITextChannel;
+
             type = type.ToLowerInvariant();
+
+            if (channel == null && !NadekoBot.Credentials.IsOwner(Context.User))
+            {
+                try { await Context.Channel.SendErrorAsync("Insufficient permissions. Requires Bot ownership for global access."); } catch { }
+                return;
+            }
 
             if (!new[] { "name", "shell", "version", "mod" }.Contains(type))
             {
