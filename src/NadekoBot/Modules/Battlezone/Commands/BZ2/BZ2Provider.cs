@@ -13,7 +13,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 {
     public static class BZ2Provider
     {
-        private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZ2&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId&__pluginShowSource=true";
+        private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZ2&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId&__pluginShowSource=true&__pluginQueryServers=true";
 
         public static async Task<RaknetData> GetGames()
         {
@@ -118,6 +118,8 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
         public string p { get; set; } // varchar(16)  | GAMEPORT_KEY
         public string l { get; set; } // locked
 
+        public RaknetPongResponse pong { get; set; }
+
         public bool IsMatesFamilyMarker()
         {
             return proxySource == "masterserver.matesfamily.org"
@@ -163,15 +165,26 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 embed.WithColor(new Color(0xff, 0xac, 0x33))
                      .WithTitle("🔐 " + n);
             }
-            //else if(t == "5" && !string.IsNullOrWhiteSpace(r))
-            //{
-            //    embed.WithColor(new Color(0xff, 0xff, 0x00))
-            //         .WithTitle("⚠ " + n);
-            //}
+            else if(t == "5" && pong == null)
+            {
+                embed.WithColor(new Color(0xff, 0xff, 0x00))
+                     .WithTitle("⚠ " + n);
+            }
             else
             {
                 embed.WithOkColor()
                      .WithTitle(n);
+            }
+
+            if (pong != null)
+            {
+                if (pong.CompressedData != null)
+                {
+                    if (pong.CompressedData.Players.Length > 0)
+                    {
+                        embed.AddField(efb => efb.WithName("(K/D/S) Players").WithValue(pong.CompressedData.GetPlayersString()).WithIsInline(false));
+                    }
+                }
             }
 
             return embed;
@@ -259,5 +272,72 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
             return Format.Code(builder.ToString(), "css");
         }
+    }
+
+    public class RaknetPongResponse
+    {
+        public byte DataVersion { get; set; } // To ignore malformed data
+        public byte TimeLimit { get; set; }
+        public byte KillLimit { get; set; }
+        public byte GameTimeMinutes { get; set; }
+
+        public UInt16 MaxPing { get; set; }
+        public UInt16 GameVersion { get; set; } // == NETWORK_GAME_VERSION
+
+        public CompressibleRaknetPongResponse CompressedData { get; set; }
+
+        public bool bDataValid { get; set; }
+        public bool bPassworded { get; set; }
+        public byte CurPlayers { get; set; }
+        public byte MaxPlayers { get; set; }
+        public byte TPS { get; set; }
+        public bool bLockedDown { get; set; }
+        public byte GameType { get; set; } // ivar5
+        public byte ServerInfoMode { get; set; } // 3 bits so it has several possibe values clearly
+        public bool TeamsOn { get; set; } // ivar3
+        public byte GameSubType { get; set; } // ivar7
+        public bool OnlyOneTeam { get; set; } // ivar12
+    }
+
+    public class CompressibleRaknetPongResponse
+    {
+        public string SessionName { get; set; }
+        public string MapName { get; set; }
+        public string Mods { get; set; }
+        public string MapURL { get; set; }
+        public string MOTD { get; set; }
+        public RaknetPongPlayerInfo[] Players { get; set; }
+
+        public string GetPlayersString()
+        {
+            StringBuilder builder = new StringBuilder();
+
+            int k = 1;
+            int d = 1;
+            int s = 1;
+
+            Players.ForEach(dr =>
+            {
+                k = Math.Max(k, dr.Kills.ToString().Length);
+                d = Math.Max(k, dr.Deaths.ToString().Length);
+                s = Math.Max(k, dr.Score.ToString().Length);
+            });
+
+            Players.ForEach(dr =>
+            {
+                builder.AppendLine($"{dr.Kills.ToString().PadLeft(k)}/{dr.Deaths.ToString().PadLeft(d)}/{dr.Score.ToString().PadLeft(s)} {dr.UserName}");
+            });
+
+            return Format.Code(builder.ToString(), "css");
+        }
+    }
+
+    public class RaknetPongPlayerInfo
+    {
+        public byte Kills { get; set; }
+        public byte Deaths { get; set; }
+        public byte Team { get; set; }
+        public short Score { get; set; }
+        public string UserName { get; set; }
     }
 }
