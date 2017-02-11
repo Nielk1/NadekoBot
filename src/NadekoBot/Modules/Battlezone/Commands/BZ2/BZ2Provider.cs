@@ -319,16 +319,17 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             Players.ForEach(dr =>
             {
                 k = Math.Max(k, dr.Kills.ToString().Length);
-                d = Math.Max(k, dr.Deaths.ToString().Length);
-                s = Math.Max(k, dr.Score.ToString().Length);
+                d = Math.Max(d, dr.Deaths.ToString().Length);
+                s = Math.Max(s, dr.Score.ToString().Length);
             });
 
             Players.ForEach(dr =>
             {
-                builder.AppendLine($"{dr.Kills.ToString().PadLeft(k)}/{dr.Deaths.ToString().PadLeft(d)}/{dr.Score.ToString().PadLeft(s)} {dr.UserName}");
+                builder.AppendLine($"`{dr.Kills.ToString().PadLeft(k)}/{dr.Deaths.ToString().PadLeft(d)}/{dr.Score.ToString().PadLeft(s)}` {dr.UserName}");
             });
 
-            return Format.Code(builder.ToString(), "css");
+            //return Format.Code(builder.ToString(), "css");
+            return builder.ToString();
         }
     }
 
