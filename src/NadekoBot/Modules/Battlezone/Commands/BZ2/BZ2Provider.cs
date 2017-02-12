@@ -43,7 +43,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithColor(new Color(255, 255, 255))
                 .WithTitle("Battlezone II Game List")
                 //.WithUrl()
-                .WithDescription($"List of games currently on Battlezone II matchmaking servers\n`{GET.Where(game => !game.IsMarker()).Count()} Game(s)`")
+                .WithDescription($"List of games currently on Battlezone II matchmaking servers\n⛔ Locked | 🔐 Password | ❓ Limited Info\n🔲 Open | ⬛ Full | ⚠ Unknown\n`{GET.Where(game => !game.IsMarker()).Count()} Game(s)`")
                 .WithThumbnailUrl("http://vignette1.wikia.nocookie.net/battlezone/images/3/30/Isdf_logo.png/revision/latest/scale-to-width-down/80")
                 .WithFooter(efb => efb.WithText("Brought to you by Nielk1's Raknet Bot"));
 
@@ -74,8 +74,6 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             {
                 embed.AddField(efb => efb.WithName("IonDriver").WithValue("⚠ Unknown").WithIsInline(true));
             }
-
-            embed.AddField(efb => efb.WithName("Key").WithValue("⛔ Locked | 🔐 Password | ❓ NAT | 🔲 Open | ⬛ Full | ⚠ Unknown").WithIsInline(false));
 
             return embed;
         }
