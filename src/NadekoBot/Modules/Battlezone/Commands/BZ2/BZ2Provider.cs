@@ -341,10 +341,10 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 switch (pong.ServerInfoMode)
                 {
                     case 1:
-                        builder.AppendLine($"Time    | In lobby for {pong.GameTimeMinutes} minutes");
+                        builder.AppendLine($"Time    | Not playing or in shell for {pong.GameTimeMinutes} minutes");
                         break;
                     case 3:
-                        builder.AppendLine($"Time    | In game for {pong.GameTimeMinutes} minutes");
+                        builder.AppendLine($"Time    | Playing for {pong.GameTimeMinutes} minutes");
                         break;
                 }
 
