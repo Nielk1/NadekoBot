@@ -151,7 +151,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             string footer = $"[{idx}/{total}] ({m}.bzn)";
             if (pong != null && pong.CompressedData != null && pong.CompressedData.Mods.Length > 0)
             {
-                footer += "\n" + Format.Sanitize(pong.CompressedData.Mods);
+                footer += " " + Format.Sanitize(pong.CompressedData.Mods);
             }
 
             EmbedBuilder embed = new EmbedBuilder()
@@ -318,8 +318,10 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                             case 7:
                                 builder.AppendLine(@"Type    | DM (Vehicle Only)");
                                 break;
+                            default:
+                                builder.AppendLine(@"Type    | DM [UNKNOWN]");
+                                break;
                         }
-                        builder.AppendLine(@"Type    | DM");
                         break;
                     case 2:
                         if (pong.TeamsOn && pong.OnlyOneTeam)
@@ -339,10 +341,10 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 switch (pong.ServerInfoMode)
                 {
                     case 1:
-                        builder.AppendLine($"Time    | lobby ({pong.GameTimeMinutes} minutes)");
+                        builder.AppendLine($"Time    | In lobby for {pong.GameTimeMinutes} minutes");
                         break;
                     case 3:
-                        builder.AppendLine($"Time    | game ({pong.GameTimeMinutes} minutes)");
+                        builder.AppendLine($"Time    | In game for {pong.GameTimeMinutes} minutes");
                         break;
                 }
 
