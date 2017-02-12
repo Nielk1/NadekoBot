@@ -148,32 +148,46 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
         public EmbedBuilder GetEmbed(int idx, int total)
         {
+            string footer = $"[{idx}/{total}] ({m}.bzn)";
+            if (pong != null && pong.CompressedData != null && pong.CompressedData.Mods.Length > 0)
+            {
+                footer += "\n" + Format.Sanitize(pong.CompressedData.Mods);
+            }
+
             EmbedBuilder embed = new EmbedBuilder()
                 .WithDescription(ToString())
-                .WithFooter(efb => efb.WithText($"[{idx}/{total}] ({m}.bzn)"));
+                .WithFooter(efb => efb.WithText(footer));
 
-            string prop = Battlezone.GetBZ2GameProperty("shell", m);
+            string prop = Battlezone.GetBZ2GameProperty("shell", Format.Sanitize(m));
             embed.WithThumbnailUrl(prop ?? "http://vignette1.wikia.nocookie.net/battlezone/images/e/ef/Nomapbz1.png/revision/latest/scale-to-width-down/80");
+
+            string playerCountData = string.Empty;
+            bool fullPlayers = false;
+            if (pong != null)
+            {
+                playerCountData = " [" + pong.CurPlayers + "/" + pong.MaxPlayers + "]";
+                fullPlayers = (pong.CurPlayers >= pong.MaxPlayers);
+            }
 
             if (l == "1")
             {
                 embed.WithColor(new Color(0xbe, 0x19, 0x31))
-                     .WithTitle("⛔ " + n);
+                     .WithTitle("⛔ " + Format.Sanitize(n) + playerCountData);
             }
             else if (k == "1")
             {
                 embed.WithColor(new Color(0xff, 0xac, 0x33))
-                     .WithTitle("🔐 " + n);
+                     .WithTitle("🔐 " + Format.Sanitize(n) + playerCountData);
             }
             else if(t == "5" && pong == null)
             {
                 embed.WithColor(new Color(0xff, 0xff, 0x00))
-                     .WithTitle("⚠ " + n);
+                     .WithTitle("⚠ " + Format.Sanitize(n) + playerCountData);
             }
             else
             {
                 embed.WithOkColor()
-                     .WithTitle(n);
+                     .WithTitle(Format.Sanitize(n) + playerCountData);
             }
 
             if (pong != null)
@@ -201,29 +215,29 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                builder.AppendLine($@"Map     | [{m}]");
+                builder.AppendLine($@"Map     | [{Format.Sanitize(m)}]");
             }
             else
             {
-                builder.AppendLine($@"Map     | {name}");
+                builder.AppendLine($@"Map     | {Format.Sanitize(name)}");
             }
 
             if (string.IsNullOrWhiteSpace(version))
             {
-                builder.AppendLine($@"Version | [{v}]");
+                builder.AppendLine($@"Version | [{Format.Sanitize(v)}]");
             }
             else
             {
-                builder.AppendLine($@"Version | {version}");
+                builder.AppendLine($@"Version | {Format.Sanitize(version)}");
             }
 
             if (string.IsNullOrWhiteSpace(mod))
             {
-                builder.AppendLine($@"Mod     | [{d}]");
+                builder.AppendLine($@"Mod     | [{Format.Sanitize(d)}]");
             }
             else
             {
-                builder.AppendLine($@"Mod     | {mod}");
+                builder.AppendLine($@"Mod     | {Format.Sanitize(mod)}");
             }
 
             switch (t)
@@ -270,7 +284,93 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                     break;
             }
 
-            return Format.Code(builder.ToString(), "css");
+            if (pong != null)
+            {
+                switch (pong.GameType)
+                {
+                    case 0:
+                        builder.AppendLine(@"Type    | All");
+                        break;
+                    case 1:
+                        switch (pong.GameSubType)
+                        {
+                            case 0:
+                                builder.AppendLine(@"Type    | DM");
+                                break;
+                            case 1:
+                                builder.AppendLine(@"Type    | KOTH");
+                                break;
+                            case 2:
+                                builder.AppendLine(@"Type    | CTF");
+                                break;
+                            case 3:
+                                builder.AppendLine(@"Type    | Loot");
+                                break;
+                            case 4:
+                                builder.AppendLine(@"Type    | DM [RESERVED]");
+                                break;
+                            case 5:
+                                builder.AppendLine(@"Type    | Race");
+                                break;
+                            case 6:
+                                builder.AppendLine(@"Type    | Race (Vehicle Only)");
+                                break;
+                            case 7:
+                                builder.AppendLine(@"Type    | DM (Vehicle Only)");
+                                break;
+                        }
+                        builder.AppendLine(@"Type    | DM");
+                        break;
+                    case 2:
+                        if (pong.TeamsOn && pong.OnlyOneTeam)
+                        {
+                            builder.AppendLine(@"Type    | MPI");
+                        }
+                        else
+                        {
+                            builder.AppendLine(@"Type    | Strat");
+                        }
+                        break;
+                    case 3:
+                        builder.AppendLine(@"Type    | MPI [Invalid]");
+                        break;
+                }
+
+                switch (pong.ServerInfoMode)
+                {
+                    case 1:
+                        builder.AppendLine($"Time    | lobby ({pong.GameTimeMinutes} minutes)");
+                        break;
+                    case 3:
+                        builder.AppendLine($"Time    | game ({pong.GameTimeMinutes} minutes)");
+                        break;
+                }
+
+                builder.AppendLine($"TPS     | {pong.TPS}");
+
+                if (pong.TimeLimit > 0)
+                    builder.AppendLine($"TimeLim | {pong.TimeLimit}");
+
+                if (pong.KillLimit > 0)
+                    builder.AppendLine($"KillLim | {pong.KillLimit}");
+            }
+
+            string retVal = Format.Code(builder.ToString(), "css");
+
+            if (pong != null && pong.CompressedData != null)
+            {
+                if (pong.CompressedData.MapURL.Length > 0)
+                {
+                    retVal = Format.Sanitize(pong.CompressedData.MapURL) + "\n" + retVal;
+                }
+
+                if (pong.CompressedData.MOTD.Length > 0)
+                {
+                    retVal = Format.Sanitize(pong.CompressedData.MOTD) + "\n" + retVal;
+                }
+            }
+
+            return retVal;
         }
     }
 
@@ -325,7 +425,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
             Players.ForEach(dr =>
             {
-                builder.AppendLine($"`{dr.Kills.ToString().PadLeft(k)}/{dr.Deaths.ToString().PadLeft(d)}/{dr.Score.ToString().PadLeft(s)}` {dr.UserName}");
+                builder.AppendLine($"`{dr.Kills.ToString().PadLeft(k)}/{dr.Deaths.ToString().PadLeft(d)}/{dr.Score.ToString().PadLeft(s)}` {Format.Sanitize(dr.UserName)}");
             });
 
             //return Format.Code(builder.ToString(), "css");
