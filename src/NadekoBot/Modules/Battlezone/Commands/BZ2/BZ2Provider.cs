@@ -75,6 +75,8 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 embed.AddField(efb => efb.WithName("IonDriver").WithValue("⚠ Unknown").WithIsInline(true));
             }
 
+            embed.AddField(efb => efb.WithName("Key").WithValue("⛔ Locked | 🔐 Password | ❓ NAT | 🔲 Open | ⬛ Full | ⚠ Unknown").WithIsInline(false));
+
             return embed;
         }
     }
