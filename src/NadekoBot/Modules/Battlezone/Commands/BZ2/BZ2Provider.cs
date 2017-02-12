@@ -43,7 +43,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithColor(new Color(255, 255, 255))
                 .WithTitle("Battlezone II Game List")
                 //.WithUrl()
-                .WithDescription($"List of games currently on Battlezone II matchmaking servers\n⛔ Locked | 🔐 Password | ❓ Limited Info\n🔲 Open | ⬛ Full | ⚠ Unknown\n`{GET.Where(game => !game.IsMarker()).Count()} Game(s)`")
+                .WithDescription($"List of games currently on Battlezone II matchmaking servers\n`{GET.Where(game => !game.IsMarker()).Count()} Game(s)`")
                 .WithThumbnailUrl("http://vignette1.wikia.nocookie.net/battlezone/images/3/30/Isdf_logo.png/revision/latest/scale-to-width-down/80")
                 .WithFooter(efb => efb.WithText("Brought to you by Nielk1's Raknet Bot"));
 
@@ -186,15 +186,31 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             }
             else if (pong != null)
             {
-                if (pong.CurPlayers < pong.MaxPlayers)
+                float fullnessRatio = 1.0f * pong.CurPlayers / pong.MaxPlayers;
+
+                if (fullnessRatio >= 1.0f)
                 {
-                    embed.WithOkColor()
-                         .WithTitle("🔲 " + Format.Sanitize(n) + playerCountData);
+                    embed.WithOkColor().WithTitle("🌕 " + Format.Sanitize(n) + playerCountData);
+                }
+                else if (fullnessRatio >= 0.75f)
+                {
+                    embed.WithOkColor().WithTitle("🌖 " + Format.Sanitize(n) + playerCountData);
+                }
+                else if (fullnessRatio >= 0.50f)
+                {
+                    embed.WithOkColor().WithTitle("🌗 " + Format.Sanitize(n) + playerCountData);
+                }
+                else if (fullnessRatio >= 0.25f)
+                {
+                    embed.WithOkColor().WithTitle("🌘 " + Format.Sanitize(n) + playerCountData);
+                }
+                else if (fullnessRatio >= 0.0f)
+                {
+                    embed.WithOkColor().WithTitle("🌑 " + Format.Sanitize(n) + playerCountData);
                 }
                 else
                 {
-                    embed.WithColor(new Color(0x29, 0x2f, 0x33))
-                         .WithTitle("⬛ " + Format.Sanitize(n) + playerCountData);
+                    embed.WithOkColor().WithTitle("👽 " + Format.Sanitize(n) + playerCountData); // this should never happen
                 }
             }
             else // this one should never happen
