@@ -179,15 +179,28 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 embed.WithColor(new Color(0xff, 0xac, 0x33))
                      .WithTitle("🔐 " + Format.Sanitize(n) + playerCountData);
             }
-            else if(t == "5" && pong == null)
+            else if (pong == null)
+            {
+                embed.WithColor(new Color(0xff, 0xff, 0x00))
+                     .WithTitle("❓ " + Format.Sanitize(n) + playerCountData);
+            }
+            else if (pong != null)
+            {
+                if (pong.CurPlayers < pong.MaxPlayers)
+                {
+                    embed.WithOkColor()
+                         .WithTitle("🔲 " + Format.Sanitize(n) + playerCountData);
+                }
+                else
+                {
+                    embed.WithColor(new Color(0x29, 0x2f, 0x33))
+                         .WithTitle("⬛ " + Format.Sanitize(n) + playerCountData);
+                }
+            }
+            else // this one should never happen
             {
                 embed.WithColor(new Color(0xff, 0xff, 0x00))
                      .WithTitle("⚠ " + Format.Sanitize(n) + playerCountData);
-            }
-            else
-            {
-                embed.WithOkColor()
-                     .WithTitle(Format.Sanitize(n) + playerCountData);
             }
 
             if (pong != null)
