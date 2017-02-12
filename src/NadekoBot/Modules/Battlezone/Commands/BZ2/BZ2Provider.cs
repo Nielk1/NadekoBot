@@ -379,6 +379,9 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
                 builder.AppendLine($"TPS     | {pong.TPS}");
 
+                if (pong.MaxPing > 0)
+                    builder.AppendLine($"MaxPing | {pong.MaxPing}");
+
                 if (pong.TimeLimit > 0)
                     builder.AppendLine($"TimeLim | {pong.TimeLimit}");
 
