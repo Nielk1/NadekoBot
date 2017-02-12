@@ -179,15 +179,44 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 embed.WithColor(new Color(0xff, 0xac, 0x33))
                      .WithTitle("🔐 " + Format.Sanitize(n) + playerCountData);
             }
-            else if(t == "5" && pong == null)
+            else if (pong == null)
+            {
+                embed.WithColor(new Color(0xff, 0xff, 0x00))
+                     .WithTitle("❓ " + Format.Sanitize(n) + playerCountData);
+            }
+            else if (pong != null)
+            {
+                float fullnessRatio = 1.0f * pong.CurPlayers / pong.MaxPlayers;
+
+                if (fullnessRatio >= 1.0f)
+                {
+                    embed.WithOkColor().WithTitle("🌕 " + Format.Sanitize(n) + playerCountData);
+                }
+                else if (fullnessRatio >= 0.75f)
+                {
+                    embed.WithOkColor().WithTitle("🌖 " + Format.Sanitize(n) + playerCountData);
+                }
+                else if (fullnessRatio >= 0.50f)
+                {
+                    embed.WithOkColor().WithTitle("🌗 " + Format.Sanitize(n) + playerCountData);
+                }
+                else if (fullnessRatio >= 0.25f)
+                {
+                    embed.WithOkColor().WithTitle("🌘 " + Format.Sanitize(n) + playerCountData);
+                }
+                else if (fullnessRatio >= 0.0f)
+                {
+                    embed.WithOkColor().WithTitle("🌑 " + Format.Sanitize(n) + playerCountData);
+                }
+                else
+                {
+                    embed.WithOkColor().WithTitle("👽 " + Format.Sanitize(n) + playerCountData); // this should never happen
+                }
+            }
+            else // this one should never happen
             {
                 embed.WithColor(new Color(0xff, 0xff, 0x00))
                      .WithTitle("⚠ " + Format.Sanitize(n) + playerCountData);
-            }
-            else
-            {
-                embed.WithOkColor()
-                     .WithTitle(Format.Sanitize(n) + playerCountData);
             }
 
             if (pong != null)
@@ -341,10 +370,10 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 switch (pong.ServerInfoMode)
                 {
                     case 1:
-                        builder.AppendLine($"Time    | In lobby for {pong.GameTimeMinutes} minutes");
+                        builder.AppendLine($"Time    | Not playing or in shell for {pong.GameTimeMinutes} minutes");
                         break;
                     case 3:
-                        builder.AppendLine($"Time    | In game for {pong.GameTimeMinutes} minutes");
+                        builder.AppendLine($"Time    | Playing for {pong.GameTimeMinutes} minutes");
                         break;
                 }
 
@@ -417,17 +446,23 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             int k = 1;
             int d = 1;
             int s = 1;
+            bool scoreNeedsSign = false;
 
             Players.ForEach(dr =>
             {
                 k = Math.Max(k, dr.Kills.ToString().Length);
                 d = Math.Max(d, dr.Deaths.ToString().Length);
-                s = Math.Max(s, dr.Score.ToString().Length);
+                s = Math.Max(s, Math.Abs(dr.Score).ToString().Length);
+                scoreNeedsSign = scoreNeedsSign || (dr.Score < 0);
             });
 
             Players.ForEach(dr =>
             {
-                builder.AppendLine($"`{dr.Kills.ToString().PadLeft(k)}/{dr.Deaths.ToString().PadLeft(d)}/{dr.Score.ToString().PadLeft(s)}` {Format.Sanitize(dr.UserName)}");
+                string scoresign = "0";
+                if (dr.Score > 0) scoresign = "+";
+                if (dr.Score < 0) scoresign = "-";
+                if (!scoreNeedsSign) scoresign = string.Empty;
+                builder.AppendLine($"`{dr.Kills.ToString().PadLeft(k, '0')}/{dr.Deaths.ToString().PadLeft(d, '0')}/{scoresign}{Math.Abs(dr.Score).ToString().PadLeft(s, '0')}` {Format.Sanitize(dr.UserName)}");
             });
 
             //return Format.Code(builder.ToString(), "css");
