@@ -141,6 +141,33 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to addbz2gameproperty.
+        /// </summary>
+        public static string addbz2gameproperty_cmd {
+            get {
+                return ResourceManager.GetString("addbz2gameproperty_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Add a term mapping for the game list.
+        /// </summary>
+        public static string addbz2gameproperty_desc {
+            get {
+                return ResourceManager.GetString("addbz2gameproperty_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}addbz2gameproperty type term value`.
+        /// </summary>
+        public static string addbz2gameproperty_usage {
+            get {
+                return ResourceManager.GetString("addbz2gameproperty_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to addcustreact acr.
         /// </summary>
         public static string addcustreact_cmd {
@@ -2814,6 +2841,33 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to gamesbz2.
+        /// </summary>
+        public static string gamesbz2_cmd {
+            get {
+                return ResourceManager.GetString("gamesbz2_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Lists current BZ2 MultiPlayer Games.
+        /// </summary>
+        public static string gamesbz2_desc {
+            get {
+                return ResourceManager.GetString("gamesbz2_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}gamesbz2`.
+        /// </summary>
+        public static string gamesbz2_usage {
+            get {
+                return ResourceManager.GetString("gamesbz2_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to gelbooru.
         /// </summary>
         public static string gelbooru_cmd {
@@ -3782,6 +3836,33 @@ namespace NadekoBot.Resources {
         public static string linux_usage {
             get {
                 return ResourceManager.GetString("linux_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to listbz2gameproperties.
+        /// </summary>
+        public static string listbz2gameproperties_cmd {
+            get {
+                return ResourceManager.GetString("listbz2gameproperties_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Get paginated list of properties, omit type and page paramaters for a type list.
+        /// </summary>
+        public static string listbz2gameproperties_desc {
+            get {
+                return ResourceManager.GetString("listbz2gameproperties_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}listbz2gameproperties type page`.
+        /// </summary>
+        public static string listbz2gameproperties_usage {
+            get {
+                return ResourceManager.GetString("listbz2gameproperties_usage", resourceCulture);
             }
         }
         
@@ -5726,6 +5807,33 @@ namespace NadekoBot.Resources {
         public static string removeallroles_usage {
             get {
                 return ResourceManager.GetString("removeallroles_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to removebz2gameproperty.
+        /// </summary>
+        public static string removebz2gameproperty_cmd {
+            get {
+                return ResourceManager.GetString("removebz2gameproperty_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Remove a term mapping for the game list.
+        /// </summary>
+        public static string removebz2gameproperty_desc {
+            get {
+                return ResourceManager.GetString("removebz2gameproperty_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}removebz2gameproperty type term`.
+        /// </summary>
+        public static string removebz2gameproperty_usage {
+            get {
+                return ResourceManager.GetString("removebz2gameproperty_usage", resourceCulture);
             }
         }
         

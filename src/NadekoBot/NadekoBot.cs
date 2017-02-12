@@ -33,6 +33,7 @@ namespace NadekoBot
 
         public static GoogleApiService Google { get; private set; }
         public static StatsService Stats { get; private set; }
+        public static IImagesService Images { get; private set; }
 
         public static ConcurrentDictionary<string, string> ModulePrefixes { get; private set; }
         public static bool Ready { get; private set; }
@@ -68,8 +69,11 @@ namespace NadekoBot
                 LogLevel = LogSeverity.Warning,
                 TotalShards = Credentials.TotalShards,
                 ConnectionTimeout = int.MaxValue,
-                AlwaysDownloadUsers = true,
+#if !GLOBAL_NADEKO
+//                AlwaysDownloadUsers = true,
+#endif
             });
+
 #if GLOBAL_NADEKO
             Client.Log += Client_Log;
 #endif
@@ -82,6 +86,7 @@ namespace NadekoBot
             Google = new GoogleApiService();
             CommandHandler = new CommandHandler(Client, CommandService);
             Stats = new StatsService(Client, CommandHandler);
+            Images = await ImagesService.Create().ConfigureAwait(false);
 
             ////setup DI
             //var depMap = new DependencyMap();
@@ -113,7 +118,7 @@ namespace NadekoBot
             
             await CommandHandler.StartHandling().ConfigureAwait(false);
 
-            await CommandService.AddModulesAsync(this.GetType().GetTypeInfo().Assembly).ConfigureAwait(false);
+            var _ = await Task.Run(() => CommandService.AddModulesAsync(this.GetType().GetTypeInfo().Assembly)).ConfigureAwait(false);
 #if !GLOBAL_NADEKO
             await CommandService.AddModuleAsync<Music>().ConfigureAwait(false);
 #endif

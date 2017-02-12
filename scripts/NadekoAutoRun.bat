@@ -31,7 +31,7 @@ dotnet run --configuration Release
 ECHO Updating...
 timeout /t 3
 SET "FILENAME=%~dp0\Latest.bat"
-bitsadmin.exe /transfer "Downloading Nadeko (Latest)" /priority high https://github.com/Kwoth/NadekoBot/raw/master/scripts/Latest.bat "%FILENAME%"
+bitsadmin.exe /transfer "Downloading Nadeko (Latest)" /priority high https://github.com/Nielk1/NadekoBot/raw/master/scripts/Latest.bat "%FILENAME%"
 ECHO NadekoBot Dev Build (latest) downloaded.
 SET root=%~dp0
 CD /D %root%
@@ -47,7 +47,7 @@ dotnet run --configuration Release
 ECHO Updating...
 timeout /t 3
 SET "FILENAME=%~dp0\Stable.bat"
-bitsadmin.exe /transfer "Downloading Nadeko (Stable)" /priority high https://github.com/Kwoth/NadekoBot/raw/master/scripts/Stable.bat "%FILENAME%"
+bitsadmin.exe /transfer "Downloading Nadeko (Stable)" /priority high https://github.com/Nielk1/NadekoBot/raw/master/scripts/Stable.bat "%FILENAME%"
 ECHO NadekoBot Stable build downloaded.
 SET root=%~dp0
 CD /D %root%
