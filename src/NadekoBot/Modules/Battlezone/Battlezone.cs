@@ -57,26 +57,27 @@ namespace NadekoBot.Modules.Battlezone
         [NadekoCommand, Usage, Description, Aliases]
         public async Task GamesBZ2()
         {
-            await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
-
-            var gamelist = await BZ2Provider.GetGames();
-            if (gamelist == null)
+            using (Context.Channel.EnterTypingState())
             {
-                await Context.Channel.SendErrorAsync("Failed to get game list.").ConfigureAwait(false);
-                return;
-            }
+                var gamelist = await BZ2Provider.GetGames();
+                if (gamelist == null)
+                {
+                    await Context.Channel.SendErrorAsync("Failed to get game list.").ConfigureAwait(false);
+                    return;
+                }
 
-            EmbedBuilder top = gamelist.GetTopEmbed();
-            await Context.Channel.EmbedAsync(top).ConfigureAwait(false);
-                
-            var games = gamelist.GET.Where(dr => !dr.IsMarker());
-            int itr = 1;
-            int cnt = games.Count();
-            var gamesIter = games.Select(dr => dr.GetEmbed(itr++, cnt)).ToList();
-
-            foreach (var game in gamesIter)
-            {
-                await Context.Channel.EmbedAsync(game).ConfigureAwait(false);
+                EmbedBuilder top = gamelist.GetTopEmbed();
+                await Context.Channel.EmbedAsync(top).ConfigureAwait(false);
+            
+                var games = gamelist.GET.Where(dr => !dr.IsMarker());
+                int itr = 1;
+                int cnt = games.Count();
+                var gamesIter = games.Select(dr => dr.GetEmbed(itr++, cnt)).ToList();
+            
+                foreach (var game in gamesIter)
+                {
+                    await Context.Channel.EmbedAsync(game).ConfigureAwait(false);
+                }
             }
         }
 
