@@ -22,7 +22,7 @@ CD /D %installtemp%
 ::Downloads the latest version of Nadeko
 ECHO Downloading Nadeko...
 ECHO.
-git clone -b dev-custom --recursive --depth 1 --progress https://github.com/Nielk1/NadekoBot.git >nul
+git clone -b dev --recursive --depth 1 --progress https://github.com/Nielk1/NadekoBot.git >nul
 IF %ERRORLEVEL% EQU 128 (GOTO :giterror)
 TITLE Installing NadekoBot, please wait...
 ECHO.
@@ -126,12 +126,12 @@ timeout /t 5
 ECHO.
 ECHO Downloading libsodium.dll and opus.dll...
 SET "FILENAME=%~dp0\NadekoBot\src\NadekoBot\libsodium.dll"
-bitsadmin.exe /transfer "Downloading libsodium.dll" /priority high https://github.com/Nielk1/NadekoBot/raw/dev-custom/src/NadekoBot/_libs/32/libsodium.dll "%FILENAME%"
+bitsadmin.exe /transfer "Downloading libsodium.dll" /priority high https://github.com/Nielk1/NadekoBot/raw/dev/src/NadekoBot/_libs/32/libsodium.dll "%FILENAME%"
 ECHO libsodium.dll downloaded.
 ECHO.
 timeout /t 5
 SET "FILENAME=%~dp0\NadekoBot\src\NadekoBot\opus.dll"
-bitsadmin.exe /transfer "Downloading opus.dll" /priority high https://github.com/Nielk1/NadekoBot/raw/dev-custom/src/NadekoBot/_libs/32/opus.dll "%FILENAME%"
+bitsadmin.exe /transfer "Downloading opus.dll" /priority high https://github.com/Nielk1/NadekoBot/raw/dev/src/NadekoBot/_libs/32/opus.dll "%FILENAME%"
 ECHO opus.dll downloaded.
 GOTO end
 :end
