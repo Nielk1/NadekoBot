@@ -417,17 +417,23 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             int k = 1;
             int d = 1;
             int s = 1;
+            bool scoreNeedsSign = false;
 
             Players.ForEach(dr =>
             {
                 k = Math.Max(k, dr.Kills.ToString().Length);
                 d = Math.Max(d, dr.Deaths.ToString().Length);
-                s = Math.Max(s, dr.Score.ToString().Length);
+                s = Math.Max(s, Math.Abs(dr.Score).ToString().Length);
+                scoreNeedsSign = scoreNeedsSign || (dr.Score < 0);
             });
 
             Players.ForEach(dr =>
             {
-                builder.AppendLine($"`{dr.Kills.ToString().PadLeft(k)}/{dr.Deaths.ToString().PadLeft(d)}/{dr.Score.ToString().PadLeft(s)}` {Format.Sanitize(dr.UserName)}");
+                string scoresign = "0";
+                if (dr.Score > 0) scoresign = "+";
+                if (dr.Score < 0) scoresign = "-";
+                if (!scoreNeedsSign) scoresign = string.Empty;
+                builder.AppendLine($"`{dr.Kills.ToString().PadLeft(k, '0')}/{dr.Deaths.ToString().PadLeft(d, '0')}/{scoresign}{Math.Abs(dr.Score).ToString().PadLeft(s, '0')}` {Format.Sanitize(dr.UserName)}");
             });
 
             //return Format.Code(builder.ToString(), "css");
