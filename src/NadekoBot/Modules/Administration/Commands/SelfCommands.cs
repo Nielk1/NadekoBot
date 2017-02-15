@@ -3,6 +3,7 @@ using Discord.Commands;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -15,6 +16,29 @@ namespace NadekoBot.Modules.Administration
         [Group]
         class SelfCommands : ModuleBase
         {
+            [NadekoCommand, Usage, Description, Aliases]
+            [OwnerOnly]
+            public async Task ConnectShard(int shardid)
+            {
+                var shard = NadekoBot.Client.GetShard(shardid);
+
+                if (shard == null)
+                {
+                    await Context.Channel.SendErrorAsync("No shard by that id found.").ConfigureAwait(false);
+                    return;
+                }
+                try
+                {
+                    await Context.Channel.SendConfirmAsync($"Shard **#{shardid}** reconnecting.").ConfigureAwait(false);
+                    await shard.ConnectAsync().ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"Shard **#{shardid}** reconnected.").ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _log.Warn(ex);
+                }
+            }
+
             [NadekoCommand, Usage, Description, Aliases]
             [OwnerOnly]
             public async Task Leave([Remainder] string guildStr)
@@ -166,6 +190,14 @@ namespace NadekoBot.Modules.Administration
                         .ConfigureAwait(false);
 
                 await Context.Channel.SendConfirmAsync("🆗").ConfigureAwait(false);
+            }
+
+            [NadekoCommand, Usage, Description, Aliases]
+            [OwnerOnly]
+            public async Task ReloadImages()
+            {
+                var time = await NadekoBot.Images.Reload().ConfigureAwait(false);
+                await Context.Channel.SendConfirmAsync($"Images loaded after {time.TotalSeconds:F3}s!").ConfigureAwait(false);
             }
 
             private static UserStatus SettableUserStatusToUserStatus(SettableUserStatus sus)
