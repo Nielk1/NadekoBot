@@ -244,29 +244,29 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                builder.AppendLine($@"Map     | [{Format.Sanitize(m)}]");
+                builder.AppendLine($@"Map     | [{m}]");
             }
             else
             {
-                builder.AppendLine($@"Map     | {Format.Sanitize(name)}");
+                builder.AppendLine($@"Map     | {name}");
             }
 
             if (string.IsNullOrWhiteSpace(version))
             {
-                builder.AppendLine($@"Version | [{Format.Sanitize(v)}]");
+                builder.AppendLine($@"Version | [{v}]");
             }
             else
             {
-                builder.AppendLine($@"Version | {Format.Sanitize(version)}");
+                builder.AppendLine($@"Version | {version}");
             }
 
             if (string.IsNullOrWhiteSpace(mod))
             {
-                builder.AppendLine($@"Mod     | [{Format.Sanitize(d)}]");
+                builder.AppendLine($@"Mod     | [{d}]");
             }
             else
             {
-                builder.AppendLine($@"Mod     | {Format.Sanitize(mod)}");
+                builder.AppendLine($@"Mod     | {mod}");
             }
 
             switch (t)
