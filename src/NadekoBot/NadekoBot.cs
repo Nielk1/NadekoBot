@@ -22,7 +22,7 @@ namespace NadekoBot
     public class NadekoBot
     {
         private Logger _log;
-        
+
         public static Color OkColor { get; }
         public static Color ErrorColor { get; }
 
@@ -70,7 +70,7 @@ namespace NadekoBot
                 TotalShards = Credentials.TotalShards,
                 ConnectionTimeout = int.MaxValue,
 #if !GLOBAL_NADEKO
-//                AlwaysDownloadUsers = true,
+                //AlwaysDownloadUsers = true,
 #endif
             });
 
@@ -79,7 +79,8 @@ namespace NadekoBot
 #endif
 
             //initialize Services
-            CommandService = new CommandService(new CommandServiceConfig() {
+            CommandService = new CommandService(new CommandServiceConfig()
+            {
                 CaseSensitiveCommands = false,
                 DefaultRunMode = RunMode.Sync
             });
@@ -115,7 +116,7 @@ namespace NadekoBot
             ModulePrefixes = new ConcurrentDictionary<string, string>(NadekoBot.BotConfig.ModulePrefixes.OrderByDescending(mp => mp.Prefix.Length).ToDictionary(m => m.ModuleName, m => m.Prefix));
 
             // start handling messages received in commandhandler
-            
+
             await CommandHandler.StartHandling().ConfigureAwait(false);
 
             var _ = await Task.Run(() => CommandService.AddModulesAsync(this.GetType().GetTypeInfo().Assembly)).ConfigureAwait(false);
