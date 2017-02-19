@@ -13,6 +13,7 @@ using Steam.Models.SteamCommunity;
 using SteamWebAPI2.Utilities;
 using System.Collections.Concurrent;
 using SteamWebAPI2.Interfaces;
+using System.Net.Http;
 
 namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 {
@@ -24,6 +25,11 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
         /// Steam PlayerSummary cache
         /// </summary>
         static ConcurrentDictionary<ulong, Tuple<DateTime, PlayerSummaryModel>> steamPlayerCache = new ConcurrentDictionary<ulong, Tuple<DateTime, PlayerSummaryModel>>();
+
+        /// <summary>
+        /// Workshop name cache
+        /// </summary>
+        static ConcurrentDictionary<string, Tuple<DateTime, string>> steamWorkshopNameCache = new ConcurrentDictionary<string, Tuple<DateTime, string>>();
 
         /// <summary>
         /// SteamUser WebAPI Interface
@@ -129,6 +135,55 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 
             return null;
         }
+
+        public static async Task<string> GetSteamWorkshopName(string workshopId)
+        {
+            if (string.IsNullOrWhiteSpace(workshopId)) return null;
+
+            Tuple<DateTime, string> newWorkshopName = null;
+            if (steamWorkshopNameCache.TryGetValue(workshopId, out newWorkshopName))
+            {
+                if (newWorkshopName.Item1 > DateTime.UtcNow)
+                {
+                    newWorkshopName = null;
+                }
+            }
+
+            if (newWorkshopName == null)
+            {
+                try
+                {
+                    using (var http = new HttpClient())
+                    {
+                        var reqString = $"http://steamcommunity.com/sharedfiles/filedetails/?id={workshopId}";
+                        var rawText = (await http.GetStringAsync(reqString).ConfigureAwait(false));
+
+                        var matches = System.Text.RegularExpressions.Regex.Matches(rawText, "<\\s*div\\s+class\\s*=\\s*\"workshopItemTitle\"\\s*>(.*)<\\s*/\\s*div\\s*>");
+                        string found = null;
+                        if (matches.Count > 0)
+                        {
+                            if (matches[0].Groups.Count > 1)
+                            {
+                                found = matches[0].Groups[1].Value.Trim();
+                            }
+                        }
+
+                        newWorkshopName = new Tuple<DateTime, string>(DateTime.UtcNow.AddHours(24), found);
+                        steamWorkshopNameCache.AddOrUpdate(workshopId, newWorkshopName,
+                         (key, existingVal) =>
+                         {
+                             return newWorkshopName;
+                         });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //_log.Warn(ex, "Steam Workshop scan failed");
+                }
+            }
+
+            return newWorkshopName.Item2;
+        }
     }
 
     public class BZ98ServerData
@@ -205,6 +260,15 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
             get
             {
                 return metadata != null && metadata.ContainsKey("launched") && metadata["launched"] == "1";
+            }
+        }
+
+        [JsonIgnore]
+        public bool IsEnded
+        {
+            get
+            {
+                return metadata != null && metadata.ContainsKey("gameended") && metadata["gameended"] == "1";
             }
         }
 
@@ -531,8 +595,8 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
             //string mod = Battlezone.GetBZ2GameProperty("mod", d);
 
             List<Tuple<string, string>> lines = new List<Tuple<string, string>>();
-            lines.Add(new Tuple<string, string>("Map", MapFile));
-            lines.Add(new Tuple<string, string>("State", IsLaunched ? "Launched" : "In Shell"));
+            lines.Add(new Tuple<string, string>("Map", "[" + MapFile + "]"));
+            lines.Add(new Tuple<string, string>("State", IsEnded ? "Ended" : IsLaunched ? "Launched" : "In Shell"));
             if (TimeLimit.HasValue && TimeLimit.Value > 0) lines.Add(new Tuple<string, string>("TimeLimit", TimeLimit.Value.ToString()));
             if (KillLimit.HasValue && KillLimit.Value > 0) lines.Add(new Tuple<string, string>("KillLimit", KillLimit.Value.ToString()));
             if (Lives.HasValue && Lives.Value > 0) lines.Add(new Tuple<string, string>("Lives", Lives.Value.ToString()));
@@ -553,9 +617,23 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 
             string retVal = Format.Code(builder.ToString(), "css");
 
-            if (string.IsNullOrWhiteSpace(WorkshopID))
+            if (!string.IsNullOrWhiteSpace(WorkshopID))
             {
-                retVal = Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={WorkshopID}") + "\n" + retVal;
+                Task<string> modNameTask = Task.Run(async () =>
+                {
+                    string modNameRet = await BZ98Provider.GetSteamWorkshopName(WorkshopID);
+                    return modNameRet;
+                });
+                var modName = modNameTask.Result;
+
+                if (!string.IsNullOrWhiteSpace(modName))
+                {
+                    retVal =  $"[{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={WorkshopID})" + "\n" + retVal;
+                }
+                else
+                {
+                    retVal = Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={WorkshopID}") + "\n" + retVal;
+                }
             }
 
             return retVal;
