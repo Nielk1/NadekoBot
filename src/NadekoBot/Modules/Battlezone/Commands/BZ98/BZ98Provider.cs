@@ -659,7 +659,8 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 
             string retVal = Format.Code(builder.ToString(), "css");
 
-            if (!string.IsNullOrWhiteSpace(WorkshopID))
+            ulong workshopIdNum = 0;
+            if (!string.IsNullOrWhiteSpace(WorkshopID) && ulong.TryParse(WorkshopID,out workshopIdNum) && workshopIdNum > 0)
             {
                 Task<string> modNameTask = Task.Run(async () =>
                 {
