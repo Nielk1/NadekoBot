@@ -363,10 +363,13 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
                 .WithDescription(ToString())
                 .WithFooter(efb => efb.WithText(footer));
 
+            string prop = null;
+            embed.WithThumbnailUrl(prop ?? "http://vignette1.wikia.nocookie.net/battlezone/images/e/ef/Nomapbz1.png/revision/latest/scale-to-width-down/80");
+
             string playerCountData = string.Empty;
             bool fullPlayers = false;
             {
-                playerCountData = " [" + userCount + "/" + PlayerLimit??memberLimit + "]";
+                playerCountData = " [" + userCount + "/" + (PlayerLimit ?? memberLimit) + "]";
                 fullPlayers = (userCount >= (PlayerLimit ?? memberLimit));
             }
 
@@ -442,6 +445,43 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 
             //return Format.Code(builder.ToString(), "css");
             return builder.ToString();
+        }
+
+        public override string ToString()
+        {
+            //string name = Battlezone.GetBZ2GameProperty("name", m);
+            //string version = Battlezone.GetBZ2GameProperty("version", v);
+            //string mod = Battlezone.GetBZ2GameProperty("mod", d);
+
+            List<Tuple<string, string>> lines = new List<Tuple<string, string>>();
+            lines.Add(new Tuple<string, string>("Map", MapFile));
+            lines.Add(new Tuple<string, string>("State", IsLaunched ? "Launched" : "In Shell"));
+            if (TimeLimit.HasValue && TimeLimit.Value > 0) lines.Add(new Tuple<string, string>("TimeLimit", TimeLimit.Value.ToString()));
+            if (KillLimit.HasValue && KillLimit.Value > 0) lines.Add(new Tuple<string, string>("KillLimit", KillLimit.Value.ToString()));
+            if (Lives.HasValue && Lives.Value > 0) lines.Add(new Tuple<string, string>("Lives", Lives.Value.ToString()));
+            if (SyncJoin.HasValue) lines.Add(new Tuple<string, string>("SyncJoin", SyncJoin.Value ? "On" : "Off"));
+            if (SatelliteEnabled.HasValue) lines.Add(new Tuple<string, string>("Satellite", SatelliteEnabled.Value ? "On" : "Off"));
+            if (BarracksEnabled.HasValue) lines.Add(new Tuple<string, string>("Barracks", BarracksEnabled.Value ? "On" : "Off"));
+            if (SniperEnabled.HasValue) lines.Add(new Tuple<string, string>("Sniper", SniperEnabled.Value ? "On" : "Off"));
+            if (SplinterEnabled.HasValue) lines.Add(new Tuple<string, string>("Splinter", SplinterEnabled.Value ? "On" : "Off"));
+
+            StringBuilder builder = new StringBuilder();
+
+            int lenKey = lines.Max(dr => dr.Item1.Length);
+
+            lines.ForEach(dr =>
+            {
+                builder.AppendLine($"{dr.Item1.PadRight(lenKey)} | {dr.Item2}");
+            });
+
+            string retVal = Format.Code(builder.ToString(), "css");
+
+            if (string.IsNullOrWhiteSpace(WorkshopID))
+            {
+                retVal = Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={WorkshopID}") + "\n" + retVal;
+            }
+
+            return retVal;
         }
     }
 
