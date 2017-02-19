@@ -123,7 +123,10 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
                             {
                                 return newPlayerData;
                             });
+                    }
 
+                    if (newPlayerData != null)
+                    {
                         return new UserData()
                         {
                             AvatarUrl = newPlayerData.Item2.AvatarFullUrl,
