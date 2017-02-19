@@ -39,6 +39,10 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             bool isKebbzNet = GET.Any(game => game.IsKebbzNetMarker());
             bool isIonDriver = GET.Any(game => game.IsIonDriverMarker());
 
+            bool isOnMatesFamily = GET.Any(game => game.IsOnMatesFamily());
+            bool isOnKebbzNet = GET.Any(game => game.IsOnKebbzNet());
+            bool isOnIonDriver = GET.Any(game => game.IsOnIonDriver());
+
             EmbedBuilder embed = new EmbedBuilder()
                 .WithColor(new Color(255, 255, 255))
                 .WithTitle("Battlezone II Game List")
@@ -50,9 +54,14 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             if (isMatesFamily)
             {
                 embed.AddField(efb => efb.WithName("MatesFamily").WithValue("✅ Online (Primary)").WithIsInline(true));
-            } else
+            }
+            else if(isOnMatesFamily)
             {
-                embed.AddField(efb => efb.WithName("MatesFamily").WithValue("⚠ Unknown (Primary)").WithIsInline(true));
+                embed.AddField(efb => efb.WithName("MatesFamily").WithValue("⚠ No Marker (Primary)").WithIsInline(true));
+            }
+            else
+            {
+                embed.AddField(efb => efb.WithName("MatesFamily").WithValue("❓ Unknown (Primary)").WithIsInline(true));
             }
 
             embed.AddField(efb => efb.WithName("Raknet").WithValue("⛔ Dead").WithIsInline(true));
@@ -61,18 +70,26 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             {
                 embed.AddField(efb => efb.WithName("Kebbznet").WithValue("✅ Online").WithIsInline(true));
             }
+            else if(isKebbzNet)
+            {
+                embed.AddField(efb => efb.WithName("Kebbznet").WithValue("⚠ No Marker").WithIsInline(true));
+            }
             else
             {
-                embed.AddField(efb => efb.WithName("Kebbznet").WithValue("⚠ Unknown").WithIsInline(true));
+                embed.AddField(efb => efb.WithName("Kebbznet").WithValue("❓ Unknown").WithIsInline(true));
             }
 
             if (isIonDriver)
             {
                 embed.AddField(efb => efb.WithName("IonDriver").WithValue("✅ Online").WithIsInline(true));
             }
+            else if (isIonDriver)
+            {
+                embed.AddField(efb => efb.WithName("IonDriver").WithValue("⚠ No Marker").WithIsInline(true));
+            }
             else
             {
-                embed.AddField(efb => efb.WithName("IonDriver").WithValue("⚠ Unknown").WithIsInline(true));
+                embed.AddField(efb => efb.WithName("IonDriver").WithValue("❓ Unknown").WithIsInline(true));
             }
 
             return embed;
@@ -139,6 +156,21 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             return proxySource == null
                 && l == "1"
                 && m == "bismuth";
+        }
+
+        public bool IsOnMatesFamily()
+        {
+            return proxySource == "masterserver.matesfamily.org";
+        }
+
+        public bool IsOnKebbzNet()
+        {
+            return proxySource == "gamelist.kebbz.com";
+        }
+
+        public bool IsOnIonDriver()
+        {
+            return proxySource == null;
         }
 
         public bool IsMarker()
