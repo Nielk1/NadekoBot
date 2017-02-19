@@ -184,6 +184,40 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 
             return newWorkshopName.Item2;
         }
+
+        public static async Task<string> GetShellMap(string mapFile)
+        {
+            if (string.IsNullOrWhiteSpace(mapFile)) return null;
+            mapFile = Path.GetFileNameWithoutExtension(mapFile);
+            if (string.IsNullOrWhiteSpace(mapFile)) return null;
+
+            try
+            {
+                using (var http = new HttpClient())
+                {
+                    {
+                        var url = $"http://discord.battlezone.report/resources/bz98shellmaps/{mapFile}.jpg";
+                        var reply = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+                        if (reply.StatusCode == System.Net.HttpStatusCode.OK) return url;
+                    }
+                    {
+                        var url = $"http://discord.battlezone.report/resources/bz98shellmaps/{mapFile}.jpeg";
+                        var reply = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+                        if (reply.StatusCode == System.Net.HttpStatusCode.OK) return url;
+                    }
+                    {
+                        var url = $"http://discord.battlezone.report/resources/bz98shellmaps/{mapFile}.png";
+                        var reply = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+                        if (reply.StatusCode == System.Net.HttpStatusCode.OK) return url;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                //_log.Warn(ex, "Steam Workshop scan failed");
+            }
+            return null;
+        }
     }
 
     public class BZ98ServerData
@@ -198,7 +232,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
                 .WithTitle("Battlezone 98 Redux Game List")
                 //.WithUrl()
                 .WithDescription($"List of games currently on BZ98 Redux matchmaking server\n`{Games.Count} Game(s)`")
-                .WithThumbnailUrl("http://vignette1.wikia.nocookie.net/battlezone/images/3/30/Isdf_logo.png/revision/latest/scale-to-width-down/80")
+                .WithThumbnailUrl("http://discord.battlezone.report/resources/logos/bz98r.png")
                 .WithFooter(efb => efb.WithText($"Last fetched by Nielk1's BZ98Bridge Bot {TimeAgoUtc(Modified)}"));
         }
 
@@ -504,8 +538,16 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
                 .WithDescription(ToString())
                 .WithFooter(efb => efb.WithText(footer));
 
+
             string prop = null;
-            embed.WithThumbnailUrl(prop ?? "http://vignette1.wikia.nocookie.net/battlezone/images/e/ef/Nomapbz1.png/revision/latest/scale-to-width-down/80");
+            Task<string> propTask = Task.Run(async () =>
+            {
+                string propRet = await BZ98Provider.GetShellMap(MapFile);
+                return propRet;
+            });
+            prop = propTask.Result;
+
+            embed.WithThumbnailUrl(prop ?? "http://discord.battlezone.report/resources/logos/nomap.png");
 
             string playerCountData = string.Empty;
             bool fullPlayers = false;
@@ -628,11 +670,11 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 
                 if (!string.IsNullOrWhiteSpace(modName))
                 {
-                    retVal =  $"[{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={WorkshopID})" + "\n" + retVal;
+                    retVal = $"Mod: [{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={WorkshopID})" + "\n" + retVal;
                 }
                 else
                 {
-                    retVal = Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={WorkshopID}") + "\n" + retVal;
+                    retVal = "Mod: " + Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={WorkshopID}") + "\n" + retVal;
                 }
             }
 
