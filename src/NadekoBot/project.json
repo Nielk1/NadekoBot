@@ -49,7 +49,8 @@
       "target": "project",
       "version": "1.0.0-*"
     },
-    "Microsoft.EntityFrameworkCore.Tools": "1.1.0-preview4-final"
+    "Microsoft.EntityFrameworkCore.Tools": "1.1.0-preview4-final",
+    "SteamWebAPI2": "4.0.0"
   },
   "tools": {
     "Microsoft.DotNet.Watcher.Tools": "1.1.0-preview4-final",

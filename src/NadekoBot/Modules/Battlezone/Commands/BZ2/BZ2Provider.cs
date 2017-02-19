@@ -44,7 +44,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithTitle("Battlezone II Game List")
                 //.WithUrl()
                 .WithDescription($"List of games currently on Battlezone II matchmaking servers\n`{GET.Where(game => !game.IsMarker()).Count()} Game(s)`")
-                .WithThumbnailUrl("http://vignette1.wikia.nocookie.net/battlezone/images/3/30/Isdf_logo.png/revision/latest/scale-to-width-down/80")
+                .WithThumbnailUrl("http://discord.battlezone.report/resources/logos/bz2.png")
                 .WithFooter(efb => efb.WithText("Brought to you by Nielk1's Raknet Bot"));
 
             if (isMatesFamily)
@@ -159,7 +159,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithFooter(efb => efb.WithText(footer));
 
             string prop = Battlezone.GetBZ2GameProperty("shell", Format.Sanitize(m));
-            embed.WithThumbnailUrl(prop ?? "http://vignette1.wikia.nocookie.net/battlezone/images/e/ef/Nomapbz1.png/revision/latest/scale-to-width-down/80");
+            embed.WithThumbnailUrl(prop ?? "http://discord.battlezone.report/resources/logos/nomap.png");
 
             string playerCountData = string.Empty;
             bool fullPlayers = false;

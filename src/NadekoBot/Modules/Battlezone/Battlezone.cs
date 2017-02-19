@@ -21,6 +21,7 @@ using NadekoBot.Modules.Battlezone.Commands.BZ2;
 using NadekoBot.Services.Database.Models;
 using NLog;
 using System.Diagnostics;
+using NadekoBot.Modules.Battlezone.Commands.BZ98;
 
 namespace NadekoBot.Modules.Battlezone
 {
@@ -74,6 +75,33 @@ namespace NadekoBot.Modules.Battlezone
                 int cnt = games.Count();
                 var gamesIter = games.Select(dr => dr.GetEmbed(itr++, cnt)).ToList();
             
+                foreach (var game in gamesIter)
+                {
+                    await Context.Channel.EmbedAsync(game).ConfigureAwait(false);
+                }
+            }
+        }
+
+        [NadekoCommand, Usage, Description, Aliases]
+        public async Task GamesBZ98()
+        {
+            using (Context.Channel.EnterTypingState())
+            {
+                var gamelist = await BZ98Provider.GetGames();
+                if (gamelist == null)
+                {
+                    await Context.Channel.SendErrorAsync("Failed to get game list.").ConfigureAwait(false);
+                    return;
+                }
+
+                EmbedBuilder top = gamelist.GetTopEmbed();
+                await Context.Channel.EmbedAsync(top).ConfigureAwait(false);
+
+                var games = gamelist.Games;
+                int itr = 1;
+                int cnt = games.Count();
+                var gamesIter = games.Select(dr => dr.GetEmbed(itr++, cnt)).ToList();
+
                 foreach (var game in gamesIter)
                 {
                     await Context.Channel.EmbedAsync(game).ConfigureAwait(false);
