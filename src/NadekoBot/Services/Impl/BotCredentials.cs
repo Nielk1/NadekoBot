@@ -36,6 +36,7 @@ namespace NadekoBot.Services.Impl
                 _soundcloudClientId = value;
             }
         }
+        public string SteamApiKey { get; }
 
         public DBConfig Db { get; }
         public int TotalShards { get; }
@@ -66,6 +67,7 @@ namespace NadekoBot.Services.Impl
                 GoogleApiKey = data[nameof(GoogleApiKey)];
                 MashapeKey = data[nameof(MashapeKey)];
                 OsuApiKey = data[nameof(OsuApiKey)];
+                SteamApiKey = data[nameof(SteamApiKey)];
 
                 int ts = 1;
                 int.TryParse(data[nameof(TotalShards)], out ts);

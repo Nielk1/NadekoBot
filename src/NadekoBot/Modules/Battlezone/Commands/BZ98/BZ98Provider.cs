@@ -9,12 +9,33 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using NadekoBot.Extensions;
+using Steam.Models.SteamCommunity;
+using SteamWebAPI2.Utilities;
+using System.Collections.Concurrent;
+using SteamWebAPI2.Interfaces;
 
 namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 {
     public static class BZ98Provider
     {
         private const string filePath = "C:/Data/BZ98Gamelist.json";
+
+        /// <summary>
+        /// Steam PlayerSummary cache
+        /// </summary>
+        static ConcurrentDictionary<ulong, Tuple<DateTime, PlayerSummaryModel>> steamPlayerCache = new ConcurrentDictionary<ulong, Tuple<DateTime, PlayerSummaryModel>>();
+
+        /// <summary>
+        /// SteamUser WebAPI Interface
+        /// </summary>
+        static SteamUser steamInterface;
+
+        static BZ98Provider()
+        {
+            // Build SteamUser SteamWebAPI interface
+            if (!string.IsNullOrWhiteSpace(NadekoBot.Credentials.SteamApiKey))
+                steamInterface = new SteamUser(NadekoBot.Credentials.SteamApiKey);
+        }
 
         public static async Task<BZ98ServerData> GetGames()
         {
@@ -50,6 +71,62 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
                 catch (IOException) { }
                 Thread.Sleep(100);
             }
+            return null;
+        }
+
+        /// <summary>
+        /// Get extended user data from outside APIs
+        /// </summary>
+        /// <param name="id">ID of user in BZ98</param>
+        /// <param name="type">Auth type of user in BZ98</param>
+        /// <returns></returns>
+        public static UserData GetUserData(string id, string type)
+        {
+            if (steamInterface == null) return null;
+            if (string.IsNullOrWhiteSpace(id)) return null;
+            if (string.IsNullOrWhiteSpace(type)) return null;
+
+            if (type == "steam" && id[0] == 'S')
+            {
+                ulong playerID = 0;
+                if (ulong.TryParse(id.Substring(1), out playerID))
+                {
+                    Tuple<DateTime, PlayerSummaryModel> newPlayerData = null;
+                    if (steamPlayerCache.TryGetValue(playerID, out newPlayerData))
+                    {
+                        if (newPlayerData.Item1 > DateTime.UtcNow)
+                        {
+                            newPlayerData = null;
+                        }
+                    }
+
+                    if (newPlayerData == null)
+                    {
+                        Task<ISteamWebResponse<PlayerSummaryModel>> playerDataTask = Task.Run(async () =>
+                        {
+                            ISteamWebResponse<PlayerSummaryModel> msg = await steamInterface.GetPlayerSummaryAsync(playerID);
+                            return msg;
+                        });
+
+                        var playerData = playerDataTask.Result;
+
+                        newPlayerData = new Tuple<DateTime, PlayerSummaryModel>(DateTime.UtcNow.AddHours(1), playerData.Data);
+
+                        steamPlayerCache.AddOrUpdate(playerID, newPlayerData,
+                            (key, existingVal) =>
+                            {
+                                return newPlayerData;
+                            });
+
+                        return new UserData()
+                        {
+                            AvatarUrl = newPlayerData.Item2.AvatarFullUrl,
+                            ProfileUrl = newPlayerData.Item2.ProfileUrl
+                        };
+                    }
+                }
+            }
+
             return null;
         }
     }
@@ -415,7 +492,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 
             if (users.Count > 0)
             {
-                embed.AddField(efb => efb.WithName("(K/D/S) Players").WithValue(GetPlayersString()).WithIsInline(false));
+                embed.AddField(efb => efb.WithName("Players").WithValue(GetPlayersString()).WithIsInline(false));
             }
 
             return embed;
@@ -434,13 +511,13 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
                 v = Math.Max(v, dr.Value.metadata.ContainsKey("vehicle") ? dr.Value.metadata["vehicle"].Length : 0);
             });
 
-            users.OrderBy(dr => dr.Value.metadata.ContainsKey("team") ? dr.Value.metadata["team"].Length : 0)
+            users.OrderBy(dr => dr.Value.metadata.ContainsKey("team") ? int.Parse(dr.Value.metadata["team"]) : 0)
                 .ForEach(dr =>
                 {
                     string team = dr.Value.metadata.ContainsKey("team") ? dr.Value.metadata["team"] : string.Empty;
                     string vehicle = dr.Value.metadata.ContainsKey("vehicle") ? dr.Value.metadata["vehicle"] : string.Empty;
 
-                    builder.AppendLine($"`{team.PadLeft(t, '0')}{(t > 0 ? " " : string.Empty)}{vehicle.PadRight(v, ' ')}` {Format.Sanitize(dr.Value.name)}");
+                    builder.AppendLine($"`{team.PadLeft(t, '0')}{(t > 0 ? " " : string.Empty)}{vehicle.PadRight(v, ' ')}` {dr.Value.GetFormattedName()}");
                 });
 
             //return Format.Code(builder.ToString(), "css");
@@ -500,5 +577,29 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
         public string[] lanAddresses { get; set; }
         /////////////////////////////////////////////
         public bool isAuth { get; set; }
+
+
+        public string GetFormattedName()
+        {
+            UserData userData = BZ98Provider.GetUserData(id, authType);
+
+            if (userData != null && !string.IsNullOrWhiteSpace(userData.ProfileUrl))
+            {
+                return $"[{Format.Sanitize(name)}]({userData.ProfileUrl})";
+            }
+            else
+            {
+                return Format.Sanitize(name);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Collection of extended user data from other APIs such as Steam
+    /// </summary>
+    public class UserData
+    {
+        public string AvatarUrl { get; set; }
+        public string ProfileUrl { get; set; }
     }
 }
