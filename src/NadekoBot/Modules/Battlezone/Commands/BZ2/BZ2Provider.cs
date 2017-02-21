@@ -71,16 +71,31 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithDescription($"List of games currently on Battlezone II matchmaking servers\n`{GET.Where(game => !game.IsMarker()).Count()} Game(s)`")
                 .WithThumbnailUrl("http://discord.battlezone.report/resources/logos/bz2.png")
                 .WithFooter(efb => efb.WithText("Brought to you by Nielk1's Raknet Bot"));
-
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            if (isIonDriver)
+            {
+                embed.AddField(efb => efb.WithName("IonDriver").WithValue("✅ Online").WithIsInline(true));
+            }
+            else if (isIonDriver)
+            {
+                embed.AddField(efb => efb.WithName("IonDriver").WithValue("⚠ No Marker").WithIsInline(true));
+            }
+            else
+            {
+                embed.AddField(efb => efb.WithName("IonDriver").WithValue("❓ Unknown").WithIsInline(true));
+            }
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            embed.AddField(efb => efb.WithName("Raknet").WithValue("⛔ Dead").WithIsInline(true));
+            //////////////////////////////////////////////////////////////////////////////////////////////
             if (isMatesFamily)
             {
                 if (statusMatesFamily == "new")
                 {
-                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("✅ Online `(0s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"✅ Online\n`Updated {TimeAgoUtc(dateMatesFamily.Value)}`").WithIsInline(true));
                 }
                 else if (statusMatesFamily == "cached" && dateMatesFamily.HasValue)
                 {
-                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"✅ Online `({(DateTime.UtcNow - dateMatesFamily.Value).TotalSeconds}s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"✅ Online\n`Updated {TimeAgoUtc(dateMatesFamily.Value)}`").WithIsInline(true));
                 }
                 else
                 {
@@ -91,11 +106,11 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             {
                 if (statusMatesFamily == "new")
                 {
-                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("⚠ No Marker `(0s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"⚠ No Marker\n`Updated {TimeAgoUtc(dateMatesFamily.Value)}`").WithIsInline(true));
                 }
                 else if (statusMatesFamily == "cached" && dateMatesFamily.HasValue)
                 {
-                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"⚠ No Marker `({(DateTime.UtcNow - dateMatesFamily.Value).TotalSeconds}s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"⚠ No Marker\n`Updated {TimeAgoUtc(dateMatesFamily.Value)}`").WithIsInline(true));
                 }
                 else
                 {
@@ -110,18 +125,16 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             {
                 embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("❓ Unknown").WithIsInline(true));
             }
-
-            embed.AddField(efb => efb.WithName("Raknet").WithValue("⛔ Dead").WithIsInline(true));
-
+            //////////////////////////////////////////////////////////////////////////////////////////////
             if (isKebbzNet)
             {
                 if (statusKebbzNet == "new")
                 {
-                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue("✅ Online `(0s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"✅ Online\n`Updated {TimeAgoUtc(dateKebbzNet.Value)}`").WithIsInline(true));
                 }
                 else if (statusKebbzNet == "cached" && dateKebbzNet.HasValue)
                 {
-                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"✅ Online `({(DateTime.UtcNow - dateKebbzNet.Value).TotalSeconds}s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"✅ Online\n`Updated {TimeAgoUtc(dateKebbzNet.Value)}`").WithIsInline(true));
                 }
                 else
                 {
@@ -132,11 +145,11 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             {
                 if (statusKebbzNet == "new")
                 {
-                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue("⚠ No Marker `(0s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"⚠ No Marker\n`Updated {TimeAgoUtc(dateKebbzNet.Value)}`").WithIsInline(true));
                 }
                 else if (statusKebbzNet == "cached" && dateKebbzNet.HasValue)
                 {
-                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"⚠ No Marker `({(DateTime.UtcNow - dateKebbzNet.Value).TotalSeconds}s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"⚠ No Marker\n`Updated {TimeAgoUtc(dateKebbzNet.Value)}`").WithIsInline(true));
                 }
                 else
                 {
@@ -151,21 +164,44 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             {
                 embed.AddField(efb => efb.WithName("Kebbznet").WithValue("❓ Unknown").WithIsInline(true));
             }
-
-            if (isIonDriver)
-            {
-                embed.AddField(efb => efb.WithName("IonDriver").WithValue("✅ Online").WithIsInline(true));
-            }
-            else if (isIonDriver)
-            {
-                embed.AddField(efb => efb.WithName("IonDriver").WithValue("⚠ No Marker").WithIsInline(true));
-            }
-            else
-            {
-                embed.AddField(efb => efb.WithName("IonDriver").WithValue("❓ Unknown").WithIsInline(true));
-            }
+            //////////////////////////////////////////////////////////////////////////////////////////////
 
             return embed;
+        }
+
+        private static string TimeAgoUtc(DateTime dt)
+        {
+            TimeSpan span = DateTime.UtcNow - dt;
+            if (span.Days > 365)
+            {
+                int years = (span.Days / 365);
+                if (span.Days % 365 != 0)
+                    years += 1;
+                return String.Format("about {0} {1} ago",
+                years, years == 1 ? "year" : "years");
+            }
+            if (span.Days > 30)
+            {
+                int months = (span.Days / 30);
+                if (span.Days % 31 != 0)
+                    months += 1;
+                return String.Format("about {0} {1} ago",
+                months, months == 1 ? "month" : "months");
+            }
+            if (span.Days > 0)
+                return String.Format("about {0} {1} ago",
+                span.Days, span.Days == 1 ? "day" : "days");
+            if (span.Hours > 0)
+                return String.Format("about {0} {1} ago",
+                span.Hours, span.Hours == 1 ? "hour" : "hours");
+            if (span.Minutes > 0)
+                return String.Format("about {0} {1} ago",
+                span.Minutes, span.Minutes == 1 ? "minute" : "minutes");
+            if (span.Seconds > 5)
+                return String.Format("about {0} seconds ago", span.Seconds);
+            if (span.Seconds <= 5)
+                return "just now";
+            return string.Empty;
         }
     }
 
