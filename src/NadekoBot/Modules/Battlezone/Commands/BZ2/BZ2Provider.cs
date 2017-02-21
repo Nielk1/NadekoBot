@@ -33,7 +33,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
     {
         public DateTime? updated { get; set; }
         public string status { get; set; }
-        public bool success { get; set; }
+        public bool? success { get; set; }
     }
 
     public class RaknetData
@@ -55,8 +55,8 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             bool haveMatesFamilyStatus = proxyStatus.ContainsKey("masterserver.matesfamily.org");
             bool haveKebbzNetStatus = proxyStatus.ContainsKey("gamelist.kebbz.com");
 
-            bool isMatesFamilyUp = haveMatesFamilyStatus && proxyStatus["masterserver.matesfamily.org"].success;
-            bool isKebbzNetUp = haveKebbzNetStatus && proxyStatus["gamelist.kebbz.com"].success;
+            bool isMatesFamilyUp = haveMatesFamilyStatus && proxyStatus["masterserver.matesfamily.org"].success == true;
+            bool isKebbzNetUp = haveKebbzNetStatus && proxyStatus["gamelist.kebbz.com"].success == true;
 
             string statusMatesFamily = haveMatesFamilyStatus ? proxyStatus["masterserver.matesfamily.org"].status : null;
             string statusKebbzNet = haveKebbzNetStatus ? proxyStatus["gamelist.kebbz.com"].status : null;
@@ -76,39 +76,39 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             {
                 if (statusMatesFamily == "new")
                 {
-                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue("✅ Online (Primary) `(0s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("✅ Online `(0s)`").WithIsInline(true));
                 }
                 else if (statusMatesFamily == "cached" && dateMatesFamily.HasValue)
                 {
-                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue($"✅ Online (Primary) `({(DateTime.UtcNow - dateMatesFamily.Value).TotalSeconds}s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"✅ Online `({(DateTime.UtcNow - dateMatesFamily.Value).TotalSeconds}s)`").WithIsInline(true));
                 }
                 else
                 {
-                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue("✅ Online (Primary)").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("✅ Online").WithIsInline(true));
                 }
             }
             else if (isOnMatesFamily || isMatesFamilyUp)
             {
                 if (statusMatesFamily == "new")
                 {
-                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue("⚠ No Marker (Primary) `(0s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("⚠ No Marker `(0s)`").WithIsInline(true));
                 }
                 else if (statusMatesFamily == "cached" && dateMatesFamily.HasValue)
                 {
-                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue($"⚠ No Marker (Primary) `({(DateTime.UtcNow - dateMatesFamily.Value).TotalSeconds}s)`").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"⚠ No Marker `({(DateTime.UtcNow - dateMatesFamily.Value).TotalSeconds}s)`").WithIsInline(true));
                 }
                 else
                 {
-                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue("⚠ No Marker (Primary)").WithIsInline(true));
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("⚠ No Marker").WithIsInline(true));
                 }
             }
             else if (!isMatesFamilyUp)
             {
-                embed.AddField(efb => efb.WithName("MatesFamily").WithValue("❌ Offline (Primary)").WithIsInline(true));
+                embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("❌ Offline").WithIsInline(true));
             }
             else
             {
-                embed.AddField(efb => efb.WithName("MatesFamily").WithValue("❓ Unknown (Primary)").WithIsInline(true));
+                embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("❓ Unknown").WithIsInline(true));
             }
 
             embed.AddField(efb => efb.WithName("Raknet").WithValue("⛔ Dead").WithIsInline(true));
