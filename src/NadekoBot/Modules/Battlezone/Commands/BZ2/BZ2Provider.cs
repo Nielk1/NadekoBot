@@ -13,7 +13,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 {
     public static class BZ2Provider
     {
-        private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZ2&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId&__pluginShowSource=true&__pluginQueryServers=true";
+        private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZ2&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId&__pluginShowSource=true&__pluginQueryServers=true&__pluginShowStatus=true";
 
         public static async Task<RaknetData> GetGames()
         {
@@ -29,9 +29,18 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
         }
     }
 
+    public class ProxyStatus
+    {
+        public DateTime? updated { get; set; }
+        public string status { get; set; }
+        public bool? success { get; set; }
+    }
+
     public class RaknetData
     {
         public List<BZ2Game> GET { get; set; }
+
+        public Dictionary<string, ProxyStatus> proxyStatus { get; set; }
 
         public EmbedBuilder GetTopEmbed()
         {
@@ -43,6 +52,18 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             bool isOnKebbzNet = GET.Any(game => game.IsOnKebbzNet());
             bool isOnIonDriver = GET.Any(game => game.IsOnIonDriver());
 
+            bool haveMatesFamilyStatus = proxyStatus.ContainsKey("masterserver.matesfamily.org");
+            bool haveKebbzNetStatus = proxyStatus.ContainsKey("gamelist.kebbz.com");
+
+            bool isMatesFamilyUp = haveMatesFamilyStatus && proxyStatus["masterserver.matesfamily.org"].success == true;
+            bool isKebbzNetUp = haveKebbzNetStatus && proxyStatus["gamelist.kebbz.com"].success == true;
+
+            string statusMatesFamily = haveMatesFamilyStatus ? proxyStatus["masterserver.matesfamily.org"].status : null;
+            string statusKebbzNet = haveKebbzNetStatus ? proxyStatus["gamelist.kebbz.com"].status : null;
+
+            DateTime? dateMatesFamily = haveMatesFamilyStatus ? proxyStatus["masterserver.matesfamily.org"].updated : null;
+            DateTime? dateKebbzNet = haveKebbzNetStatus ? proxyStatus["gamelist.kebbz.com"].updated : null;
+
             EmbedBuilder embed = new EmbedBuilder()
                 .WithColor(new Color(255, 255, 255))
                 .WithTitle("Battlezone II Game List")
@@ -50,35 +71,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithDescription($"List of games currently on Battlezone II matchmaking servers\n`{GET.Where(game => !game.IsMarker()).Count()} Game(s)`")
                 .WithThumbnailUrl("http://discord.battlezone.report/resources/logos/bz2.png")
                 .WithFooter(efb => efb.WithText("Brought to you by Nielk1's Raknet Bot"));
-
-            if (isMatesFamily)
-            {
-                embed.AddField(efb => efb.WithName("MatesFamily").WithValue("✅ Online (Primary)").WithIsInline(true));
-            }
-            else if(isOnMatesFamily)
-            {
-                embed.AddField(efb => efb.WithName("MatesFamily").WithValue("⚠ No Marker (Primary)").WithIsInline(true));
-            }
-            else
-            {
-                embed.AddField(efb => efb.WithName("MatesFamily").WithValue("❓ Unknown (Primary)").WithIsInline(true));
-            }
-
-            embed.AddField(efb => efb.WithName("Raknet").WithValue("⛔ Dead").WithIsInline(true));
-
-            if (isKebbzNet)
-            {
-                embed.AddField(efb => efb.WithName("Kebbznet").WithValue("✅ Online").WithIsInline(true));
-            }
-            else if(isKebbzNet)
-            {
-                embed.AddField(efb => efb.WithName("Kebbznet").WithValue("⚠ No Marker").WithIsInline(true));
-            }
-            else
-            {
-                embed.AddField(efb => efb.WithName("Kebbznet").WithValue("❓ Unknown").WithIsInline(true));
-            }
-
+            //////////////////////////////////////////////////////////////////////////////////////////////
             if (isIonDriver)
             {
                 embed.AddField(efb => efb.WithName("IonDriver").WithValue("✅ Online").WithIsInline(true));
@@ -91,8 +84,124 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             {
                 embed.AddField(efb => efb.WithName("IonDriver").WithValue("❓ Unknown").WithIsInline(true));
             }
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            embed.AddField(efb => efb.WithName("Raknet").WithValue("⛔ Dead").WithIsInline(true));
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            if (isMatesFamily)
+            {
+                if (statusMatesFamily == "new")
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"✅ Online\n`Updated {TimeAgoUtc(dateMatesFamily.Value)}`").WithIsInline(true));
+                }
+                else if (statusMatesFamily == "cached" && dateMatesFamily.HasValue)
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"✅ Online\n`Updated {TimeAgoUtc(dateMatesFamily.Value)}`").WithIsInline(true));
+                }
+                else
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("✅ Online").WithIsInline(true));
+                }
+            }
+            else if (isOnMatesFamily || isMatesFamilyUp)
+            {
+                if (statusMatesFamily == "new")
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"⚠ No Marker\n`Updated {TimeAgoUtc(dateMatesFamily.Value)}`").WithIsInline(true));
+                }
+                else if (statusMatesFamily == "cached" && dateMatesFamily.HasValue)
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue($"⚠ No Marker\n`Updated {TimeAgoUtc(dateMatesFamily.Value)}`").WithIsInline(true));
+                }
+                else
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("⚠ No Marker").WithIsInline(true));
+                }
+            }
+            else if (!isMatesFamilyUp)
+            {
+                embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("❌ Offline").WithIsInline(true));
+            }
+            else
+            {
+                embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("❓ Unknown").WithIsInline(true));
+            }
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            if (isKebbzNet)
+            {
+                if (statusKebbzNet == "new")
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"✅ Online\n`Updated {TimeAgoUtc(dateKebbzNet.Value)}`").WithIsInline(true));
+                }
+                else if (statusKebbzNet == "cached" && dateKebbzNet.HasValue)
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"✅ Online\n`Updated {TimeAgoUtc(dateKebbzNet.Value)}`").WithIsInline(true));
+                }
+                else
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue("✅ Online").WithIsInline(true));
+                }
+            }
+            else if (isKebbzNet || isKebbzNetUp)
+            {
+                if (statusKebbzNet == "new")
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"⚠ No Marker\n`Updated {TimeAgoUtc(dateKebbzNet.Value)}`").WithIsInline(true));
+                }
+                else if (statusKebbzNet == "cached" && dateKebbzNet.HasValue)
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"⚠ No Marker\n`Updated {TimeAgoUtc(dateKebbzNet.Value)}`").WithIsInline(true));
+                }
+                else
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue("⚠ No Marker").WithIsInline(true));
+                }
+            }
+            else if (!isKebbzNetUp)
+            {
+                embed.AddField(efb => efb.WithName("Kebbznet").WithValue("❌ Offline").WithIsInline(true));
+            }
+            else
+            {
+                embed.AddField(efb => efb.WithName("Kebbznet").WithValue("❓ Unknown").WithIsInline(true));
+            }
+            //////////////////////////////////////////////////////////////////////////////////////////////
 
             return embed;
+        }
+
+        private static string TimeAgoUtc(DateTime dt)
+        {
+            TimeSpan span = DateTime.UtcNow - dt;
+            if (span.Days > 365)
+            {
+                int years = (span.Days / 365);
+                if (span.Days % 365 != 0)
+                    years += 1;
+                return String.Format("about {0} {1} ago",
+                years, years == 1 ? "year" : "years");
+            }
+            if (span.Days > 30)
+            {
+                int months = (span.Days / 30);
+                if (span.Days % 31 != 0)
+                    months += 1;
+                return String.Format("about {0} {1} ago",
+                months, months == 1 ? "month" : "months");
+            }
+            if (span.Days > 0)
+                return String.Format("about {0} {1} ago",
+                span.Days, span.Days == 1 ? "day" : "days");
+            if (span.Hours > 0)
+                return String.Format("about {0} {1} ago",
+                span.Hours, span.Hours == 1 ? "hour" : "hours");
+            if (span.Minutes > 0)
+                return String.Format("about {0} {1} ago",
+                span.Minutes, span.Minutes == 1 ? "minute" : "minutes");
+            if (span.Seconds > 5)
+                return String.Format("about {0} seconds ago", span.Seconds);
+            if (span.Seconds <= 5)
+                return "just now";
+            return string.Empty;
         }
     }
 
