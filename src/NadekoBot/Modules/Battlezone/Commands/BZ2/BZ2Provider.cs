@@ -56,13 +56,13 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             bool haveKebbzNetStatus = proxyStatus.ContainsKey("gamelist.kebbz.com");
 
             bool isMatesFamilyUp = haveMatesFamilyStatus && proxyStatus["masterserver.matesfamily.org"].success;
-            bool isKebbzNetUp = haveMatesFamilyStatus && proxyStatus["gamelist.kebbz.com"].success;
+            bool isKebbzNetUp = haveKebbzNetStatus && proxyStatus["gamelist.kebbz.com"].success;
 
             string statusMatesFamily = haveMatesFamilyStatus ? proxyStatus["masterserver.matesfamily.org"].status : null;
-            string statusKebbzNet = haveMatesFamilyStatus ? proxyStatus["gamelist.kebbz.com"].status : null;
+            string statusKebbzNet = haveKebbzNetStatus ? proxyStatus["gamelist.kebbz.com"].status : null;
 
             DateTime? dateMatesFamily = haveMatesFamilyStatus ? proxyStatus["masterserver.matesfamily.org"].updated : null;
-            DateTime? dateKebbzNet = haveMatesFamilyStatus ? proxyStatus["gamelist.kebbz.com"].updated : null;
+            DateTime? dateKebbzNet = haveKebbzNetStatus ? proxyStatus["gamelist.kebbz.com"].updated : null;
 
             EmbedBuilder embed = new EmbedBuilder()
                 .WithColor(new Color(255, 255, 255))
@@ -89,7 +89,18 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             }
             else if (isOnMatesFamily || isMatesFamilyUp)
             {
-                embed.AddField(efb => efb.WithName("MatesFamily").WithValue("⚠ No Marker (Primary)").WithIsInline(true));
+                if (statusMatesFamily == "new")
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue("⚠ No Marker (Primary) `(0s)`").WithIsInline(true));
+                }
+                else if (statusMatesFamily == "cached" && dateMatesFamily.HasValue)
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue($"⚠ No Marker (Primary) `({(DateTime.UtcNow - dateMatesFamily.Value).TotalSeconds}s)`").WithIsInline(true));
+                }
+                else
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue("⚠ No Marker (Primary)").WithIsInline(true));
+                }
             }
             else if (!isMatesFamilyUp)
             {
@@ -119,7 +130,18 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             }
             else if (isKebbzNet || isKebbzNetUp)
             {
-                embed.AddField(efb => efb.WithName("Kebbznet").WithValue("⚠ No Marker").WithIsInline(true));
+                if (statusKebbzNet == "new")
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue("⚠ No Marker `(0s)`").WithIsInline(true));
+                }
+                else if (statusKebbzNet == "cached" && dateKebbzNet.HasValue)
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"⚠ No Marker `({(DateTime.UtcNow - dateKebbzNet.Value).TotalSeconds}s)`").WithIsInline(true));
+                }
+                else
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue("⚠ No Marker").WithIsInline(true));
+                }
             }
             else if (!isKebbzNetUp)
             {
