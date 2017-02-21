@@ -29,9 +29,18 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
         }
     }
 
+    public class ProxyStatus
+    {
+        public DateTime? updated { get; set; }
+        public string status { get; set; }
+        public bool success { get; set; }
+    }
+
     public class RaknetData
     {
         public List<BZ2Game> GET { get; set; }
+
+        public Dictionary<string, ProxyStatus> proxyStatus { get; set; }
 
         public EmbedBuilder GetTopEmbed()
         {
@@ -43,6 +52,18 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             bool isOnKebbzNet = GET.Any(game => game.IsOnKebbzNet());
             bool isOnIonDriver = GET.Any(game => game.IsOnIonDriver());
 
+            bool haveMatesFamilyStatus = proxyStatus.ContainsKey("masterserver.matesfamily.org");
+            bool haveKebbzNetStatus = proxyStatus.ContainsKey("gamelist.kebbz.com");
+
+            bool isMatesFamilyUp = haveMatesFamilyStatus && proxyStatus["masterserver.matesfamily.org"].success;
+            bool isKebbzNetUp = haveMatesFamilyStatus && proxyStatus["gamelist.kebbz.com"].success;
+
+            string statusMatesFamily = haveMatesFamilyStatus ? proxyStatus["masterserver.matesfamily.org"].status : null;
+            string statusKebbzNet = haveMatesFamilyStatus ? proxyStatus["gamelist.kebbz.com"].status : null;
+
+            DateTime? dateMatesFamily = haveMatesFamilyStatus ? proxyStatus["masterserver.matesfamily.org"].updated : null;
+            DateTime? dateKebbzNet = haveMatesFamilyStatus ? proxyStatus["gamelist.kebbz.com"].updated : null;
+
             EmbedBuilder embed = new EmbedBuilder()
                 .WithColor(new Color(255, 255, 255))
                 .WithTitle("Battlezone II Game List")
@@ -53,11 +74,26 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
             if (isMatesFamily)
             {
-                embed.AddField(efb => efb.WithName("MatesFamily").WithValue("✅ Online (Primary)").WithIsInline(true));
+                if (statusMatesFamily == "new")
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue("✅ Online (Primary) `(0s)`").WithIsInline(true));
+                }
+                else if (statusMatesFamily == "cached" && dateMatesFamily.HasValue)
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue($"✅ Online (Primary) `({(DateTime.UtcNow - dateMatesFamily.Value).TotalSeconds}s)`").WithIsInline(true));
+                }
+                else
+                {
+                    embed.AddField(efb => efb.WithName("MatesFamily").WithValue("✅ Online (Primary)").WithIsInline(true));
+                }
             }
-            else if(isOnMatesFamily)
+            else if (isOnMatesFamily || isMatesFamilyUp)
             {
                 embed.AddField(efb => efb.WithName("MatesFamily").WithValue("⚠ No Marker (Primary)").WithIsInline(true));
+            }
+            else if (!isMatesFamilyUp)
+            {
+                embed.AddField(efb => efb.WithName("MatesFamily").WithValue("❌ Offline (Primary)").WithIsInline(true));
             }
             else
             {
@@ -68,11 +104,26 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
             if (isKebbzNet)
             {
-                embed.AddField(efb => efb.WithName("Kebbznet").WithValue("✅ Online").WithIsInline(true));
+                if (statusKebbzNet == "new")
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue("✅ Online `(0s)`").WithIsInline(true));
+                }
+                else if (statusKebbzNet == "cached" && dateKebbzNet.HasValue)
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue($"✅ Online `({(DateTime.UtcNow - dateKebbzNet.Value).TotalSeconds}s)`").WithIsInline(true));
+                }
+                else
+                {
+                    embed.AddField(efb => efb.WithName("Kebbznet").WithValue("✅ Online").WithIsInline(true));
+                }
             }
-            else if(isKebbzNet)
+            else if (isKebbzNet || isKebbzNetUp)
             {
                 embed.AddField(efb => efb.WithName("Kebbznet").WithValue("⚠ No Marker").WithIsInline(true));
+            }
+            else if (!isKebbzNetUp)
+            {
+                embed.AddField(efb => efb.WithName("Kebbznet").WithValue("❌ Offline").WithIsInline(true));
             }
             else
             {
