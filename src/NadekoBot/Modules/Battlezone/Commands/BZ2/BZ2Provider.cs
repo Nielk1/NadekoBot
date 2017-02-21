@@ -13,7 +13,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 {
     public static class BZ2Provider
     {
-        private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZ2&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId&__pluginShowSource=true&__pluginQueryServers=true";
+        private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZ2&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId&__pluginShowSource=true&__pluginQueryServers=true&__pluginShowStatus=true";
 
         public static async Task<RaknetData> GetGames()
         {
