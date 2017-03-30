@@ -51,7 +51,11 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 
             var LobbyData = JsonConvert.DeserializeObject<Dictionary<string, Lobby>>(gameData.Item1);
             return new BZ98ServerData() {
-                Games = LobbyData.Where(dr => !dr.Value.isChat && (!dr.Value.isPrivate || (dr.Value.isPrivate && dr.Value.IsPassworded == true))).Select(dr => dr.Value).ToList(),
+                Games = LobbyData.Where(dr => !dr.Value.isChat
+                                           && (!dr.Value.isPrivate || (dr.Value.isPrivate && dr.Value.IsPassworded == true))
+                                           && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && ("0123456789".Contains(dr.Value.clientVersion[0]))) // not mobile which starts with MB or something
+                                           && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && (dr.Value.clientVersion != "0.0.0")) // not test game
+                                       ).Select(dr => dr.Value).ToList(),
                 Modified = gameData.Item2
             };
         }
@@ -626,7 +630,10 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
                     string team = dr.Value.metadata.ContainsKey("team") ? dr.Value.metadata["team"] : string.Empty;
                     string vehicle = dr.Value.metadata.ContainsKey("vehicle") ? dr.Value.metadata["vehicle"] : string.Empty;
 
-                    builder.AppendLine($"`{team.PadLeft(t, '0')}{(t > 0 ? " " : string.Empty)}{vehicle.PadRight(v, ' ')}` {dr.Value.GetFormattedName()}");
+                    string codeBlock = $"{team.PadLeft(t, '0')}{(t > 0 ? " " : string.Empty)}{vehicle.PadRight(v, ' ')}";
+                    codeBlock = Format.Sanitize(codeBlock);
+                    if (codeBlock.Length == 0) codeBlock = " ";
+                    builder.AppendLine($"`{codeBlock}` {dr.Value.GetFormattedName()}");
                 });
 
             //return Format.Code(builder.ToString(), "css");
