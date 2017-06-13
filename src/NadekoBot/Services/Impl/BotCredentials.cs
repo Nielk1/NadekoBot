@@ -5,6 +5,7 @@ using Discord;
 using System.Linq;
 using NLog;
 using Microsoft.Extensions.Configuration;
+using System.Collections.Immutable;
 
 namespace NadekoBot.Services.Impl
 {
@@ -13,7 +14,6 @@ namespace NadekoBot.Services.Impl
         private Logger _log;
 
         public ulong ClientId { get; }
-        public ulong BotId { get; }
 
         public string GoogleApiKey { get; }
 
@@ -21,7 +21,7 @@ namespace NadekoBot.Services.Impl
 
         public string Token { get; }
 
-        public ulong[] OwnerIds { get; }
+        public ImmutableHashSet<ulong> OwnerIds { get; }
 
         public string LoLApiKey { get; }
         public string OsuApiKey { get; }
@@ -43,6 +43,7 @@ namespace NadekoBot.Services.Impl
         public string CarbonKey { get; }
 
         public string credsFileName { get; } = Path.Combine(Directory.GetCurrentDirectory(), "credentials.json");
+        public string PatreonAccessToken { get; }
 
         public BotCredentials()
         {
@@ -62,11 +63,12 @@ namespace NadekoBot.Services.Impl
                 Token = data[nameof(Token)];
                 if (string.IsNullOrWhiteSpace(Token))
                     throw new ArgumentNullException(nameof(Token), "Token is missing from credentials.json or Environment varibles.");
-                OwnerIds = data.GetSection("OwnerIds").GetChildren().Select(c => ulong.Parse(c.Value)).ToArray();
+                OwnerIds = data.GetSection("OwnerIds").GetChildren().Select(c => ulong.Parse(c.Value)).ToImmutableHashSet();
                 LoLApiKey = data[nameof(LoLApiKey)];
                 GoogleApiKey = data[nameof(GoogleApiKey)];
                 MashapeKey = data[nameof(MashapeKey)];
                 OsuApiKey = data[nameof(OsuApiKey)];
+                PatreonAccessToken = data[nameof(PatreonAccessToken)];
                 SteamApiKey = data[nameof(SteamApiKey)];
 
                 int ts = 1;
@@ -109,6 +111,7 @@ namespace NadekoBot.Services.Impl
             public string CarbonKey { get; set; } = "";
             public DBConfig Db { get; set; } = new DBConfig("sqlite", "Filename=./data/NadekoBot.db");
             public int TotalShards { get; set; } = 1;
+            public string PatreonAccessToken { get; set; } = "";
         }
 
         private class DbModel

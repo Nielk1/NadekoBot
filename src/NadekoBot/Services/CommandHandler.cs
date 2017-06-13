@@ -5,9 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using NLog;
-using System.Diagnostics;
 using Discord.Commands;
-using NadekoBot.Services.Database.Models;
 using NadekoBot.Modules.Permissions;
 using Discord.Net;
 using NadekoBot.Extensions;
@@ -18,11 +16,12 @@ using NadekoBot.Modules.CustomReactions;
 using NadekoBot.Modules.Games;
 using System.Collections.Concurrent;
 using System.Threading;
+using Microsoft.EntityFrameworkCore;
 using NadekoBot.DataStructures;
 
 namespace NadekoBot.Services
 {
-    public class IGuildUserComparer : IEqualityComparer<IGuildUser>
+    public class GuildUserComparer : IEqualityComparer<IGuildUser>
     {
         public bool Equals(IGuildUser x, IGuildUser y) => x.Id == y.Id;
 
@@ -30,17 +29,13 @@ namespace NadekoBot.Services
     }
     public class CommandHandler
     {
-#if GLOBAL_NADEKO
-        public const int GlobalCommandsCooldown = 1500;
-#else
         public const int GlobalCommandsCooldown = 750;
-#endif
 
         private readonly DiscordShardedClient _client;
         private readonly CommandService _commandService;
         private readonly Logger _log;
 
-        private List<IDMChannel> ownerChannels { get; set; }
+        private List<IDMChannel> ownerChannels { get; set; } = new List<IDMChannel>();
 
         public event Func<SocketUserMessage, CommandInfo, Task> CommandExecuted = delegate { return Task.CompletedTask; };
 
@@ -48,7 +43,7 @@ namespace NadekoBot.Services
         public ConcurrentDictionary<ulong, uint> UserMessagesSent { get; } = new ConcurrentDictionary<ulong, uint>();
 
         public ConcurrentHashSet<ulong> UsersOnShortCooldown { get; } = new ConcurrentHashSet<ulong>();
-        private Timer clearUsersOnShortCooldown { get; }
+        private readonly Timer _clearUsersOnShortCooldown;
 
         public CommandHandler(DiscordShardedClient client, CommandService commandService)
         {
@@ -56,26 +51,62 @@ namespace NadekoBot.Services
             _commandService = commandService;
             _log = LogManager.GetCurrentClassLogger();
 
-            clearUsersOnShortCooldown = new Timer((_) =>
+            _clearUsersOnShortCooldown = new Timer(_ =>
             {
                 UsersOnShortCooldown.Clear();
             }, null, GlobalCommandsCooldown, GlobalCommandsCooldown);
         }
-        public async Task StartHandling()
+        public Task StartHandling()
         {
-            ownerChannels = (await Task.WhenAll(_client.GetGuilds().SelectMany(g => g.Users)
-                                  .Where(u => NadekoBot.Credentials.OwnerIds.Contains(u.Id))
-                                  .Distinct(new IGuildUserComparer())
-                                  .Select(async u => { try { return await u.CreateDMChannelAsync(); } catch { return null; } })))
-                                      .Where(ch => ch != null)
-                                      .ToList();
+            var _ = Task.Run(async () =>
+            {
+                await Task.Delay(5000).ConfigureAwait(false);
+                ownerChannels = (await Task.WhenAll(_client.GetGuilds().SelectMany(g => g.Users)
+                        .Where(u => NadekoBot.Credentials.OwnerIds.Contains(u.Id))
+                        .Distinct(new GuildUserComparer())
+                        .Select(async u =>
+                        {
+                            try
+                            {
+                                return await u.CreateDMChannelAsync();
+                            }
+                            catch
+                            {
+                                return null;
+                            }
+                        })))
+                    .Where(ch => ch != null)
+                    .ToList();
 
-            if (!ownerChannels.Any())
-                _log.Warn("No owner channels created! Make sure you've specified correct OwnerId in the credentials.json file.");
-            else
-                _log.Info($"Created {ownerChannels.Count} out of {NadekoBot.Credentials.OwnerIds.Length} owner message channels.");
+                if (!ownerChannels.Any())
+                    _log.Warn("No owner channels created! Make sure you've specified correct OwnerId in the credentials.json file.");
+                else
+                    _log.Info($"Created {ownerChannels.Count} out of {NadekoBot.Credentials.OwnerIds.Count} owner message channels.");
+            });
 
             _client.MessageReceived += MessageReceivedHandler;
+            _client.MessageUpdated += (oldmsg, newMsg) =>
+            {
+                var ignore = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var usrMsg = newMsg as SocketUserMessage;
+                        var guild = (usrMsg?.Channel as ITextChannel)?.Guild;
+
+                        if (guild != null && !await InviteFiltered(guild, usrMsg).ConfigureAwait(false))
+                            await WordFiltered(guild, usrMsg).ConfigureAwait(false);
+
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Warn(ex);
+                    }
+                    return Task.CompletedTask;
+                });
+                return Task.CompletedTask;
+            };
+            return Task.CompletedTask;
         }
 
         private async Task<bool> TryRunCleverbot(SocketUserMessage usrMsg, IGuild guild)
@@ -100,11 +131,12 @@ namespace NadekoBot.Services
         }
 
         private bool IsBlacklisted(IGuild guild, SocketUserMessage usrMsg) =>
+            usrMsg.Author?.Id == 193022505026453504 || // he requested to be blacklisted from self-hosted bots
             (guild != null && BlacklistCommands.BlacklistedGuilds.Contains(guild.Id)) ||
             BlacklistCommands.BlacklistedChannels.Contains(usrMsg.Channel.Id) ||
             BlacklistCommands.BlacklistedUsers.Contains(usrMsg.Author.Id);
 
-        const float oneThousandth = 1.0f / 1000;
+        private const float _oneThousandth = 1.0f / 1000;
         private Task LogSuccessfulExecution(SocketUserMessage usrMsg, ExecuteCommandResult exec, SocketTextChannel channel, int exec1, int exec2, int exec3, int total)
         {
             _log.Info("Command Executed after {4}/{5}/{6}/{7}s\n\t" +
@@ -116,10 +148,10 @@ namespace NadekoBot.Services
                         (channel == null ? "PRIVATE" : channel.Guild.Name + " [" + channel.Guild.Id + "]"), // {1}
                         (channel == null ? "PRIVATE" : channel.Name + " [" + channel.Id + "]"), // {2}
                         usrMsg.Content, // {3}
-                        exec1 * oneThousandth, // {4}
-                        exec2 * oneThousandth, // {5}
-                        exec3 * oneThousandth, // {6}
-                        total * oneThousandth // {7}
+                        exec1 * _oneThousandth, // {4}
+                        exec2 * _oneThousandth, // {5}
+                        exec3 * _oneThousandth, // {6}
+                        total * _oneThousandth // {7}
                         );
             return Task.CompletedTask;
         }
@@ -137,10 +169,10 @@ namespace NadekoBot.Services
                         (channel == null ? "PRIVATE" : channel.Name + " [" + channel.Id + "]"), // {2}
                         usrMsg.Content,// {3}
                         exec.Result.ErrorReason, // {4}
-                        exec1 * oneThousandth, // {5}
-                        exec2 * oneThousandth, // {6}
-                        exec3 * oneThousandth, // {7}
-                        total * oneThousandth // {8}
+                        exec1 * _oneThousandth, // {5}
+                        exec2 * _oneThousandth, // {6}
+                        exec3 * _oneThousandth, // {7}
+                        total * _oneThousandth // {8}
                         );
         }
 
@@ -206,6 +238,8 @@ namespace NadekoBot.Services
                     if (usrMsg == null) //has to be an user message, not system/other messages.
                         return;
 
+                    if (usrMsg.Author.Id == 193022505026453504)
+                        return;
 #if !GLOBAL_NADEKO
                     // track how many messagges each user is sending
                     UserMessagesSent.AddOrUpdate(usrMsg.Author.Id, 1, (key, old) => ++old);
@@ -236,13 +270,76 @@ namespace NadekoBot.Services
 
                     // maybe this message is a custom reaction
                     // todo log custom reaction executions. return struct with info
-                    var crExecuted = await Task.Run(() => CustomReactions.TryExecuteCustomReaction(usrMsg)).ConfigureAwait(false);
-                    if (crExecuted) //if it was, don't execute the command
+                    var cr = await Task.Run(() => CustomReactions.TryGetCustomReaction(usrMsg)).ConfigureAwait(false);
+                    if (cr != null) //if it was, don't execute the command
+                    {
+                        try
+                        {
+                            if (guild != null)
+                            {
+                                PermissionCache pc;
+                                if (!Permissions.Cache.TryGetValue(guild.Id, out pc))
+                                {
+                                    using (var uow = DbHandler.UnitOfWork())
+                                    {
+                                        var config = uow.GuildConfigs.For(guild.Id,
+                                            set => set.Include(x => x.Permissions));
+                                        Permissions.UpdateCache(config);
+                                    }
+                                    Permissions.Cache.TryGetValue(guild.Id, out pc);
+                                    if (pc == null)
+                                        throw new Exception("Cache is null.");
+                                }
+                                int index;
+                                if (
+                                    !pc.Permissions.CheckPermissions(usrMsg, cr.Trigger, "ActualCustomReactions",
+                                        out index))
+                                {
+                                    //todo print in guild actually
+                                    var returnMsg =
+                                        $"Permission number #{index + 1} **{pc.Permissions[index].GetCommand(guild)}** is preventing this action.";
+                                    _log.Info(returnMsg);
+                                    return;
+                                }
+                            }
+                            await cr.Send(usrMsg).ConfigureAwait(false);
+
+                            if (cr.AutoDeleteTrigger)
+                            {
+                                try { await msg.DeleteAsync().ConfigureAwait(false); } catch { }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _log.Warn("Sending CREmbed failed");
+                            _log.Warn(ex);
+                        }
                         return;
+                    }
 
                     var exec3 = Environment.TickCount - execTime;
 
                     string messageContent = usrMsg.Content;
+                    if (guild != null)
+                    {
+                        ConcurrentDictionary<string, string> maps;
+                        if (Modules.Utility.Utility.CommandMapCommands.AliasMaps.TryGetValue(guild.Id, out maps))
+                        {
+                            string newMessageContent;
+                            if (maps.TryGetValue(messageContent.Trim().ToLowerInvariant(), out newMessageContent))
+                            {
+                                _log.Info(@"--Mapping Command--
+    GuildId: {0}
+    Trigger: {1}
+    Mapping: {2}", guild.Id, messageContent, newMessageContent);
+                                var oldMessageContent = messageContent;
+                                messageContent = newMessageContent;
+
+                                try { await usrMsg.Channel.SendConfirmAsync($"{oldMessageContent} => {newMessageContent}").ConfigureAwait(false); } catch { }
+                            }
+                        }
+                    }
+                    
 
                     // execute the command and measure the time it took
                     var exec = await Task.Run(() => ExecuteCommand(new CommandContext(_client, usrMsg), messageContent, DependencyMap.Empty, MultiMatchHandling.Best)).ConfigureAwait(false);
@@ -273,7 +370,7 @@ namespace NadekoBot.Services
 
                             await msg.Channel.SendMessageAsync(Help.DMHelpString).ConfigureAwait(false);
 
-                            await DMForwardCommands.HandleDMForwarding(msg, ownerChannels).ConfigureAwait(false);
+                            await SelfCommands.HandleDmForwarding(msg, ownerChannels).ConfigureAwait(false);
                         }
                     }
                 }
@@ -341,28 +438,27 @@ namespace NadekoBot.Services
                 }
 
                 var cmd = commands[i].Command;
-                bool resetCommand = cmd.Name == "resetperms";
+                var resetCommand = cmd.Name == "resetperms";
                 var module = cmd.Module.GetTopLevelModule();
                 PermissionCache pc;
                 if (context.Guild != null)
                 {
-                    pc = Permissions.Cache.GetOrAdd(context.Guild.Id, (id) =>
+                    //todo move to permissions module?
+                    if (!Permissions.Cache.TryGetValue(context.Guild.Id, out pc))
                     {
                         using (var uow = DbHandler.UnitOfWork())
                         {
-                            var config = uow.GuildConfigs.PermissionsFor(context.Guild.Id);
-                            return new PermissionCache()
-                            {
-                                Verbose = config.VerbosePermissions,
-                                RootPermission = config.RootPermission,
-                                PermRole = config.PermissionRole.Trim().ToLowerInvariant(),
-                            };
+                            var config = uow.GuildConfigs.GcWithPermissionsv2For(context.Guild.Id);
+                            Permissions.UpdateCache(config);
                         }
-                    });
+                        Permissions.Cache.TryGetValue(context.Guild.Id, out pc);
+                        if(pc == null)
+                            throw new Exception("Cache is null.");
+                    }
                     int index;
-                    if (!resetCommand && !pc.RootPermission.AsEnumerable().CheckPermissions(context.Message, cmd.Aliases.First(), module.Name, out index))
+                    if (!resetCommand && !pc.Permissions.CheckPermissions(context.Message, cmd.Aliases.First(), module.Name, out index))
                     {
-                        var returnMsg = $"Permission number #{index + 1} **{pc.RootPermission.GetAt(index).GetCommand((SocketGuild)context.Guild)}** is preventing this action.";
+                        var returnMsg = $"Permission number #{index + 1} **{pc.Permissions[index].GetCommand((SocketGuild)context.Guild)}** is preventing this action.";
                         return new ExecuteCommandResult(cmd, pc, SearchResult.FromError(CommandError.Exception, returnMsg));
                     }
 
@@ -390,10 +486,10 @@ namespace NadekoBot.Services
                 // Bot will ignore commands which are ran more often than what specified by
                 // GlobalCommandsCooldown constant (miliseconds)
                 if (!UsersOnShortCooldown.Add(context.Message.Author.Id))
-                    return new ExecuteCommandResult(cmd, null, SearchResult.FromError(CommandError.Exception, $"You are on a global cooldown."));
+                    return new ExecuteCommandResult(cmd, null, SearchResult.FromError(CommandError.Exception, "You are on a global cooldown."));
 
                 if (CmdCdsCommands.HasCooldown(cmd, context.Guild, context.User))
-                    return new ExecuteCommandResult(cmd, null, SearchResult.FromError(CommandError.Exception, $"That command is on a cooldown for you."));
+                    return new ExecuteCommandResult(cmd, null, SearchResult.FromError(CommandError.Exception, "That command is on a cooldown for you."));
 
                 return new ExecuteCommandResult(cmd, null, await commands[i].ExecuteAsync(context, parseResult, dependencyMap));
             }
