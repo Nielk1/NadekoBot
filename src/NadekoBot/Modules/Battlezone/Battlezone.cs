@@ -26,7 +26,7 @@ using NadekoBot.Modules.Battlezone.Commands.BZ98;
 namespace NadekoBot.Modules.Battlezone
 {
     [NadekoModule("Battlezone", "!")]
-    public partial class Battlezone : DiscordModule
+    public partial class Battlezone : NadekoTopLevelModule
     {
         public static ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
 
