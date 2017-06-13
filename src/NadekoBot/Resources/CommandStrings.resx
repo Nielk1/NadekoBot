@@ -3510,7 +3510,6 @@
   <data name="verboseerror_desc" xml:space="preserve">
     <value>Toggles whether the bot should print command errors when a command is incorrectly used.</value>
   </data>
-</root>
   <data name="gamesbz2_cmd" xml:space="preserve">
     <value>gamesbz2</value>
   </data>

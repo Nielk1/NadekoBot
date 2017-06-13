@@ -14,11 +14,17 @@ using SteamWebAPI2.Utilities;
 using System.Collections.Concurrent;
 using SteamWebAPI2.Interfaces;
 using System.Net.Http;
+using NadekoBot.Services;
+using Discord.WebSocket;
 
 namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 {
-    public static class BZ98Provider
+    public class BZ98Service
     {
+        private readonly IBotCredentials _creds;
+        private readonly DbService _db;
+        private readonly DiscordShardedClient _client;
+
         private const string filePath = "C:/Data/BZ98Gamelist.json";
 
         /// <summary>
@@ -36,14 +42,18 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
         /// </summary>
         static SteamUser steamInterface;
 
-        static BZ98Provider()
+        public BZ98Service(IBotCredentials creds, DbService db, DiscordShardedClient client)
         {
+            _creds = creds;
+            _db = db;
+            _client = client;
+
             // Build SteamUser SteamWebAPI interface
-            if (!string.IsNullOrWhiteSpace(NadekoBot.Credentials.SteamApiKey))
-                steamInterface = new SteamUser(NadekoBot.Credentials.SteamApiKey);
+            if (!string.IsNullOrWhiteSpace(_creds.SteamApiKey))
+                steamInterface = new SteamUser(_creds.SteamApiKey);
         }
 
-        public static async Task<BZ98ServerData> GetGames()
+        public async Task<BZ98ServerData> GetGames()
         {
             Tuple<string, DateTime> gameData = await TryReadText(filePath, TimeSpan.FromSeconds(5));
 
@@ -549,7 +559,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
             string prop = null;
             Task<string> propTask = Task.Run(async () =>
             {
-                string propRet = await BZ98Provider.GetShellMap(MapFile);
+                string propRet = await BZ98Service.GetShellMap(MapFile);
                 return propRet;
             });
             prop = propTask.Result;
@@ -674,7 +684,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
             {
                 Task<string> modNameTask = Task.Run(async () =>
                 {
-                    string modNameRet = await BZ98Provider.GetSteamWorkshopName(WorkshopID);
+                    string modNameRet = await BZ98Service.GetSteamWorkshopName(WorkshopID);
                     return modNameRet;
                 });
                 var modName = modNameTask.Result;
@@ -712,7 +722,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 
         public string GetFormattedName()
         {
-            UserData userData = BZ98Provider.GetUserData(id, authType);
+            UserData userData = BZ98Service.GetUserData(id, authType);
 
             if (userData != null && !string.IsNullOrWhiteSpace(userData.ProfileUrl))
             {

@@ -27,6 +27,8 @@ using NadekoBot.Services.Utility;
 using NadekoBot.Services.Help;
 using System.IO;
 using NadekoBot.Services.Pokemon;
+using NadekoBot.Modules.Battlezone.Commands.BZ98;
+using NadekoBot.Modules.Battlezone.Commands.BZ2;
 
 namespace NadekoBot
 {
@@ -171,6 +173,11 @@ namespace NadekoBot
             var pokemonService = new PokemonService();
             #endregion
 
+            #region battlezone 
+            var bz98Service = new BZ98Service(Credentials, Db, Client);
+            var bz2Service = new BZ2Service(Credentials, Db, Client);
+            #endregion
+
 
             //initialize Services
             Services = new NServiceProvider.ServiceProviderBuilder()
@@ -223,6 +230,8 @@ namespace NadekoBot
                     .Add(filterService)
                     .Add(globalPermsService)
                 .Add<PokemonService>(pokemonService)
+                .Add<BZ98Service>(bz98Service)
+                .Add<BZ2Service>(bz2Service)
                 .Build();
 
             CommandHandler.AddServices(Services);

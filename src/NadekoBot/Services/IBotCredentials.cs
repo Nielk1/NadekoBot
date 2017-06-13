@@ -19,6 +19,8 @@ namespace NadekoBot.Services
         string SoundCloudClientId { get; }
         string OsuApiKey { get; }
 
+        string SteamApiKey { get; }
+
         bool IsOwner(IUser u);
     }
 

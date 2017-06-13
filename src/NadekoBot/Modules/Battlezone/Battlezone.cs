@@ -25,34 +25,26 @@ using NadekoBot.Modules.Battlezone.Commands.BZ98;
 
 namespace NadekoBot.Modules.Battlezone
 {
-    [NadekoModule("Battlezone", "!")]
+    //[NadekoModule("Battlezone", "!")]
     public partial class Battlezone : NadekoTopLevelModule
     {
-        public static ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
+        private readonly IBotCredentials _creds;
+        private readonly DbService _db;
+        private readonly DiscordShardedClient _client;
 
-        private static new readonly Logger _log;
+        private readonly BZ98Service _bz98;
+        private readonly BZ2Service _bz2;
 
-        static Battlezone()
+
+
+        public Battlezone(IBotCredentials creds, DbService db, DiscordShardedClient client, BZ98Service bz98, BZ2Service bz2)
         {
-            _log = LogManager.GetCurrentClassLogger();
-            var sw = Stopwatch.StartNew();
-            using (var uow = DbHandler.UnitOfWork())
-            {
-                var items = uow.BZ2GameProperties.GetAll();
-                BZ2GameProperties = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
-                items.ForEach(BZ2Property =>
-                {
-                    lock (BZ2GameProperties)
-                    {
-                        if (!BZ2GameProperties.ContainsKey(BZ2Property.TermType))
-                            BZ2GameProperties[BZ2Property.TermType] = new ConcurrentDictionary<string, BZ2GameProperty>();
+            _creds = creds;
+            _db = db;
+            _client = client;
 
-                        BZ2GameProperties[BZ2Property.TermType][BZ2Property.Term] = BZ2Property;
-                    }
-                });
-            }
-            sw.Stop();
-            _log.Debug($"Loaded in {sw.Elapsed.TotalSeconds:F2}s");
+            _bz98 = bz98;
+            _bz2 = bz2;
         }
 
         [NadekoCommand, Usage, Description, Aliases]
@@ -60,7 +52,7 @@ namespace NadekoBot.Modules.Battlezone
         {
             using (Context.Channel.EnterTypingState())
             {
-                var gamelist = await BZ2Provider.GetGames();
+                var gamelist = await _bz2.GetGames();
                 if (gamelist == null)
                 {
                     await Context.Channel.SendErrorAsync("Failed to get game list.").ConfigureAwait(false);
@@ -87,7 +79,7 @@ namespace NadekoBot.Modules.Battlezone
         {
             using (Context.Channel.EnterTypingState())
             {
-                var gamelist = await BZ98Provider.GetGames();
+                var gamelist = await _bz98.GetGames();
                 if (gamelist == null)
                 {
                     await Context.Channel.SendErrorAsync("Failed to get game list.").ConfigureAwait(false);
@@ -118,7 +110,7 @@ namespace NadekoBot.Modules.Battlezone
 
             type = type.ToLowerInvariant();
 
-            if (channel == null && !NadekoBot.Credentials.IsOwner(Context.User))
+            if (channel == null && !_creds.IsOwner(Context.User))
             {
                 try { await Context.Channel.SendErrorAsync("Insufficient permissions. Requires Bot ownership for global access."); } catch { }
                 return;
@@ -165,7 +157,7 @@ namespace NadekoBot.Modules.Battlezone
 
             type = type.ToLowerInvariant();
 
-            if (channel == null && !NadekoBot.Credentials.IsOwner(Context.User))
+            if (channel == null && !_creds.IsOwner(Context.User))
             {
                 try { await Context.Channel.SendErrorAsync("Insufficient permissions. Requires Bot ownership for global access."); } catch { }
                 return;
@@ -182,13 +174,13 @@ namespace NadekoBot.Modules.Battlezone
                 key = key.ToLowerInvariant(); // only for bzn based stuff
             }
 
-            using (var uow = DbHandler.UnitOfWork())
+            using (var uow = _db.UnitOfWork)
             {
-                if (BZ2GameProperties.ContainsKey(type) && BZ2GameProperties[type].ContainsKey(key))
+                if (_bz2.BZ2GameProperties.ContainsKey(type) && _bz2.BZ2GameProperties[type].ContainsKey(key))
                 {
 
                     BZ2GameProperty deadProp = null;
-                    if (BZ2GameProperties[type].TryRemove(key, out deadProp))
+                    if (_bz2.BZ2GameProperties[type].TryRemove(key, out deadProp))
                     {
                         uow.BZ2GameProperties.Remove(deadProp.Id);
                         await uow.CompleteAsync().ConfigureAwait(false);
@@ -208,20 +200,20 @@ namespace NadekoBot.Modules.Battlezone
         {
             if (string.IsNullOrWhiteSpace(type))
             {
-                string types = string.Join(", ", BZ2GameProperties.Keys.Select(dr => $"\"{dr}\" `{BZ2GameProperties[dr].Count}`"));
+                string types = string.Join(", ", _bz2.BZ2GameProperties.Keys.Select(dr => $"\"{dr}\" `{_bz2.BZ2GameProperties[dr].Count}`"));
                 await Context.Channel.SendMessageAsync($"📄 TermTypes: {types}").ConfigureAwait(false);
             }
             else
             {
-                if (BZ2GameProperties.ContainsKey(type))
+                if (_bz2.BZ2GameProperties.ContainsKey(type))
                 {
-                    var gameProps = BZ2GameProperties[type];
+                    var gameProps = _bz2.BZ2GameProperties[type];
 
                     if (page < 1 || ((page - 1) > (gameProps.Count / 20)))
                         return;
                     string toSend = "";
 
-                    using (var uow = DbHandler.UnitOfWork())
+                    using (var uow = _db.UnitOfWork)
                     {
                         var i = 1 + 20 * (page - 1);
                         int NumWidth = gameProps.Count.ToString().Length;
@@ -240,10 +232,10 @@ namespace NadekoBot.Modules.Battlezone
 
         private async Task AddBZ2GameProperty(BZ2GameProperty sm)
         {
-            using (var uow = DbHandler.UnitOfWork())
+            using (var uow = _db.UnitOfWork)
             {
-                if (BZ2GameProperties.ContainsKey(sm.TermType) && BZ2GameProperties[sm.TermType].ContainsKey(sm.Term))
-                    uow.BZ2GameProperties.Remove(BZ2GameProperties[sm.TermType][sm.Term].Id);
+                if (_bz2.BZ2GameProperties.ContainsKey(sm.TermType) && _bz2.BZ2GameProperties[sm.TermType].ContainsKey(sm.Term))
+                    uow.BZ2GameProperties.Remove(_bz2.BZ2GameProperties[sm.TermType][sm.Term].Id);
 
                 uow.BZ2GameProperties.Add(sm);
 
@@ -251,21 +243,14 @@ namespace NadekoBot.Modules.Battlezone
             }
 
             {
-                lock (BZ2GameProperties)
+                lock (_bz2.BZ2GameProperties)
                 {
-                    if (!BZ2GameProperties.ContainsKey(sm.TermType))
-                        BZ2GameProperties[sm.TermType] = new ConcurrentDictionary<string, BZ2GameProperty>();
+                    if (!_bz2.BZ2GameProperties.ContainsKey(sm.TermType))
+                        _bz2.BZ2GameProperties[sm.TermType] = new ConcurrentDictionary<string, BZ2GameProperty>();
 
-                    BZ2GameProperties[sm.TermType][sm.Term] = sm;
+                    _bz2.BZ2GameProperties[sm.TermType][sm.Term] = sm;
                 }
             }
-        }
-
-        public static string GetBZ2GameProperty(string termType, string term)
-        {
-            if (BZ2GameProperties.ContainsKey(termType) && BZ2GameProperties[termType].ContainsKey(term))
-                return BZ2GameProperties[termType][term].Value;
-            return null;
         }
     }
 }

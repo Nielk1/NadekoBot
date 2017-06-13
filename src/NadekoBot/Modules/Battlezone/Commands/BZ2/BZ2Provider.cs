@@ -1,9 +1,15 @@
 ﻿using Discord;
 using Discord.API;
+using Discord.WebSocket;
 using NadekoBot.Extensions;
+using NadekoBot.Services;
+using NadekoBot.Services.Database.Models;
 using Newtonsoft.Json;
+using NLog;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -11,21 +17,64 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 {
-    public static class BZ2Provider
+    public class BZ2Service
     {
-        private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZ2&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId&__pluginShowSource=true&__pluginQueryServers=true&__pluginShowStatus=true";
+        private readonly IBotCredentials _creds;
+        private readonly DbService _db;
+        private readonly DiscordShardedClient _client;
 
-        public static async Task<RaknetData> GetGames()
+        public ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
+
+        private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZ2&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId&__pluginShowSource=true&__pluginQueryServers=true&__pluginShowStatus=true";
+        
+        private Logger _log;
+
+        public BZ2Service(IBotCredentials creds, DbService db, DiscordShardedClient client)
+        {
+            _creds = creds;
+            _db = db;
+            _client = client;
+
+            _log = LogManager.GetCurrentClassLogger();
+            var sw = Stopwatch.StartNew();
+            using (var uow = _db.UnitOfWork)
+            {
+                var items = uow.BZ2GameProperties.GetAll();
+                BZ2GameProperties = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
+                items.ForEach(BZ2Property =>
+                {
+                    lock (BZ2GameProperties)
+                    {
+                        if (!BZ2GameProperties.ContainsKey(BZ2Property.TermType))
+                            BZ2GameProperties[BZ2Property.TermType] = new ConcurrentDictionary<string, BZ2GameProperty>();
+
+                        BZ2GameProperties[BZ2Property.TermType][BZ2Property.Term] = BZ2Property;
+                    }
+                });
+            }
+            sw.Stop();
+            _log.Debug($"Loaded in {sw.Elapsed.TotalSeconds:F2}s");
+        }
+
+        public async Task<RaknetData> GetGames()
         {
             using (var http = new HttpClient())
             {
                 var res = await http.GetStringAsync(queryUrl).ConfigureAwait(false);
                 var gamelist = JsonConvert.DeserializeObject<RaknetData>(res);
+                gamelist.SetBz2Service(this);
                 //if (gamelist?.Title == null)
                 //    return null;
                 //gamelist.Poster = await NadekoBot.Google.ShortenUrl(gamelist.Poster);
                 return gamelist;
             }
+        }
+
+        public string GetBZ2GameProperty(string termType, string term)
+        {
+            if (BZ2GameProperties.ContainsKey(termType) && BZ2GameProperties[termType].ContainsKey(term))
+                return BZ2GameProperties[termType][term].Value;
+            return null;
         }
     }
 
@@ -203,6 +252,11 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 return "just now";
             return string.Empty;
         }
+
+        internal void SetBz2Service(BZ2Service bZ2Service)
+        {
+            GET.ForEach(dr => dr.SetBz2Service(bZ2Service));
+        }
     }
 
     ///// All possible types of NATs (except NAT_TYPE_COUNT, which is an internal value) 
@@ -243,6 +297,8 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
         public string v { get; set; } // varchar(8)   | GAMEVERSION_KEY
         public string p { get; set; } // varchar(16)  | GAMEPORT_KEY
         public string l { get; set; } // locked
+
+        private BZ2Service _bz2;
 
         public RaknetPongResponse pong { get; set; }
 
@@ -299,7 +355,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
                 .WithDescription(ToString())
                 .WithFooter(efb => efb.WithText(footer));
 
-            string prop = Battlezone.GetBZ2GameProperty("shell", Format.Sanitize(m));
+            string prop = _bz2.GetBZ2GameProperty("shell", Format.Sanitize(m));
             embed.WithThumbnailUrl(prop ?? "http://discord.battlezone.report/resources/logos/nomap.png");
 
             string playerCountData = string.Empty;
@@ -376,9 +432,9 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
 
         public override string ToString()
         {
-            string name = Battlezone.GetBZ2GameProperty("name", m);
-            string version = Battlezone.GetBZ2GameProperty("version", v);
-            string mod = Battlezone.GetBZ2GameProperty("mod", d);
+            string name = _bz2.GetBZ2GameProperty("name", m);
+            string version = _bz2.GetBZ2GameProperty("version", v);
+            string mod = _bz2.GetBZ2GameProperty("mod", d);
 
 
             StringBuilder builder = new StringBuilder();
@@ -546,6 +602,11 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             }
 
             return retVal;
+        }
+
+        internal void SetBz2Service(BZ2Service bZ2Service)
+        {
+            _bz2 = bZ2Service;
         }
     }
 
