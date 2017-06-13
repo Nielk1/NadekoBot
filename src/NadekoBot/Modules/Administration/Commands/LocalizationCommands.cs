@@ -16,33 +16,38 @@ namespace NadekoBot.Modules.Administration
         [Group]
         public class LocalizationCommands : NadekoSubmodule
         {
-            private ImmutableDictionary<string, string> supportedLocales { get; } = new Dictionary<string, string>()
+            private static ImmutableDictionary<string, string> supportedLocales { get; } = new Dictionary<string, string>()
             {
-                {"zh-TW", "Chinese (Traditional), China" },
-                {"zh-CN", "Chinese (Simplified), China"},
-                {"nl-NL", "Dutch, Netherlands"},
+                {"ar", "العربية" },
+                {"zh-TW", "繁體中文, 台灣" },
+                {"zh-CN", "简体中文, 中华人民共和国"},
+                {"nl-NL", "Nederlands, Nederland"},
                 {"en-US", "English, United States"},
-                {"fr-FR", "French, France"},
-                {"de-DE", "German, Germany"},
-                {"he-IL", "Hebrew, Israel" },
-                {"it-IT", "Italian, Italy" },
-                //{"ja-JP", "Japanese, Japan"},
-                {"ko-KR", "Korean, Korea" },
-                {"nb-NO", "Norwegian (bokmål), Norway"},
-                {"pl-PL", "Polish, Poland" },
-                {"pt-BR", "Portuguese, Brazil"},
-                {"ru-RU", "Russian, Russia"},
-                {"sr-Cyrl-RS", "Serbian, Serbia - Cyrillic"},
-                {"es-ES", "Spanish, Spain"},
-                {"sv-SE", "Swedish, Sweden"},
-                {"tr-TR", "Turkish, Turkey" }
+                {"fr-FR", "Français, France"},
+                {"cs-CZ", "Čeština, Česká republika" },
+                {"da-DK", "Dansk, Danmark" },
+                {"de-DE", "Deutsch, Deutschland"},
+                {"he-IL", "עברית, ישראל"},
+                {"id-ID", "Bahasa Indonesia, Indonesia" },
+                {"it-IT", "Italiano, Italia" },
+                {"ja-JP", "日本語, 日本"},
+                {"ko-KR", "한국어, 대한민국" },
+                {"nb-NO", "Norsk, Norge"},
+                {"pl-PL", "Polski, Polska" },
+                {"pt-BR", "Português Brasileiro, Brasil"},
+                {"ro-RO", "Română, România" },
+                {"ru-RU", "Русский, Россия"},
+                {"sr-Cyrl-RS", "Српски, Србија"},
+                {"es-ES", "Español, España"},
+                {"sv-SE", "Svenska, Sverige"},
+                {"tr-TR", "Türkçe, Türkiye"}
             }.ToImmutableDictionary();
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             public async Task LanguageSet()
             {
-                var cul = NadekoBot.Localization.GetCultureInfo(Context.Guild);
+                var cul = _localization.GetCultureInfo(Context.Guild);
                 await ReplyConfirmLocalized("lang_set_show", Format.Bold(cul.ToString()), Format.Bold(cul.NativeName))
                     .ConfigureAwait(false);
             }
@@ -57,13 +62,13 @@ namespace NadekoBot.Modules.Administration
                     CultureInfo ci;
                     if (name.Trim().ToLowerInvariant() == "default")
                     {
-                        NadekoBot.Localization.RemoveGuildCulture(Context.Guild);
-                        ci = NadekoBot.Localization.DefaultCultureInfo;
+                        _localization.RemoveGuildCulture(Context.Guild);
+                        ci = _localization.DefaultCultureInfo;
                     }
                     else
                     {
                         ci = new CultureInfo(name);
-                        NadekoBot.Localization.SetGuildCulture(Context.Guild, ci);
+                        _localization.SetGuildCulture(Context.Guild, ci);
                     }
 
                     await ReplyConfirmLocalized("lang_set", Format.Bold(ci.ToString()), Format.Bold(ci.NativeName)).ConfigureAwait(false);
@@ -77,7 +82,7 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             public async Task LanguageSetDefault()
             {
-                var cul = NadekoBot.Localization.DefaultCultureInfo;
+                var cul = _localization.DefaultCultureInfo;
                 await ReplyConfirmLocalized("lang_set_bot_show", cul, cul.NativeName).ConfigureAwait(false);
             }
 
@@ -90,13 +95,13 @@ namespace NadekoBot.Modules.Administration
                     CultureInfo ci;
                     if (name.Trim().ToLowerInvariant() == "default")
                     {
-                        NadekoBot.Localization.ResetDefaultCulture();
-                        ci = NadekoBot.Localization.DefaultCultureInfo;
+                        _localization.ResetDefaultCulture();
+                        ci = _localization.DefaultCultureInfo;
                     }
                     else
                     {
                         ci = new CultureInfo(name);
-                        NadekoBot.Localization.SetDefaultCulture(ci);
+                        _localization.SetDefaultCulture(ci);
                     }
                     await ReplyConfirmLocalized("lang_set_bot", Format.Bold(ci.ToString()), Format.Bold(ci.NativeName)).ConfigureAwait(false);
                 }

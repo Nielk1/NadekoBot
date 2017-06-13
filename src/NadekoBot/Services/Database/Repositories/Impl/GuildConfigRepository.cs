@@ -12,6 +12,18 @@ namespace NadekoBot.Services.Database.Repositories.Impl
         {
         }
 
+        private List<WarningPunishment> DefaultWarnPunishments =>
+            new List<WarningPunishment>() {
+                new WarningPunishment() {
+                    Count = 3,
+                    Punishment = PunishmentAction.Kick
+                },
+                new WarningPunishment() {
+                    Count = 5,
+                    Punishment = PunishmentAction.Ban
+                }
+            };
+
         public IEnumerable<GuildConfig> GetAllGuildConfigs() =>
             _set.Include(gc => gc.LogSetting)
                     .ThenInclude(ls => ls.IgnoredChannels)
@@ -26,6 +38,8 @@ namespace NadekoBot.Services.Database.Repositories.Impl
                 .Include(gc => gc.CommandCooldowns)
                 .Include(gc => gc.GuildRepeaters)
                 .Include(gc => gc.AntiRaidSetting)
+                .Include(gc => gc.SlowmodeIgnoredRoles)
+                .Include(gc => gc.SlowmodeIgnoredUsers)
                 .Include(gc => gc.AntiSpamSetting)
                     .ThenInclude(x => x.IgnoredChannels)
                 .ToList();
@@ -64,10 +78,19 @@ namespace NadekoBot.Services.Database.Repositories.Impl
                 _set.Add((config = new GuildConfig
                 {
                     GuildId = guildId,
-                    Permissions = Permissionv2.GetDefaultPermlist
+                    Permissions = Permissionv2.GetDefaultPermlist,
+                    WarningsInitialized = true,
+                    WarnPunishments = DefaultWarnPunishments,
                 }));
                 _context.SaveChanges();
             }
+
+            if (!config.WarningsInitialized)
+            {
+                config.WarningsInitialized = true;
+                config.WarnPunishments = DefaultWarnPunishments;
+            }
+
             return config;
         }
 
@@ -75,16 +98,24 @@ namespace NadekoBot.Services.Database.Repositories.Impl
         {
             var config = _set.Include(gc => gc.LogSetting)
                             .ThenInclude(gc => gc.IgnoredChannels)
-               .FirstOrDefault();
+               .FirstOrDefault(x => x.GuildId == guildId);
 
             if (config == null)
             {
                 _set.Add((config = new GuildConfig
                 {
                     GuildId = guildId,
-                    Permissions = Permissionv2.GetDefaultPermlist
+                    Permissions = Permissionv2.GetDefaultPermlist,
+                    WarningsInitialized = true,
+                    WarnPunishments = DefaultWarnPunishments,
                 }));
                 _context.SaveChanges();
+            }
+
+            if (!config.WarningsInitialized)
+            {
+                config.WarningsInitialized = true;
+                config.WarnPunishments = DefaultWarnPunishments;
             }
             return config;
         }
@@ -95,10 +126,6 @@ namespace NadekoBot.Services.Database.Repositories.Impl
                 .Where(gc => gc.RootPermission != null)
                 .Include(gc => gc.RootPermission);
 
-            //todo this is possibly a disaster for performance
-            //What i could do instead is count the number of permissions in the permission table for this guild
-            // and make a for loop with those.
-            // or just select permissions for this guild and manually chain them
             for (int i = 0; i < 60; i++)
             {
                 query = query.ThenInclude(gc => gc.Next);

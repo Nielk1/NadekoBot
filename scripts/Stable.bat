@@ -4,10 +4,10 @@ TITLE Downloading Stable Build of NadekoBot...
 SET "root=%~dp0"
 CD /D "%root%"
 SET "rootdir=%cd%"
-SET "build1=%root%NadekoInstall_Temp\NadekoBot\Discord.Net\src\Discord.Net.Core\"
-SET "build2=%root%NadekoInstall_Temp\NadekoBot\Discord.Net\src\Discord.Net.Rest\"
-SET "build3=%root%NadekoInstall_Temp\NadekoBot\Discord.Net\src\Discord.Net.WebSocket\"
-SET "build4=%root%NadekoInstall_Temp\NadekoBot\Discord.Net\src\Discord.Net.Commands\"
+REM SET "build1=%root%NadekoInstall_Temp\NadekoBot\Discord.Net\src\Discord.Net.Core\"
+REM SET "build2=%root%NadekoInstall_Temp\NadekoBot\Discord.Net\src\Discord.Net.Rest\"
+REM SET "build3=%root%NadekoInstall_Temp\NadekoBot\Discord.Net\src\Discord.Net.WebSocket\"
+REM SET "build4=%root%NadekoInstall_Temp\NadekoBot\Discord.Net\src\Discord.Net.Commands\"
 SET "build5=%root%NadekoInstall_Temp\NadekoBot\src\NadekoBot\"
 SET "installtemp=%root%NadekoInstall_Temp\"
 ::Deleting traces of last setup for the sake of clean folders, if by some miracle it still exists
@@ -27,22 +27,22 @@ git clone -b master --recursive --depth 1 --progress https://github.com/Nielk1/N
 IF %ERRORLEVEL% EQU 128 (GOTO :giterror)
 TITLE Installing NadekoBot, please wait...
 ECHO.
-ECHO Installing Discord.Net(1/4)...
+REM ECHO Installing Discord.Net(1/4)...
 ::Building Nadeko
-CD /D "%build1%"
-dotnet restore >nul 2>&1
-ECHO Installing Discord.Net(2/4)...
-CD /D "%build2%"
-dotnet restore >nul 2>&1
-ECHO Installing Discord.Net(3/4)...
-CD /D "%build3%"
-dotnet restore >nul 2>&1
-ECHO Installing Discord.Net(4/4)...
-CD /D "%build4%"
-dotnet restore >nul 2>&1
-ECHO.
-ECHO Discord.Net installation completed successfully...
-ECHO.
+REM CD /D "%build1%"
+REM dotnet restore >nul 2>&1
+REM ECHO Installing Discord.Net(2/4)...
+REM CD /D "%build2%"
+REM dotnet restore >nul 2>&1
+REM ECHO Installing Discord.Net(3/4)...
+REM CD /D "%build3%"
+REM dotnet restore >nul 2>&1
+REM ECHO Installing Discord.Net(4/4)...
+REM CD /D "%build4%"
+REM dotnet restore >nul 2>&1
+REM ECHO.
+REM ECHO Discord.Net installation completed successfully...
+REM ECHO.
 ECHO Installing NadekoBot...
 CD /D "%build5%"
 dotnet restore >nul 2>&1
@@ -128,31 +128,31 @@ ECHO.
 ECHO Your System Architecture is 32bit...
 timeout /t 5
 ECHO.
-ECHO Getting 32bit libsodium.dll and opus.dll...
-IF EXIST "%root%NadekoBot\src\NadekoBot\_libs\32\libsodium.dll" (GOTO copysodium) ELSE (GOTO downloadsodium)
-:copysodium
-del "%root%NadekoBot\src\NadekoBot\libsodium.dll"
-copy "%root%NadekoBot\src\NadekoBot\_libs\32\libsodium.dll" "%root%NadekoBot\src\NadekoBot\libsodium.dll"
-ECHO libsodium.dll copied.
-ECHO.
-timeout /t 5
-IF EXIST "%root%NadekoBot\src\NadekoBot\_libs\32\opus.dll" (GOTO copyopus) ELSE (GOTO downloadopus)
-:downloadsodium
-SET "FILENAME=%~dp0\NadekoBot\src\NadekoBot\libsodium.dll"
-powershell -Command "Invoke-WebRequest https://github.com/Nielk1/NadekoBot/raw/dev/src/NadekoBot/_libs/32/libsodium.dll -OutFile '%FILENAME%'"
-ECHO libsodium.dll downloaded.
-ECHO.
-timeout /t 5
-IF EXIST "%root%NadekoBot\src\NadekoBot\_libs\32\opus.dll" (GOTO copyopus) ELSE (GOTO downloadopus)
-:copyopus
-del "%root%NadekoBot\src\NadekoBot\opus.dll"
-copy "%root%NadekoBot\src\NadekoBot\_libs\32\opus.dll" "%root%NadekoBot\src\NadekoBot\opus.dll"
-ECHO opus.dll copied.
-GOTO end
-:downloadopus
-SET "FILENAME=%~dp0\NadekoBot\src\NadekoBot\opus.dll"
-powershell -Command "Invoke-WebRequest https://github.com/Nielk1/NadekoBot/raw/dev/src/NadekoBot/_libs/32/opus.dll -OutFile '%FILENAME%'"
-ECHO opus.dll downloaded.
+REM ECHO Getting 32bit libsodium.dll and opus.dll...
+REM IF EXIST "%root%NadekoBot\src\NadekoBot\_libs\32\libsodium.dll" (GOTO copysodium) ELSE (GOTO downloadsodium)
+REM :copysodium
+REM del "%root%NadekoBot\src\NadekoBot\libsodium.dll"
+REM copy "%root%NadekoBot\src\NadekoBot\_libs\32\libsodium.dll" "%root%NadekoBot\src\NadekoBot\libsodium.dll"
+REM ECHO libsodium.dll copied.
+REM ECHO.
+REM timeout /t 5
+REM IF EXIST "%root%NadekoBot\src\NadekoBot\_libs\32\opus.dll" (GOTO copyopus) ELSE (GOTO downloadopus)
+REM :downloadsodium
+REM SET "FILENAME=%~dp0\NadekoBot\src\NadekoBot\libsodium.dll"
+REM powershell -Command "Invoke-WebRequest https://github.com/Nielk1/NadekoBot/raw/dev/src/NadekoBot/_libs/32/libsodium.dll -OutFile '%FILENAME%'"
+REM ECHO libsodium.dll downloaded.
+REM ECHO.
+REM timeout /t 5
+REM IF EXIST "%root%NadekoBot\src\NadekoBot\_libs\32\opus.dll" (GOTO copyopus) ELSE (GOTO downloadopus)
+REM :copyopus
+REM del "%root%NadekoBot\src\NadekoBot\opus.dll"
+REM copy "%root%NadekoBot\src\NadekoBot\_libs\32\opus.dll" "%root%NadekoBot\src\NadekoBot\opus.dll"
+REM ECHO opus.dll copied.
+REM GOTO end
+REM :downloadopus
+REM SET "FILENAME=%~dp0\NadekoBot\src\NadekoBot\opus.dll"
+REM powershell -Command "Invoke-WebRequest https://github.com/Nielk1/NadekoBot/raw/dev/src/NadekoBot/_libs/32/opus.dll -OutFile '%FILENAME%'"
+REM ECHO opus.dll downloaded.
 GOTO end
 :end
 	::Normal execution of end of script

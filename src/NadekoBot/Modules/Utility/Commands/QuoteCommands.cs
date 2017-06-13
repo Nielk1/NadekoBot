@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.Commands;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
@@ -17,6 +17,13 @@ namespace NadekoBot.Modules.Utility
         [Group]
         public class QuoteCommands : NadekoSubmodule
         {
+            private readonly DbService _db;
+
+            public QuoteCommands(DbService db)
+            {
+                _db = db;
+            }
+
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             public async Task ListQuotes(int page = 1)
@@ -27,14 +34,14 @@ namespace NadekoBot.Modules.Utility
                     return;
 
                 IEnumerable<Quote> quotes;
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     quotes = uow.Quotes.GetGroup(Context.Guild.Id, page * 16, 16);
                 }
 
                 if (quotes.Any())
                     await Context.Channel.SendConfirmAsync(GetText("quotes_page", page + 1),
-                            string.Join("\n", quotes.Select(q => $"`#{q.Id}` {Format.Bold(q.Keyword),-20} by {q.AuthorName}")))
+                            string.Join("\n", quotes.Select(q => $"`#{q.Id}` {Format.Bold(q.Keyword.SanitizeMentions()),-20} by {q.AuthorName.SanitizeMentions()}")))
                         .ConfigureAwait(false);
                 else
                     await ReplyErrorLocalized("quotes_page_none").ConfigureAwait(false);
@@ -50,7 +57,7 @@ namespace NadekoBot.Modules.Utility
                 keyword = keyword.ToUpperInvariant();
 
                 Quote quote;
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     quote =
                         await uow.Quotes.GetRandomQuoteByKeywordAsync(Context.Guild.Id, keyword).ConfigureAwait(false);
@@ -79,7 +86,7 @@ namespace NadekoBot.Modules.Utility
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task SearchQuote(string keyword, [Remainder] string text)
+            public async Task QuoteSearch(string keyword, [Remainder] string text)
             {
                 if (string.IsNullOrWhiteSpace(keyword) || string.IsNullOrWhiteSpace(text))
                     return;
@@ -87,7 +94,7 @@ namespace NadekoBot.Modules.Utility
                 keyword = keyword.ToUpperInvariant();
 
                 Quote keywordquote;
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     keywordquote =
                         await uow.Quotes.SearchQuoteKeywordTextAsync(Context.Guild.Id, keyword, text)
@@ -100,7 +107,43 @@ namespace NadekoBot.Modules.Utility
                 await Context.Channel.SendMessageAsync($"`#{keywordquote.Id}` 💬 " + keyword.ToLowerInvariant() + ":  " +
                                                        keywordquote.Text.SanitizeMentions());
             }
-
+            
+            [NadekoCommand, Usage, Description, Aliases]
+            [RequireContext(ContextType.Guild)]
+            public async Task QuoteId(int id)
+            {  
+                if (id < 0)
+                    return;
+                
+                using (var uow = _db.UnitOfWork)
+                { 
+                    var qfromid = uow.Quotes.Get(id);
+                    CREmbed crembed;
+                    
+                    if (qfromid == null)
+                    {
+                        await Context.Channel.SendErrorAsync(GetText("quotes_notfound"));
+                    }
+                    else if (CREmbed.TryParse(qfromid.Text, out crembed))
+                    {
+                        try 
+                        {
+                            await Context.Channel.EmbedAsync(crembed.ToEmbed(), crembed.PlainText ?? "")
+                                .ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            _log.Warn("Sending CREmbed failed");
+                            _log.Warn(ex);    
+                        } 
+                        return;
+                    }
+                    
+                    else { await Context.Channel.SendMessageAsync($"`#{qfromid.Id}` 🗯️ " + qfromid.Keyword.ToLowerInvariant().SanitizeMentions() + ":  " +
+                                                       qfromid.Text.SanitizeMentions()); }
+                }
+            }        
+                          
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             public async Task AddQuote(string keyword, [Remainder] string text)
@@ -110,7 +153,7 @@ namespace NadekoBot.Modules.Utility
 
                 keyword = keyword.ToUpperInvariant();
 
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     uow.Quotes.Add(new Quote
                     {
@@ -130,10 +173,10 @@ namespace NadekoBot.Modules.Utility
             public async Task DeleteQuote(int id)
             {
                 var isAdmin = ((IGuildUser) Context.Message.Author).GuildPermissions.Administrator;
-
-                var sucess = false;
+                
+                var success = false;
                 string response;
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     var q = uow.Quotes.Get(id);
 
@@ -145,11 +188,11 @@ namespace NadekoBot.Modules.Utility
                     {
                         uow.Quotes.Remove(q);
                         await uow.CompleteAsync().ConfigureAwait(false);
-                        sucess = true;
+                        success = true;
                         response = GetText("quote_deleted", id);
                     }
                 }
-                if (sucess)
+                if (success)
                     await Context.Channel.SendConfirmAsync(response);
                 else
                     await Context.Channel.SendErrorAsync(response);
@@ -165,14 +208,14 @@ namespace NadekoBot.Modules.Utility
 
                 keyword = keyword.ToUpperInvariant();
 
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     uow.Quotes.RemoveAllByKeyword(Context.Guild.Id, keyword.ToUpperInvariant());
 
                     await uow.CompleteAsync();
                 }
 
-                await ReplyConfirmLocalized("quotes_deleted", Format.Bold(keyword)).ConfigureAwait(false);
+                await ReplyConfirmLocalized("quotes_deleted", Format.Bold(keyword.SanitizeMentions())).ConfigureAwait(false);
             }
         }
     }
