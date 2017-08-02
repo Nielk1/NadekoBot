@@ -20,11 +20,11 @@ namespace NadekoBot.Modules.GamesList
         }
 
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task Games(string type, [Remainder] string restOfLine = null)
+        public async Task Games(string type = null, [Remainder] string restOfLine = null)
         {
             var channel = Context.Channel as ITextChannel;
 
-            if (!_service.IsValidGameType(type))
+            if (string.IsNullOrWhiteSpace(type) || !_service.IsValidGameType(type))
             {
                 var embed = new EmbedBuilder().WithOkColor()
                                 .WithTitle("Games List")
