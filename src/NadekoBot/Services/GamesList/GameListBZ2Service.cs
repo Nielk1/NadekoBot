@@ -77,8 +77,8 @@ namespace NadekoBot.Services.GamesList
                 using (var http = new HttpClient())
                 {
                     var url = $"http://discord.battlezone.report/resources/meta/bz2/{termType}/{term}";
-                    var reply = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
-                    if (reply.StatusCode == System.Net.HttpStatusCode.OK) return url;
+                    var reply = await http.SendAsync(new HttpRequestMessage(HttpMethod.Get, url));
+                    if (reply.StatusCode == System.Net.HttpStatusCode.OK) return await reply.Content.ReadAsStringAsync();
                 }
                 return null;
             }
