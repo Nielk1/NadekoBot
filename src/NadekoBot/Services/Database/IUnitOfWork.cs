@@ -23,7 +23,7 @@ namespace NadekoBot.Services.Database
         IPokeGameRepository PokeGame { get; }
         IWaifuRepository Waifus { get; }
         IDiscordUserRepository DiscordUsers { get; }
-        IBZ2GamePropertyRepository BZ2GameProperties { get; }
+        IWarningsRepository Warnings { get; }
 
         int Complete();
         Task<int> CompleteAsync();

@@ -1,11 +1,12 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Modules.Games.Trivia;
-using System;
+using NadekoBot.Services;
+using NadekoBot.Services.Database.Models;
 using System.Collections.Concurrent;
-using System.Linq;
 using System.Threading.Tasks;
 
 
@@ -14,24 +15,41 @@ namespace NadekoBot.Modules.Games
     public partial class Games
     {
         [Group]
-        public class TriviaCommands : ModuleBase
+        public class TriviaCommands : NadekoSubmodule
         {
+            private readonly CurrencyService _cs;
+            private readonly DiscordShardedClient _client;
+            private readonly BotConfig _bc;
+
             public static ConcurrentDictionary<ulong, TriviaGame> RunningTrivias { get; } = new ConcurrentDictionary<ulong, TriviaGame>();
+
+            public TriviaCommands(DiscordShardedClient client, BotConfig bc, CurrencyService cs)
+            {
+                _cs = cs;
+                _client = client;
+                _bc = bc;
+            }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             public Task Trivia([Remainder] string additionalArgs = "")
-                => Trivia(10, additionalArgs);
+                => InternalTrivia(10, additionalArgs);
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Trivia(int winReq = 10, [Remainder] string additionalArgs = "")
+            public Task Trivia(int winReq = 10, [Remainder] string additionalArgs = "")
+                => InternalTrivia(winReq, additionalArgs);
+
+            public async Task InternalTrivia(int winReq, string additionalArgs = "")
             {
                 var channel = (ITextChannel)Context.Channel;
 
-                var showHints = !additionalArgs.Contains("nohint");
+                additionalArgs = additionalArgs?.Trim()?.ToLowerInvariant();
 
-                TriviaGame trivia = new TriviaGame(channel.Guild, channel, showHints, winReq);
+                var showHints = !additionalArgs.Contains("nohint");
+                var isPokemon = additionalArgs.Contains("pokemon");
+
+                var trivia = new TriviaGame(_strings, _client, _bc, _cs, channel.Guild, channel, showHints, winReq, isPokemon);
                 if (RunningTrivias.TryAdd(channel.Guild.Id, trivia))
                 {
                     try
@@ -43,10 +61,11 @@ namespace NadekoBot.Modules.Games
                         RunningTrivias.TryRemove(channel.Guild.Id, out trivia);
                         await trivia.EnsureStopped().ConfigureAwait(false);
                     }
-                    return;                    
+                    return;
                 }
-                else
-                    await Context.Channel.SendErrorAsync("Trivia game is already running on this server.\n" + trivia.CurrentQuestion).ConfigureAwait(false);
+
+                await Context.Channel.SendErrorAsync(GetText("trivia_already_running") + "\n" + trivia.CurrentQuestion)
+                    .ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
@@ -58,11 +77,11 @@ namespace NadekoBot.Modules.Games
                 TriviaGame trivia;
                 if (RunningTrivias.TryGetValue(channel.Guild.Id, out trivia))
                 {
-                    await channel.SendConfirmAsync("Leaderboard", trivia.GetLeaderboard()).ConfigureAwait(false);
+                    await channel.SendConfirmAsync(GetText("leaderboard"), trivia.GetLeaderboard()).ConfigureAwait(false);
                     return;
                 }
 
-                await channel.SendErrorAsync("No trivia is running on this server.").ConfigureAwait(false);
+                await ReplyErrorLocalized("trivia_none").ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
@@ -78,7 +97,7 @@ namespace NadekoBot.Modules.Games
                     return;
                 }
 
-                await channel.SendErrorAsync("No trivia is running on this server.").ConfigureAwait(false);
+                await ReplyErrorLocalized("trivia_none").ConfigureAwait(false);
             }
         }
     }

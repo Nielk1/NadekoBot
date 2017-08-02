@@ -9,7 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-//todo drawing
+//todo 50 drawing
 namespace NadekoBot.Modules.Searches
 {
     public partial class Searches
@@ -22,7 +22,7 @@ namespace NadekoBot.Modules.Searches
                 obj["name"].GetHashCode();
         }
 
-        private static string[] trashTalk { get; } = { "Better ban your counters. You are going to carry the game anyway.",
+        private static readonly string[] trashTalk = { "Better ban your counters. You are going to carry the game anyway.",
                                                 "Go with the flow. Don't think. Just ban one of these.",
                                                 "DONT READ BELOW! Ban Urgot mid OP 100%. Im smurf Diamond 1.",
                                                 "Ask your teammates what would they like to play, and ban that.",
@@ -33,30 +33,31 @@ namespace NadekoBot.Modules.Searches
         [NadekoCommand, Usage, Description, Aliases]
         public async Task Lolban()
         {
-            var showCount = 8;
+            const int showCount = 8;
             //http://api.champion.gg/stats/champs/mostBanned?api_key=YOUR_API_TOKEN&page=1&limit=2
             try
             {
                 using (var http = new HttpClient())
                 {
                     var data = JObject.Parse(await http.GetStringAsync($"http://api.champion.gg/stats/champs/mostBanned?" +
-                                                    $"api_key={NadekoBot.Credentials.LoLApiKey}&page=1&" +
+                                                    $"api_key={_creds.LoLApiKey}&page=1&" +
                                                     $"limit={showCount}")
                                                     .ConfigureAwait(false))["data"] as JArray;
                     var dataList = data.Distinct(new ChampionNameComparer()).Take(showCount).ToList();
-                    var eb = new EmbedBuilder().WithOkColor().WithTitle(Format.Underline($"{dataList.Count} most banned champions"));
-                    for (var i = 0; i < dataList.Count; i++)
+                    var eb = new EmbedBuilder().WithOkColor().WithTitle(Format.Underline(GetText("x_most_banned_champs",dataList.Count)));
+                    foreach (var champ in dataList)
                     {
-                        var champ = dataList[i];
-                        eb.AddField(efb => efb.WithName(champ["name"].ToString()).WithValue(champ["general"]["banRate"] + "%").WithIsInline(true));
+                        var champ1 = champ;
+                        eb.AddField(efb => efb.WithName(champ1["name"].ToString()).WithValue(champ1["general"]["banRate"] + "%").WithIsInline(true));
                     }
 
                     await Context.Channel.EmbedAsync(eb, Format.Italics(trashTalk[new NadekoRandom().Next(0, trashTalk.Length)])).ConfigureAwait(false);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                await Context.Channel.SendMessageAsync("Something went wrong.").ConfigureAwait(false);
+                _log.Warn(ex);
+                await ReplyErrorLocalized("something_went_wrong").ConfigureAwait(false);
             }
         }
     }
@@ -82,7 +83,7 @@ namespace NadekoBot.Modules.Searches
 //                try
 //                {
 //                    CachedChampionImages = CachedChampionImages
-//                        .Where(kvp => DateTime.Now - kvp.Value.AddedAt > new TimeSpan(1, 0, 0))
+//                        .Where(kvp => DateTime.UtcNow - kvp.Value.AddedAt > new TimeSpan(1, 0, 0))
 //                        .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 //                }
 //                catch { }
@@ -126,7 +127,7 @@ namespace NadekoBot.Modules.Searches
 //                                  await e.Channel.SendFile("champ.png", champ.ImageStream).ConfigureAwait(false);
 //                                  return;
 //                              }
-//                          var allData = JArray.Parse(await Classes.http.GetStringAsync($"http://api.champion.gg/champion/{name}?api_key={NadekoBot.Credentials.LOLAPIKey}").ConfigureAwait(false));
+//                          var allData = JArray.Parse(await Classes.http.GetStringAsync($"http://api.champion.gg/champion/{name}?api_key={_creds.LOLAPIKey}").ConfigureAwait(false));
 //                          JToken data = null;
 //                          if (role != null)
 //                          {
@@ -167,7 +168,7 @@ namespace NadekoBot.Modules.Searches
 //                                  roles[i] = ">" + roles[i] + "<";
 //                          }
 //                          var general = JArray.Parse(await http.GetStringAsync($"http://api.champion.gg/stats/" +
-//                                                                                               $"champs/{name}?api_key={NadekoBot.Credentials.LOLAPIKey}")
+//                                                                                               $"champs/{name}?api_key={_creds.LOLAPIKey}")
 //                                                                                                .ConfigureAwait(false))
 //                                              .FirstOrDefault(jt => jt["role"].ToString() == role)?["general"];
 //                          if (general == null)
@@ -302,7 +303,7 @@ namespace NadekoBot.Modules.Searches
 //                                              smallImgSize));
 //                              }
 //                          }
-//                          var cachedChamp = new CachedChampion { AddedAt = DateTime.Now, ImageStream = img.ToStream(System.Drawing.Imaging.ImageFormat.Png), Name = name.ToLower() + "_" + resolvedRole };
+//                          var cachedChamp = new CachedChampion { AddedAt = DateTime.UtcNow, ImageStream = img.ToStream(System.Drawing.Imaging.ImageFormat.Png), Name = name.ToLower() + "_" + resolvedRole };
 //                          CachedChampionImages.Add(cachedChamp.Name, cachedChamp);
 //                          await e.Channel.SendFile(data["title"] + "_stats.png", cachedChamp.ImageStream).ConfigureAwait(false);
 //                      }

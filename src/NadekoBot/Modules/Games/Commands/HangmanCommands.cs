@@ -1,52 +1,49 @@
 ﻿using Discord.Commands;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
-using NadekoBot.Modules.Games.Commands.Hangman;
-using NLog;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using NadekoBot.Modules.Games.Hangman;
+using Discord;
+using Discord.WebSocket;
 
 namespace NadekoBot.Modules.Games
 {
     public partial class Games
     {
         [Group]
-        public class HangmanCommands : ModuleBase
+        public class HangmanCommands : NadekoSubmodule
         {
-            private static Logger _log { get; }
+            private readonly DiscordShardedClient _client;
+
+            public HangmanCommands(DiscordShardedClient client)
+            {
+                _client = client;
+            }
 
             //channelId, game
             public static ConcurrentDictionary<ulong, HangmanGame> HangmanGames { get; } = new ConcurrentDictionary<ulong, HangmanGame>();
-            private static string typesStr { get; } = "";
-
-            static HangmanCommands()
-            {
-                _log = LogManager.GetCurrentClassLogger();
-                typesStr = $"`List of \"{NadekoBot.ModulePrefixes[typeof(Games).Name]}hangman\" term types:`\n" + String.Join(", ", HangmanTermPool.data.Keys);
-            }
-
             [NadekoCommand, Usage, Description, Aliases]
             public async Task Hangmanlist()
             {
-                await Context.Channel.SendConfirmAsync(typesStr);
+                await Context.Channel.SendConfirmAsync(Format.Code(GetText("hangman_types", Prefix)) + "\n" + string.Join(", ", HangmanTermPool.data.Keys));
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             public async Task Hangman([Remainder]string type = "All")
             {
-                var hm = new HangmanGame(Context.Channel, type);
+                var hm = new HangmanGame(_client, Context.Channel, type);
 
                 if (!HangmanGames.TryAdd(Context.Channel.Id, hm))
                 {
-                    await Context.Channel.SendErrorAsync("Hangman game already running on this channel.").ConfigureAwait(false);
+                    await ReplyErrorLocalized("hangman_running").ConfigureAwait(false);
                     return;
                 }
 
-                hm.OnEnded += (g) =>
+                hm.OnEnded += g =>
                 {
-                    HangmanGame throwaway;
-                    HangmanGames.TryRemove(g.GameChannel.Id, out throwaway);
+                    HangmanGames.TryRemove(g.GameChannel.Id, out HangmanGame throwaway);
                 };
                 try
                 {
@@ -54,14 +51,13 @@ namespace NadekoBot.Modules.Games
                 }
                 catch (Exception ex)
                 {
-                    try { await Context.Channel.SendErrorAsync($"Starting errored: {ex.Message}").ConfigureAwait(false); } catch { }
-                    HangmanGame throwaway;
-                    HangmanGames.TryRemove(Context.Channel.Id, out throwaway);
+                    try { await Context.Channel.SendErrorAsync(GetText("hangman_start_errored") + " " + ex.Message).ConfigureAwait(false); } catch { }
+                    HangmanGames.TryRemove(Context.Channel.Id, out HangmanGame throwaway);
                     throwaway.Dispose();
                     return;
                 }
 
-                await Context.Channel.SendConfirmAsync("Hangman game started", hm.ScrambledWord + "\n" + hm.GetHangman());
+                await Context.Channel.SendConfirmAsync(GetText("hangman_game_started"), hm.ScrambledWord + "\n" + hm.GetHangman());
             }
         }
     }

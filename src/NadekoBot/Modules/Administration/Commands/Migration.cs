@@ -8,7 +8,6 @@ using NadekoBot.Attributes;
 using NadekoBot.Services;
 using NadekoBot.Services.Database.Models;
 using Newtonsoft.Json;
-using NLog;
 using NadekoBot.Modules.Administration.Commands.Migration;
 using System.Collections.Concurrent;
 using NadekoBot.Extensions;
@@ -20,15 +19,14 @@ namespace NadekoBot.Modules.Administration
     public partial class Administration
     {
         [Group]
-        public class Migration : ModuleBase
+        public class Migration : NadekoSubmodule
         {
             private const int CURRENT_VERSION = 1;
+            private readonly DbService _db;
 
-            private static Logger _log { get; }
-
-            static Migration()
+            public Migration(DbService db)
             {
-                _log = LogManager.GetCurrentClassLogger();
+                _db = db;
             }
 
             [NadekoCommand, Usage, Description, Aliases]
@@ -36,7 +34,7 @@ namespace NadekoBot.Modules.Administration
             public async Task MigrateData()
             {
                 var version = 0;
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     version = uow.BotConfig.GetOrCreate().MigrationVersion;
                 }
@@ -51,18 +49,18 @@ namespace NadekoBot.Modules.Administration
                                 break;
                         }
                     }
-                    await Context.Channel.SendMessageAsync("🆙 **Migration done.**").ConfigureAwait(false);
+                    await ReplyConfirmLocalized("migration_done").ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     _log.Error(ex);
-                    await Context.Channel.SendMessageAsync("⚠️ **Error while migrating, check `logs` for more informations.**").ConfigureAwait(false);
+                    await ReplyErrorLocalized("migration_error").ConfigureAwait(false);
                 }
             }
 
             private void Migrate0_9To1_0()
             {
-                using (var uow = DbHandler.UnitOfWork())
+                using (var uow = _db.UnitOfWork)
                 {
                     var botConfig = uow.BotConfig.GetOrCreate();
                     MigrateConfig0_9(uow, botConfig);
@@ -103,11 +101,8 @@ namespace NadekoBot.Modules.Administration
                         var greetChannel = (ulong)(long)reader["GreetChannelId"];
                         var greetMsg = (string)reader["GreetText"];
                         var bye = (long)reader["Bye"] == 1;
-                        var byeDM = (long)reader["ByePM"] == 1;
                         var byeChannel = (ulong)(long)reader["ByeChannelId"];
                         var byeMsg = (string)reader["ByeText"];
-                        var grdel = false;
-                        var byedel = grdel;
                         var gc = uow.GuildConfigs.For(gid, set => set);
 
                         if (greetDM)
@@ -121,7 +116,6 @@ namespace NadekoBot.Modules.Administration
                         gc.ByeMessageChannelId = byeChannel;
                         gc.ChannelByeMessageText = byeMsg;
 
-                        gc.AutoDeleteGreetMessagesTimer = gc.AutoDeleteByeMessagesTimer = grdel ? 30 : 0;
                         _log.Info(++i);
                     }
                 }
@@ -129,12 +123,12 @@ namespace NadekoBot.Modules.Administration
                     _log.Warn("Greet/bye messages won't be migrated");
                 }
                 var com2 = db.CreateCommand();
-                com.CommandText = "SELECT * FROM CurrencyState GROUP BY UserId";
+                com2.CommandText = "SELECT * FROM CurrencyState GROUP BY UserId";
 
                 i = 0;
                 try
                 {
-                    var reader2 = com.ExecuteReader();
+                    var reader2 = com2.ExecuteReader();
                     while (reader2.Read())
                     {
                         _log.Info(++i);
@@ -203,7 +197,6 @@ namespace NadekoBot.Modules.Administration
                             guildConfig.ExclusiveSelfAssignedRoles = data.ExclusiveSelfAssignedRoles;
                             guildConfig.GenerateCurrencyChannelIds = new HashSet<GCChannelId>(data.GenerateCurrencyChannels.Select(gc => new GCChannelId() { ChannelId = gc.Key }));
                             selfAssRoles.AddRange(data.ListOfSelfAssignableRoles.Select(r => new SelfAssignedRole() { GuildId = guildConfig.GuildId, RoleId = r }).ToArray());
-                            var logSetting = guildConfig.LogSetting;
                             guildConfig.LogSetting.IgnoredChannels = new HashSet<IgnoredLogChannel>(data.LogserverIgnoreChannels.Select(id => new IgnoredLogChannel() { ChannelId = id }));
 
                             guildConfig.LogSetting.LogUserPresenceId = data.LogPresenceChannel;
@@ -249,7 +242,7 @@ namespace NadekoBot.Modules.Administration
 
             private void MigratePermissions0_9(IUnitOfWork uow)
             {
-                var PermissionsDict = new ConcurrentDictionary<ulong, ServerPermissions0_9>();
+                var permissionsDict = new ConcurrentDictionary<ulong, ServerPermissions0_9>();
                 if (!Directory.Exists("data/permissions/"))
                 {
                     _log.Warn("No data from permissions will be migrated.");
@@ -263,12 +256,15 @@ namespace NadekoBot.Modules.Administration
                         if (string.IsNullOrWhiteSpace(strippedFileName)) continue;
                         var id = ulong.Parse(strippedFileName);
                         var data = JsonConvert.DeserializeObject<ServerPermissions0_9>(File.ReadAllText(file));
-                        PermissionsDict.TryAdd(id, data);
+                        permissionsDict.TryAdd(id, data);
                     }
-                    catch { }
+                    catch
+                    {
+                        // ignored
+                    }
                 }
                 var i = 0;
-                PermissionsDict
+                permissionsDict
                     .Select(p => new { data = p.Value, gconfig = uow.GuildConfigs.For(p.Key) })
                     .AsParallel()
                     .ForAll(perms =>
@@ -404,9 +400,9 @@ namespace NadekoBot.Modules.Administration
                 });
 
                 //Blacklist
-                var blacklist = new HashSet<BlacklistItem>(oldConfig.ServerBlacklist.Select(server => new BlacklistItem() { ItemId = server, Type = BlacklistItem.BlacklistType.Server }));
-                blacklist.AddRange(oldConfig.ChannelBlacklist.Select(channel => new BlacklistItem() { ItemId = channel, Type = BlacklistItem.BlacklistType.Channel }));
-                blacklist.AddRange(oldConfig.UserBlacklist.Select(user => new BlacklistItem() { ItemId = user, Type = BlacklistItem.BlacklistType.User }));
+                var blacklist = new HashSet<BlacklistItem>(oldConfig.ServerBlacklist.Select(server => new BlacklistItem() { ItemId = server, Type = BlacklistType.Server }));
+                blacklist.AddRange(oldConfig.ChannelBlacklist.Select(channel => new BlacklistItem() { ItemId = channel, Type = BlacklistType.Channel }));
+                blacklist.AddRange(oldConfig.UserBlacklist.Select(user => new BlacklistItem() { ItemId = user, Type = BlacklistType.User }));
                 botConfig.Blacklist = blacklist;
 
                 //Eightball

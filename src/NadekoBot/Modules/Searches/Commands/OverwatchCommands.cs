@@ -1,12 +1,11 @@
-﻿using Discord;
+﻿using System;
+using Discord;
 using Discord.Commands;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Modules.Searches.Models;
 using Newtonsoft.Json;
-using NLog;
 using System.Net.Http;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace NadekoBot.Modules.Searches
@@ -14,81 +13,97 @@ namespace NadekoBot.Modules.Searches
     public partial class Searches
     {
         [Group]
-        public class OverwatchCommands : ModuleBase
+        public class OverwatchCommands : NadekoSubmodule
         {
-            private readonly Logger _log;
-            public OverwatchCommands()
+            public enum Region
             {
-                _log = LogManager.GetCurrentClassLogger();
+                Eu,
+                Us,
+                Kr
             }
+
             [NadekoCommand, Usage, Description, Aliases]
-            public async Task Overwatch(string region, [Remainder] string query = null)
+            public async Task Overwatch(Region region, [Remainder] string query = null)
             {
                 if (string.IsNullOrWhiteSpace(query))
                     return;
-                var battletag = Regex.Replace(query, "#", "-", RegexOptions.IgnoreCase);
+                var battletag = query.Replace("#", "-");
 
                 await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
-                try
-                {
-                    await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
-                    var model = await GetProfile(region, battletag);
+                var model = (await GetProfile(region, battletag))?.Stats;
 
-                    var rankimg = $"{model.Competitive.rank_img}";
-                    var rank = $"{model.Competitive.rank}";
-                    var competitiveplay = $"{model.Games.Competitive.played}";
-                    if (string.IsNullOrWhiteSpace(rank))
+                if (model != null)
+                {
+                    if (model.Competitive == null)
                     {
+                        var qp = model.Quickplay;
                         var embed = new EmbedBuilder()
-                            .WithAuthor(eau => eau.WithName($"{model.username}")
+                            .WithAuthor(eau => eau.WithName(query)
                             .WithUrl($"https://www.overbuff.com/players/pc/{battletag}")
-                            .WithIconUrl($"{model.avatar}"))
-                            .WithThumbnailUrl("https://cdn.discordapp.com/attachments/155726317222887425/255653487512256512/YZ4w2ey.png")
-                            .AddField(fb => fb.WithName("**Level**").WithValue($"{model.level}").WithIsInline(true))
-                            .AddField(fb => fb.WithName("**Quick Wins**").WithValue($"{model.Games.Quick.wins}").WithIsInline(true))
-                            .AddField(fb => fb.WithName("**Competitive Rank**").WithValue("0").WithIsInline(true))
-                            .AddField(fb => fb.WithName("**Quick Playtime**").WithValue($"{model.Playtime.quick}").WithIsInline(true))
+                            .WithIconUrl("https://cdn.discordapp.com/attachments/155726317222887425/255653487512256512/YZ4w2ey.png"))
+                            .WithThumbnailUrl(qp.OverallStats.avatar)
+                            .AddField(fb => fb.WithName(GetText("level")).WithValue((qp.OverallStats.level + (qp.OverallStats.prestige * 100)).ToString()).WithIsInline(true))
+                            .AddField(fb => fb.WithName(GetText("quick_wins")).WithValue(qp.OverallStats.wins.ToString()).WithIsInline(true))
+                            .AddField(fb => fb.WithName(GetText("compet_rank")).WithValue("0").WithIsInline(true))
+                            .AddField(fb => fb.WithName(GetText("quick_playtime")).WithValue($"{qp.GameStats.timePlayed}hrs").WithIsInline(true))
                             .WithOkColor();
                         await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
                     }
                     else
                     {
+                        var qp = model.Quickplay;
+                        var compet = model.Competitive;
                         var embed = new EmbedBuilder()
-                            .WithAuthor(eau => eau.WithName($"{model.username}")
-                            .WithUrl($"https://www.overbuff.com/players/pc/{battletag}")
-                            .WithIconUrl($"{model.avatar}"))
-                            .WithThumbnailUrl(rankimg)
-                            .AddField(fb => fb.WithName("**Level**").WithValue($"{model.level}").WithIsInline(true))
-                            .AddField(fb => fb.WithName("**Quick Wins**").WithValue($"{model.Games.Quick.wins}").WithIsInline(true))
-                            .AddField(fb => fb.WithName("**Competitive Wins**").WithValue($"{model.Games.Competitive.wins}").WithIsInline(true))
-                            .AddField(fb => fb.WithName("**Competitive Loses**").WithValue($"{model.Games.Competitive.lost}").WithIsInline(true))
-                            .AddField(fb => fb.WithName("**Competitive Played**").WithValue($"{model.Games.Competitive.played}").WithIsInline(true))
-                            .AddField(fb => fb.WithName("**Competitive Rank**").WithValue(rank).WithIsInline(true))
-                            .AddField(fb => fb.WithName("**Competitive Playtime**").WithValue($"{model.Playtime.competitive}").WithIsInline(true))
-                            .AddField(fb => fb.WithName("**Quick Playtime**").WithValue($"{model.Playtime.quick}").WithIsInline(true))
+                            .WithAuthor(eau => eau.WithName(query)
+                                .WithUrl($"https://www.overbuff.com/players/pc/{battletag}")
+                                .WithIconUrl(compet.OverallStats.rank_image))
+                            .WithThumbnailUrl(compet.OverallStats.avatar)
+                            .AddField(fb => fb.WithName(GetText("level")).WithValue((qp.OverallStats.level + (qp.OverallStats.prestige * 100)).ToString()).WithIsInline(true))
+                            .AddField(fb => fb.WithName(GetText("quick_wins")).WithValue(qp.OverallStats.wins.ToString()).WithIsInline(true))
+                            .AddField(fb => fb.WithName(GetText("compet_wins")).WithValue(compet.OverallStats.wins.ToString()).WithIsInline(true))
+                            .AddField(fb => fb.WithName(GetText("compet_loses")).WithValue(compet.OverallStats.losses.ToString()).WithIsInline(true))
+                            .AddField(fb => fb.WithName(GetText("compet_played")).WithValue(compet.OverallStats.games.ToString()).WithIsInline(true))
+                            .AddField(fb => fb.WithName(GetText("compet_rank")).WithValue(compet.OverallStats.comprank.ToString()).WithIsInline(true))
+                            .AddField(fb => fb.WithName(GetText("compet_playtime")).WithValue(compet.GameStats.timePlayed + "hrs").WithIsInline(true))
+                            .AddField(fb => fb.WithName(GetText("quick_playtime")).WithValue(qp.GameStats.timePlayed.ToString("F1") + "hrs").WithIsInline(true))
                             .WithColor(NadekoBot.OkColor);
                         await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
-                        return;
                     }
                 }
-                catch
+                else
                 {
-                    await Context.Channel.SendErrorAsync("Found no user! Please check the **Region** and **BattleTag** before trying again.");
+                    await ReplyErrorLocalized("ow_user_not_found").ConfigureAwait(false);
                 }
             }
-            public async Task<OverwatchApiModel.OverwatchPlayer.Data> GetProfile(string region, string battletag)
+            public async Task<OverwatchApiModel.OverwatchPlayer> GetProfile(Region region, string battletag)
             {
                 try
                 {
-                    using (var http = new HttpClient())
+                    using (var handler = new HttpClientHandler())
                     {
-                        var Url = await http.GetStringAsync($"https://api.lootbox.eu/pc/{region.ToLower()}/{battletag}/profile");
-                        var model = JsonConvert.DeserializeObject<OverwatchApiModel.OverwatchPlayer>(Url);
-                        return model.data;
+                        handler.ServerCertificateCustomValidationCallback = (x, y, z, e) => true;
+                        using (var http = new HttpClient(handler))
+                        {
+                            http.AddFakeHeaders();
+                            var url = $"https://owapi.nadekobot.me/api/v3/u/{battletag}/stats";
+                            System.Console.WriteLine(url);
+                            var res = await http.GetStringAsync($"https://owapi.nadekobot.me/api/v3/u/{battletag}/stats");
+                            var model = JsonConvert.DeserializeObject<OverwatchApiModel.OverwatchResponse>(res);
+                            switch (region)
+                            {
+                                case Region.Eu:
+                                    return model.Eu;
+                                case Region.Kr:
+                                    return model.Kr;
+                                default:
+                                    return model.Us;
+                            }
+                        }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _log.Warn(ex);
                     return null;
                 }
             }
