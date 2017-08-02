@@ -14,12 +14,11 @@ using SteamWebAPI2.Utilities;
 using System.Collections.Concurrent;
 using SteamWebAPI2.Interfaces;
 using System.Net.Http;
-using NadekoBot.Services;
 using Discord.WebSocket;
 
-namespace NadekoBot.Modules.Battlezone.Commands.BZ98
+namespace NadekoBot.Services.GamesList
 {
-    public class BZ98Service
+    public class GameListBZ98Service
     {
         private readonly IBotCredentials _creds;
         private readonly DbService _db;
@@ -42,7 +41,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
         /// </summary>
         static SteamUser steamInterface;
 
-        public BZ98Service(IBotCredentials creds, DbService db, DiscordShardedClient client)
+        public GameListBZ98Service(IBotCredentials creds, DbService db, DiscordShardedClient client)
         {
             _creds = creds;
             _db = db;
@@ -245,7 +244,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
         public EmbedBuilder GetTopEmbed()
         {
             return new EmbedBuilder()
-                .WithColor(new Discord.Color(255, 255, 255))
+                .WithColor(new Color(255, 255, 255))
                 .WithTitle("Battlezone 98 Redux Game List")
                 //.WithUrl()
                 .WithDescription($"List of games currently on BZ98 Redux matchmaking server\n`{Games.Count} Game(s)`")
@@ -559,7 +558,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
             string prop = null;
             Task<string> propTask = Task.Run(async () =>
             {
-                string propRet = await BZ98Service.GetShellMap(MapFile);
+                string propRet = await GameListBZ98Service.GetShellMap(MapFile);
                 return propRet;
             });
             prop = propTask.Result;
@@ -684,7 +683,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
             {
                 Task<string> modNameTask = Task.Run(async () =>
                 {
-                    string modNameRet = await BZ98Service.GetSteamWorkshopName(WorkshopID);
+                    string modNameRet = await GameListBZ98Service.GetSteamWorkshopName(WorkshopID);
                     return modNameRet;
                 });
                 var modName = modNameTask.Result;
@@ -722,7 +721,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ98
 
         public string GetFormattedName()
         {
-            UserData userData = BZ98Service.GetUserData(id, authType);
+            UserData userData = GameListBZ98Service.GetUserData(id, authType);
 
             if (userData != null && !string.IsNullOrWhiteSpace(userData.ProfileUrl))
             {

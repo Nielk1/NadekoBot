@@ -1,11 +1,8 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using NadekoBot.Extensions;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace NadekoBot.Services.GamesList
 {
@@ -15,21 +12,19 @@ namespace NadekoBot.Services.GamesList
         private readonly DbService _db;
         private readonly ILocalization _localization;
         private readonly NadekoStrings _strings;
-        //private readonly Timer checkWarTimer;
 
-        public ConcurrentDictionary<string, List<ITextChannel>> ActiveRequests { get; set; }
+        private readonly GameListBZ98Service _bz98;
+        private readonly GameListBZ2Service _bz2;
 
-        public GamesListService(DiscordShardedClient client, DbService db, ILocalization localization, NadekoStrings strings)
+        public GamesListService(DiscordShardedClient client, DbService db, ILocalization localization, NadekoStrings strings, GameListBZ98Service bz98, GameListBZ2Service bz2)
         {
             _client = client;
             _db = db;
             _localization = localization;
             _strings = strings;
 
-            using (var uow = _db.UnitOfWork)
-            {
-                ActiveRequests = new ConcurrentDictionary<string, List<ITextChannel>>();
-            }
+            _bz98 = bz98;
+            _bz2 = bz2;
         }
 
         public bool IsValidGameType(string type)
@@ -60,10 +55,64 @@ namespace NadekoBot.Services.GamesList
                     }
                     break;
                 case "bz2":
+                    await GamesBZ2(channel);
                     break;
                 case "bz98":
                 case "bz98r":
+                    await GamesBZ98(channel);
                     break;
+            }
+        }
+
+        public async Task GamesBZ2(ITextChannel channel)
+        {
+            using (channel.EnterTypingState())
+            {
+                var gamelist = await _bz2.GetGames();
+                if (gamelist == null)
+                {
+                    await channel.SendErrorAsync("Failed to get game list.").ConfigureAwait(false);
+                    return;
+                }
+
+                EmbedBuilder top = gamelist.GetTopEmbed();
+                await channel.EmbedAsync(top).ConfigureAwait(false);
+
+                var games = gamelist.GET.Where(dr => !dr.IsMarker());
+                int itr = 1;
+                int cnt = games.Count();
+                var gamesIter = games.Select(dr => dr.GetEmbed(itr++, cnt)).ToList();
+
+                foreach (var game in gamesIter)
+                {
+                    await channel.EmbedAsync(game).ConfigureAwait(false);
+                }
+            }
+        }
+
+        public async Task GamesBZ98(ITextChannel channel)
+        {
+            using (channel.EnterTypingState())
+            {
+                var gamelist = await _bz98.GetGames();
+                if (gamelist == null)
+                {
+                    await channel.SendErrorAsync("Failed to get game list.").ConfigureAwait(false);
+                    return;
+                }
+
+                EmbedBuilder top = gamelist.GetTopEmbed();
+                await channel.EmbedAsync(top).ConfigureAwait(false);
+
+                var games = gamelist.Games;
+                int itr = 1;
+                int cnt = games.Count();
+                var gamesIter = games.Select(dr => dr.GetEmbed(itr++, cnt)).ToList();
+
+                foreach (var game in gamesIter)
+                {
+                    await channel.EmbedAsync(game).ConfigureAwait(false);
+                }
             }
         }
     }

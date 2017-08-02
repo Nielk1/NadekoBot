@@ -15,9 +15,9 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NadekoBot.Modules.Battlezone.Commands.BZ2
+namespace NadekoBot.Services.GamesList
 {
-    public class BZ2Service
+    public class GameListBZ2Service
     {
         private readonly IBotCredentials _creds;
         private readonly DbService _db;
@@ -29,7 +29,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
         
         private Logger _log;
 
-        public BZ2Service(IBotCredentials creds, DbService db, DiscordShardedClient client)
+        public GameListBZ2Service(IBotCredentials creds, DbService db, DiscordShardedClient client)
         {
             _creds = creds;
             _db = db;
@@ -253,7 +253,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             return string.Empty;
         }
 
-        internal void SetBz2Service(BZ2Service bZ2Service)
+        internal void SetBz2Service(GameListBZ2Service bZ2Service)
         {
             GET.ForEach(dr => dr.SetBz2Service(bZ2Service));
         }
@@ -298,7 +298,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
         public string p { get; set; } // varchar(16)  | GAMEPORT_KEY
         public string l { get; set; } // locked
 
-        private BZ2Service _bz2;
+        private GameListBZ2Service _bz2;
 
         public RaknetPongResponse pong { get; set; }
 
@@ -604,7 +604,7 @@ namespace NadekoBot.Modules.Battlezone.Commands.BZ2
             return retVal;
         }
 
-        internal void SetBz2Service(BZ2Service bZ2Service)
+        internal void SetBz2Service(GameListBZ2Service bZ2Service)
         {
             _bz2 = bZ2Service;
         }
