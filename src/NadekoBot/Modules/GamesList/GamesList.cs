@@ -24,10 +24,13 @@ namespace NadekoBot.Modules.GamesList
         {
             var channel = Context.Channel as ITextChannel;
 
-
             if (!_service.IsValidGameType(type))
             {
-                await _service.GetGames(channel, "help", null);
+                var embed = new EmbedBuilder().WithOkColor()
+                                .WithTitle("Games List")
+                                .WithDescription($"<:game_icon_battlezone98redux:342134901975547916> `{Prefix}games bz98` | `{Prefix}games bz98r` | `{Prefix}games bzr`\n" +
+                                                 $"<:game_icon_battlezone2:342134902587785219> `{Prefix}games bz2`");
+                await channel.EmbedAsync(embed).ConfigureAwait(false);
                 return;
             }
 

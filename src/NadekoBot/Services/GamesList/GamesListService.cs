@@ -31,7 +31,6 @@ namespace NadekoBot.Services.GamesList
         {
             switch(type.ToLowerInvariant())
             {
-                case "help":
                 case "bz2":
                 case "bzr":
                 case "bz98":
@@ -46,15 +45,6 @@ namespace NadekoBot.Services.GamesList
         {
             switch (type.ToLowerInvariant())
             {
-                case "help":
-                    {
-                        var embed = new EmbedBuilder().WithOkColor()
-                                        .WithTitle("Games List")
-                                        .WithDescription("<:game_icon_battlezone98redux:342134901975547916> `.games bz98` | `.games bz98r` | `.games bzr`\n"
-                                                       + "<:game_icon_battlezone2:342134902587785219> `.games bz2`");
-                        await channel.EmbedAsync(embed).ConfigureAwait(false);
-                    }
-                    break;
                 case "bz2":
                     await GamesBZ2(channel);
                     break;
