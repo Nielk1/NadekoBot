@@ -53,9 +53,6 @@ namespace NadekoBot.Services.Database
         public DbSet<ModulePrefix> ModulePrefixes { get; set; }
         public DbSet<RewardedUser> RewardedUsers { get; set; }
 
-        //custom
-        public DbSet<BZ2GameProperty> BZ2GameProperties { get; set; }
-
         public NadekoContext() : base()
         {
 

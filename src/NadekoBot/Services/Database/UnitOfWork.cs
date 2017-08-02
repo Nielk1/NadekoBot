@@ -57,9 +57,6 @@ namespace NadekoBot.Services.Database
         private IWarningsRepository _warnings;
         public IWarningsRepository Warnings => _warnings ?? (_warnings = new WarningsRepository(_context));
 
-        private IBZ2GamePropertyRepository _bZ2GameProperties;
-        public IBZ2GamePropertyRepository BZ2GameProperties => _bZ2GameProperties ?? (_bZ2GameProperties = new BZ2GamePropertyRepository(_context));
-
         public UnitOfWork(NadekoContext context)
         {
             _context = context;

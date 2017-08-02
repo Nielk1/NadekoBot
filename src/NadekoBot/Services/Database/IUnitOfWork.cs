@@ -24,7 +24,6 @@ namespace NadekoBot.Services.Database
         IWaifuRepository Waifus { get; }
         IDiscordUserRepository DiscordUsers { get; }
         IWarningsRepository Warnings { get; }
-        IBZ2GamePropertyRepository BZ2GameProperties { get; }
 
         int Complete();
         Task<int> CompleteAsync();

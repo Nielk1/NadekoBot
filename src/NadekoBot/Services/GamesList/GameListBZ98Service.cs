@@ -206,23 +206,24 @@ namespace NadekoBot.Services.GamesList
             if (string.IsNullOrWhiteSpace(mapFile)) return null;
             mapFile = Path.GetFileNameWithoutExtension(mapFile);
             if (string.IsNullOrWhiteSpace(mapFile)) return null;
+            mapFile = mapFile.ToLowerInvariant();
 
             try
             {
                 using (var http = new HttpClient())
                 {
                     {
-                        var url = $"http://discord.battlezone.report/resources/bz98shellmaps/{mapFile}.jpg";
+                        var url = $"http://discord.battlezone.report/resources/meta/bz98/shellmaps/{mapFile}.jpg";
                         var reply = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
                         if (reply.StatusCode == System.Net.HttpStatusCode.OK) return url;
                     }
                     {
-                        var url = $"http://discord.battlezone.report/resources/bz98shellmaps/{mapFile}.jpeg";
+                        var url = $"http://discord.battlezone.report/resources/meta/bz98/shellmaps/{mapFile}.jpeg";
                         var reply = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
                         if (reply.StatusCode == System.Net.HttpStatusCode.OK) return url;
                     }
                     {
-                        var url = $"http://discord.battlezone.report/resources/bz98shellmaps/{mapFile}.png";
+                        var url = $"http://discord.battlezone.report/resources/meta/bz98/shellmaps/{mapFile}.png";
                         var reply = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
                         if (reply.StatusCode == System.Net.HttpStatusCode.OK) return url;
                     }

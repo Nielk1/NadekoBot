@@ -23,7 +23,7 @@ namespace NadekoBot.Services.GamesList
         private readonly DbService _db;
         private readonly DiscordShardedClient _client;
 
-        public ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
+        //public ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
 
         private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZ2&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId&__pluginShowSource=true&__pluginQueryServers=true&__pluginShowStatus=true";
         
@@ -36,7 +36,7 @@ namespace NadekoBot.Services.GamesList
             _client = client;
 
             _log = LogManager.GetCurrentClassLogger();
-            var sw = Stopwatch.StartNew();
+            /*var sw = Stopwatch.StartNew();
             using (var uow = _db.UnitOfWork)
             {
                 var items = uow.BZ2GameProperties.GetAll();
@@ -53,7 +53,7 @@ namespace NadekoBot.Services.GamesList
                 });
             }
             sw.Stop();
-            _log.Debug($"Loaded in {sw.Elapsed.TotalSeconds:F2}s");
+            _log.Debug($"Loaded in {sw.Elapsed.TotalSeconds:F2}s");*/
         }
 
         public async Task<RaknetData> GetGames()
@@ -72,8 +72,8 @@ namespace NadekoBot.Services.GamesList
 
         public string GetBZ2GameProperty(string termType, string term)
         {
-            if (BZ2GameProperties.ContainsKey(termType) && BZ2GameProperties[termType].ContainsKey(term))
-                return BZ2GameProperties[termType][term].Value;
+            //if (BZ2GameProperties.ContainsKey(termType) && BZ2GameProperties[termType].ContainsKey(term))
+            //    return BZ2GameProperties[termType][term].Value;
             return null;
         }
     }
