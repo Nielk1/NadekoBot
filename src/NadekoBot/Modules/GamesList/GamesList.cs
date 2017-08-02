@@ -22,13 +22,14 @@ namespace NadekoBot.Modules.GamesList
         [NadekoCommand, Usage, Description, Aliases]
         public async Task Games(string type, [Remainder] string restOfLine = null)
         {
-            if(!_service.IsValidGameType(type))
+            var channel = Context.Channel as ITextChannel;
+
+
+            if (!_service.IsValidGameType(type))
             {
-                await ReplyErrorLocalized("invalid_gametype").ConfigureAwait(false);
+                await _service.GetGames(channel, "help", null);
                 return;
             }
-
-            var channel = Context.Channel as ITextChannel;
 
             await _service.GetGames(channel, type, restOfLine);
         }

@@ -70,8 +70,18 @@ namespace NadekoBot.Services.GamesList
             }
         }
 
-        public string GetBZ2GameProperty(string termType, string term)
+        public async Task<string> GetBZ2GameProperty(string termType, string term)
         {
+            if (new string[] { "version", "mod" }.Contains(termType))
+            {
+                using (var http = new HttpClient())
+                {
+                    var url = $"http://discord.battlezone.report/resources/meta/bz2/{termType}/{term}";
+                    var reply = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+                    if (reply.StatusCode == System.Net.HttpStatusCode.OK) return url;
+                }
+                return null;
+            }
             //if (BZ2GameProperties.ContainsKey(termType) && BZ2GameProperties[termType].ContainsKey(term))
             //    return BZ2GameProperties[termType][term].Value;
             return null;
@@ -343,7 +353,7 @@ namespace NadekoBot.Services.GamesList
             return IsMatesFamilyMarker() || IsKebbzNetMarker() || IsIonDriverMarker();
         }
 
-        public EmbedBuilder GetEmbed(int idx, int total)
+        public async Task<EmbedBuilder> GetEmbed(int idx, int total)
         {
             string footer = $"[{idx}/{total}] ({m}.bzn)";
             if (pong != null && pong.CompressedData != null && pong.CompressedData.Mods.Length > 0)
@@ -352,10 +362,10 @@ namespace NadekoBot.Services.GamesList
             }
 
             EmbedBuilder embed = new EmbedBuilder()
-                .WithDescription(ToString())
+                .WithDescription(await GetGameDataString())
                 .WithFooter(efb => efb.WithText(footer));
 
-            string prop = _bz2.GetBZ2GameProperty("shell", Format.Sanitize(m));
+            string prop = await _bz2.GetBZ2GameProperty("shell", Format.Sanitize(m));
             embed.WithThumbnailUrl(prop ?? "http://discord.battlezone.report/resources/logos/nomap.png");
 
             string playerCountData = string.Empty;
@@ -430,11 +440,11 @@ namespace NadekoBot.Services.GamesList
             return embed;
         }
 
-        public override string ToString()
+        public async Task<string> GetGameDataString()
         {
-            string name = _bz2.GetBZ2GameProperty("name", m);
-            string version = _bz2.GetBZ2GameProperty("version", v);
-            string mod = _bz2.GetBZ2GameProperty("mod", d);
+            string name = await _bz2.GetBZ2GameProperty("name", m);
+            string version = await _bz2.GetBZ2GameProperty("version", v);
+            string mod = await _bz2.GetBZ2GameProperty("mod", d);
 
 
             StringBuilder builder = new StringBuilder();
