@@ -10,11 +10,7 @@ namespace NadekoBot.Modules.Searches.Commands.OMDB
 {
     public static class OmdbProvider
     {
-<<<<<<< HEAD
         private const string queryUrl = "https://omdbapi.nadekobot.me/?t={0}&y=&plot=full&r=json";
-=======
-        private const string queryUrl =  "http://omdbapi.nadekobot.me/?t={0}&y=&plot=full&r=json";
->>>>>>> refs/remotes/Kwoth/master
 
         public static async Task<OmdbMovie> FindMovie(string name, IGoogleApiService google)
         {
