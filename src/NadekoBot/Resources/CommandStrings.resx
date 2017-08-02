@@ -3517,6 +3517,6 @@
     <value>List multiplayer game sessions</value>
   </data>
   <data name="games_usage" xml:space="preserve">
-    <value>`{0}games help`</value>
+    <value>`{0}games`</value>
   </data>
 </root>

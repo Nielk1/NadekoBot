@@ -20,15 +20,19 @@ namespace NadekoBot.Modules.GamesList
         }
 
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task Games(string type, [Remainder] string restOfLine = null)
+        public async Task Games(string type = null, [Remainder] string restOfLine = null)
         {
-            if(!_service.IsValidGameType(type))
+            var channel = Context.Channel as ITextChannel;
+
+            if (string.IsNullOrWhiteSpace(type) || !_service.IsValidGameType(type))
             {
-                await ReplyErrorLocalized("invalid_gametype").ConfigureAwait(false);
+                var embed = new EmbedBuilder().WithOkColor()
+                                .WithTitle("Games List")
+                                .WithDescription($"<:game_icon_battlezone98redux:342134901975547916> `{Prefix}games bz98` | `{Prefix}games bz98r` | `{Prefix}games bzr`\n" +
+                                                 $"<:game_icon_battlezone2:342134902587785219> `{Prefix}games bz2`");
+                await channel.EmbedAsync(embed).ConfigureAwait(false);
                 return;
             }
-
-            var channel = Context.Channel as ITextChannel;
 
             await _service.GetGames(channel, type, restOfLine);
         }
