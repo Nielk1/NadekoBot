@@ -3555,4 +3555,13 @@
   <data name="gamesbz98_usage" xml:space="preserve">
     <value>`{0}gamesbz98` or `{0}gamesbz98r` or `{0}gamesbzr`</value>
   </data>
+  <data name="games_cmd" xml:space="preserve">
+    <value>games</value>
+  </data>
+  <data name="games_desc" xml:space="preserve">
+    <value>List multiplayer game sessions</value>
+  </data>
+  <data name="games_usage" xml:space="preserve">
+    <value>`{0}games help`</value>
+  </data>
 </root>
