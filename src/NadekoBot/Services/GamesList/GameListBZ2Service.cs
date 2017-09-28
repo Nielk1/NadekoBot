@@ -21,7 +21,7 @@ namespace NadekoBot.Services.GamesList
     {
         private readonly IBotCredentials _creds;
         private readonly DbService _db;
-        private readonly DiscordShardedClient _client;
+        private readonly DiscordSocketClient _client;
 
         //public ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
 
@@ -29,7 +29,7 @@ namespace NadekoBot.Services.GamesList
         
         private Logger _log;
 
-        public GameListBZ2Service(IBotCredentials creds, DbService db, DiscordShardedClient client)
+        public GameListBZ2Service(IBotCredentials creds, DbService db, DiscordSocketClient client)
         {
             _creds = creds;
             _db = db;

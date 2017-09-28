@@ -143,10 +143,11 @@ namespace NadekoBot
                 //var localization = new Localization(_botConfig.Locale, AllGuildConfigs.ToDictionary(x => x.GuildId, x => x.Locale), Db);
 
             #region gamesList
-            var bz98Service = new GameListBZ98Service(Credentials, Db, Client);
-            var bz2Service = new GameListBZ2Service(Credentials, Db, Client);
+            var bz98Service = new GameListBZ98Service(Credentials, _db, Client);
+            var bz2Service = new GameListBZ2Service(Credentials, _db, Client);
 
-            var gamesListService = new GamesListService(Client, Db, Localization, Strings, bz98Service, bz2Service);
+            //var gamesListService = new GamesListService(Client, _db, Localization, Strings, bz98Service, bz2Service);
+            var gamesListService = new GamesListService(Client, _db, bz98Service, bz2Service);
             #endregion
 
 
@@ -163,9 +164,9 @@ namespace NadekoBot
                     .AddManual<IUnitOfWork>(uow)
                     .AddManual<IDataCache>(new RedisCache(Client.CurrentUser.Id))
                     .LoadFrom(Assembly.GetEntryAssembly())
-                .Add<GameListBZ98Service>(bz98Service)
-                .Add<GameListBZ2Service>(bz2Service)
-                .Add<GamesListService>(gamesListService)
+                .AddManual<GameListBZ98Service>(bz98Service)
+                .AddManual<GameListBZ2Service>(bz2Service)
+                .AddManual<GamesListService>(gamesListService)
                 .Build();
 
                 var commandHandler = Services.GetService<CommandHandler>();

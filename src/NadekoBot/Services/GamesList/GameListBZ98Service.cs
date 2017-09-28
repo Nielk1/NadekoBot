@@ -22,7 +22,7 @@ namespace NadekoBot.Services.GamesList
     {
         private readonly IBotCredentials _creds;
         private readonly DbService _db;
-        private readonly DiscordShardedClient _client;
+        private readonly DiscordSocketClient _client;
 
         private const string filePath = "C:/Data/BZ98Gamelist.json";
 
@@ -41,7 +41,7 @@ namespace NadekoBot.Services.GamesList
         /// </summary>
         static SteamUser steamInterface;
 
-        public GameListBZ98Service(IBotCredentials creds, DbService db, DiscordShardedClient client)
+        public GameListBZ98Service(IBotCredentials creds, DbService db, DiscordSocketClient client)
         {
             _creds = creds;
             _db = db;

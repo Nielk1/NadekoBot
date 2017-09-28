@@ -8,20 +8,21 @@ namespace NadekoBot.Services.GamesList
 {
     public class GamesListService
     {
-        private readonly DiscordShardedClient _client;
+        private readonly DiscordSocketClient _client;
         private readonly DbService _db;
-        private readonly ILocalization _localization;
-        private readonly NadekoStrings _strings;
+        //private readonly ILocalization _localization;
+        //private readonly NadekoStrings _strings;
 
         private readonly GameListBZ98Service _bz98;
         private readonly GameListBZ2Service _bz2;
 
-        public GamesListService(DiscordShardedClient client, DbService db, ILocalization localization, NadekoStrings strings, GameListBZ98Service bz98, GameListBZ2Service bz2)
+        //public GamesListService(DiscordSocketClient client, DbService db, ILocalization localization, NadekoStrings strings, GameListBZ98Service bz98, GameListBZ2Service bz2)
+        public GamesListService(DiscordSocketClient client, DbService db, GameListBZ98Service bz98, GameListBZ2Service bz2)
         {
             _client = client;
             _db = db;
-            _localization = localization;
-            _strings = strings;
+            //_localization = localization;
+            //_strings = strings;
 
             _bz98 = bz98;
             _bz2 = bz2;
