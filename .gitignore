@@ -1,5 +1,6 @@
 #Manually added files
 
+patreon_rewards.json
 command_errors*.txt
 
 src/NadekoBot/Command Errors*.txt
@@ -355,3 +356,4 @@ __pycache__/
 
 ### VisualStudio Patch ###
 build/
+src/NadekoBot/credentials.json

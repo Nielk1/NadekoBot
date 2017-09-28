@@ -10,7 +10,7 @@ NadekoBot is an open source project, and it can be found on our [GitHub][GitHub]
 
 Here you can read current [Issues][Issues].
 
-If you want to contribute, be sure to PR on the **[1.4][1.4]** branch.
+If you want to contribute, be sure to PR on the current **[default][repo]** branch.
 
 ##Content
 - [About](about.md)
@@ -28,6 +28,7 @@ If you want to contribute, be sure to PR on the **[1.4][1.4]** branch.
 	- [Permissions System](Permissions System.md)
 	- [JSON Explanations](JSON Explanations.md)
 	- [Custom Reactions](Custom Reactions.md)
+	- [Placeholders](Placeholders.md)
 - [Frequently Asked Questions](Frequently Asked Questions.md)
 - [Contribution Guide](Contribution Guide.md)
 - [Donate](Donate.md)
@@ -36,4 +37,4 @@ If you want to contribute, be sure to PR on the **[1.4][1.4]** branch.
 [NadekoBot Server]: https://discord.gg/nadekobot
 [GitHub]: https://github.com/Kwoth/NadekoBot
 [Issues]: https://github.com/Kwoth/NadekoBot/issues
-[1.4]: https://github.com/Kwoth/NadekoBot/tree/1.4
+[repo]: https://github.com/Kwoth/NadekoBot

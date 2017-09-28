@@ -5,11 +5,12 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Services
 {
-    public interface IGoogleApiService
+    public interface IGoogleApiService : INService
     {
         IEnumerable<string> Languages { get; }
 
-        Task<IEnumerable<string>> GetVideosByKeywordsAsync(string keywords, int count = 1);
+        Task<IEnumerable<string>> GetVideoLinksByKeywordAsync(string keywords, int count = 1);
+        Task<IEnumerable<(string Name, string Id, string Url)>> GetVideoInfosByKeywordAsync(string keywords, int count = 1);
         Task<IEnumerable<string>> GetPlaylistIdsByKeywordsAsync(string keywords, int count = 1);
         Task<IEnumerable<string>> GetRelatedVideosAsync(string url, int count = 1);
         Task<IEnumerable<string>> GetPlaylistTracksAsync(string playlistId, int count = 50);

@@ -1,11 +1,8 @@
 ﻿using Discord;
 using Discord.Commands;
-using NadekoBot.Attributes;
+using NadekoBot.Common.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Services.GamesList;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace NadekoBot.Modules.GamesList
