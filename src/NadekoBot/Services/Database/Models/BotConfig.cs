@@ -28,6 +28,7 @@ namespace NadekoBot.Services.Database.Models
         public int MinimumBetAmount { get; set; } = 2;
         public float BetflipMultiplier { get; set; } = 1.95f;
         public int CurrencyDropAmount { get; set; } = 1;
+        public int? CurrencyDropAmountMax { get; set; } = null;
         public float Betroll67Multiplier { get; set; } = 2;
         public float Betroll91Multiplier { get; set; } = 4;
         public float Betroll100Multiplier { get; set; } = 10;
@@ -64,8 +65,11 @@ Nadeko Support Server: https://discord.gg/nadekobot";
         public List<StartupCommand> StartupCommands { get; set; }
         public HashSet<BlockedCmdOrMdl> BlockedCommands { get; set; }
         public HashSet<BlockedCmdOrMdl> BlockedModules { get; set; }
-        public int PermissionVersion { get; set; } = 1;
+        public int PermissionVersion { get; set; }
         public string DefaultPrefix { get; set; } = ".";
+        public bool CustomReactionsStartWith { get; set; } = false;
+        public int XpPerMessage { get; set; } = 3;
+        public int XpMinutesTimeout { get; set; } = 5;
     }
 
     public class BlockedCmdOrMdl : DbEntity

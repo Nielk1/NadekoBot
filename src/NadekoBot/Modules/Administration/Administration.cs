@@ -5,24 +5,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using NadekoBot.Common.Attributes;
 using NadekoBot.Services;
-using NadekoBot.Attributes;
+using NadekoBot.Modules.Administration.Services;
 using NadekoBot.Services.Database.Models;
-using NadekoBot.Services.Administration;
-using Discord.WebSocket;
 
 namespace NadekoBot.Modules.Administration
 {
-    public partial class Administration : NadekoTopLevelModule
+    public partial class Administration : NadekoTopLevelModule<AdministrationService>
     {
         private IGuild _nadekoSupportServer;
         private readonly DbService _db;
-        private readonly AdministrationService _admin;
 
-        public Administration(DbService db, AdministrationService admin)
+        public Administration(DbService db)
         {
             _db = db;
-            _admin = admin;
         }
 
         [NadekoCommand, Usage, Description, Aliases]
@@ -41,12 +38,12 @@ namespace NadekoBot.Modules.Administration
             }
             if (enabled)
             {
-                _admin.DeleteMessagesOnCommand.Add(Context.Guild.Id);
+                _service.DeleteMessagesOnCommand.Add(Context.Guild.Id);
                 await ReplyConfirmLocalized("delmsg_on").ConfigureAwait(false);
             }
             else
             {
-                _admin.DeleteMessagesOnCommand.TryRemove(Context.Guild.Id);
+                _service.DeleteMessagesOnCommand.TryRemove(Context.Guild.Id);
                 await ReplyConfirmLocalized("delmsg_off").ConfigureAwait(false);
             }
         }
@@ -59,7 +56,7 @@ namespace NadekoBot.Modules.Administration
         {
             var guser = (IGuildUser)Context.User;
             var maxRole = guser.GetRoles().Max(x => x.Position);
-            if ((Context.User.Id != Context.Guild.OwnerId) && (maxRole < role.Position || maxRole <= usr.GetRoles().Max(x => x.Position)))
+            if ((Context.User.Id != Context.Guild.OwnerId) && (maxRole <= role.Position || maxRole <= usr.GetRoles().Max(x => x.Position)))
                 return;
             try
             {
@@ -70,7 +67,7 @@ namespace NadekoBot.Modules.Administration
             catch (Exception ex)
             {
                 await ReplyErrorLocalized("setrole_err").ConfigureAwait(false);
-                Console.WriteLine(ex.ToString());
+                _log.Info(ex);
             }
         }
 
@@ -127,16 +124,15 @@ namespace NadekoBot.Modules.Administration
         {
             var guser = (IGuildUser)Context.User;
 
-            var userRoles = user.GetRoles();
-            if (guser.Id != Context.Guild.OwnerId && 
-                (user.Id == Context.Guild.OwnerId || guser.GetRoles().Max(x => x.Position) <= userRoles.Max(x => x.Position)))
+            var userRoles = user.GetRoles().Except(new[] { guser.Guild.EveryoneRole });
+            if (user.Id == Context.Guild.OwnerId || (Context.User.Id != Context.Guild.OwnerId && guser.GetRoles().Max(x => x.Position) <= userRoles.Max(x => x.Position)))
                 return;
             try
             {
                 await user.RemoveRolesAsync(userRoles).ConfigureAwait(false);
                 await ReplyConfirmLocalized("rar", Format.Bold(user.ToString())).ConfigureAwait(false);
             }
-            catch
+            catch (Exception)
             {
                 await ReplyErrorLocalized("rar_err").ConfigureAwait(false);
             }
@@ -309,65 +305,6 @@ namespace NadekoBot.Modules.Administration
             var channel = (ITextChannel)Context.Channel;
             await channel.ModifyAsync(c => c.Name = name).ConfigureAwait(false);
             await ReplyConfirmLocalized("set_channel_name").ConfigureAwait(false);
-        }
-
-
-        //delets her own messages, no perm required
-        [NadekoCommand, Usage, Description, Aliases]
-        [RequireContext(ContextType.Guild)]
-        public async Task Prune()
-        {
-            var user = await Context.Guild.GetCurrentUserAsync().ConfigureAwait(false);
-
-            var enumerable = (await Context.Channel.GetMessagesAsync().Flatten())
-                .Where(x => x.Author.Id == user.Id && DateTime.UtcNow - x.CreatedAt < twoWeeks);
-            await Context.Channel.DeleteMessagesAsync(enumerable).ConfigureAwait(false);
-            Context.Message.DeleteAfter(3);
-        }
-
-
-        private TimeSpan twoWeeks => TimeSpan.FromDays(14);
-        // prune x
-        [NadekoCommand, Usage, Description, Aliases]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(ChannelPermission.ManageMessages)]
-        [RequireBotPermission(GuildPermission.ManageMessages)]
-        [Priority(0)]
-        public async Task Prune(int count)
-        {
-            if (count < 1)
-                return;
-            await Context.Message.DeleteAsync().ConfigureAwait(false);
-            int limit = (count < 100) ? count + 1 : 100;
-            var enumerable = (await Context.Channel.GetMessagesAsync(limit: limit).Flatten().ConfigureAwait(false))
-                .Where(x => DateTime.UtcNow - x.CreatedAt < twoWeeks);
-            if (enumerable.FirstOrDefault()?.Id == Context.Message.Id)
-                enumerable = enumerable.Skip(1).ToArray();
-            else
-                enumerable = enumerable.Take(count);
-            await Context.Channel.DeleteMessagesAsync(enumerable).ConfigureAwait(false);
-        }
-
-        //prune @user [x]
-        [NadekoCommand, Usage, Description, Aliases]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(ChannelPermission.ManageMessages)]
-        [RequireBotPermission(GuildPermission.ManageMessages)]
-        [Priority(1)]
-        public async Task Prune(IGuildUser user, int count = 100)
-        {
-            if (count < 1)
-                return;
-
-            if (user.Id == Context.User.Id)
-                count += 1;
-
-            int limit = (count < 100) ? count : 100;
-            var enumerable = (await Context.Channel.GetMessagesAsync(limit: limit).Flatten())
-                .Where(m => m.Author == user && DateTime.UtcNow - m.CreatedAt < twoWeeks);
-            await Context.Channel.DeleteMessagesAsync(enumerable).ConfigureAwait(false);
-
-            Context.Message.DeleteAfter(3);
         }
 
         [NadekoCommand, Usage, Description, Aliases]

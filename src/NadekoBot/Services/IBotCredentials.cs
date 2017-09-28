@@ -16,20 +16,37 @@ namespace NadekoBot.Services
         string CarbonKey { get; }
 
         DBConfig Db { get; }
-        string SoundCloudClientId { get; }
         string OsuApiKey { get; }
 
         string SteamApiKey { get; }
 
         bool IsOwner(IUser u);
+        int TotalShards { get; }
+        string ShardRunCommand { get; }
+        string ShardRunArguments { get; }
+        string PatreonCampaignId { get; }
+        string CleverbotApiKey { get; }
+        RestartConfig RestartCommand { get; }
+    }
+
+    public class RestartConfig
+    {
+        public RestartConfig(string cmd, string args)
+        {
+            this.Cmd = cmd;
+            this.Args = args;
+        }
+
+        public string Cmd { get; }
+        public string Args { get; }
     }
 
     public class DBConfig
     {
-        public DBConfig(string type, string connString)
+        public DBConfig(string type, string connectionString)
         {
             this.Type = type;
-            this.ConnectionString = connString;
+            this.ConnectionString = connectionString;
         }
         public string Type { get; }
         public string ConnectionString { get; }
