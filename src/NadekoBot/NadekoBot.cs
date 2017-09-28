@@ -164,9 +164,9 @@ namespace NadekoBot
                     .AddManual<IUnitOfWork>(uow)
                     .AddManual<IDataCache>(new RedisCache(Client.CurrentUser.Id))
 
-                //.AddManual<GameListBZ98Service>(bz98Service)
-                //.AddManual<GameListBZ2Service>(bz2Service)
-                //.AddManual<GamesListService>(gamesListService)
+                .AddManual<GameListBZ98Service>(bz98Service)
+                .AddManual<GameListBZ2Service>(bz2Service)
+                .AddManual<GamesListService>(gamesListService)
 
                     .LoadFrom(Assembly.GetEntryAssembly())
                 .Build();
