@@ -3,7 +3,6 @@ using Discord.API;
 using Discord.WebSocket;
 using NadekoBot.Extensions;
 using NadekoBot.Services;
-using NadekoBot.Services.Database.Models;
 using Newtonsoft.Json;
 using NLog;
 using System;
@@ -19,8 +18,8 @@ namespace NadekoBot.Services.GamesList
 {
     public class GameListBZ2Service
     {
-        private readonly IBotCredentials _creds;
-        private readonly DbService _db;
+        //private readonly IBotCredentials _creds;
+        //private readonly DbService _db;
         private readonly DiscordSocketClient _client;
 
         //public ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
@@ -29,10 +28,10 @@ namespace NadekoBot.Services.GamesList
         
         private Logger _log;
 
-        public GameListBZ2Service(IBotCredentials creds, DbService db, DiscordSocketClient client)
+        public GameListBZ2Service(/*IBotCredentials creds, DbService db,*/ DiscordSocketClient client)
         {
-            _creds = creds;
-            _db = db;
+            //_creds = creds;
+            //_db = db;
             _client = client;
 
             _log = LogManager.GetCurrentClassLogger();

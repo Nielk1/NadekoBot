@@ -20,11 +20,9 @@ using NadekoBot.Common.ShardCom;
 using NadekoBot.Core.Services.Database;
 using StackExchange.Redis;
 using Newtonsoft.Json;
-<<<<<<< HEAD:src/NadekoBot/NadekoBot.cs
-using NadekoBot.Services.GamesList;
-=======
 using NadekoBot.Core.Common;
->>>>>>> 1.9:NadekoBot.Core/Services/NadekoBot.cs
+
+using NadekoBot.Services.GamesList;
 
 namespace NadekoBot
 {
@@ -69,7 +67,7 @@ namespace NadekoBot
             LogSetup.SetupLogger(shardId);
             _log = LogManager.GetCurrentClassLogger();
             TerribleElevatedPermissionCheck();
-            
+
             Credentials = new BotCredentials();
             Cache = new RedisCache(Credentials);
             _db = new DbService(Credentials);
@@ -136,22 +134,17 @@ namespace NadekoBot
 
                 IBotConfigProvider botConfigProvider = new BotConfigProvider(_db, _botConfig, Cache);
 
-<<<<<<< HEAD:src/NadekoBot/NadekoBot.cs
             #region gamesList
-            var bz98Service = new GameListBZ98Service(Credentials, _db, Client);
-            var bz2Service = new GameListBZ2Service(Credentials, _db, Client);
+                var bz98Service = new GameListBZ98Service(Credentials, /*_db,*/ Client);
+                var bz2Service = new GameListBZ2Service(/*Credentials, _db,*/ Client);
 
-            //var gamesListService = new GamesListService(Client, _db, Localization, Strings, bz98Service, bz2Service);
-            var gamesListService = new GamesListService(Client, _db, bz98Service, bz2Service);
+                //var gamesListService = new GamesListService(Client, _db, Localization, Strings, bz98Service, bz2Service);
+                var gamesListService = new GamesListService(Client, /*_db,*/ bz98Service, bz2Service);
             #endregion
 
 
-            //initialize Services
-            Services = new NServiceProvider.ServiceProviderBuilder()
-=======
                 //initialize Services
                 Services = new NServiceProvider()
->>>>>>> 1.9:NadekoBot.Core/Services/NadekoBot.cs
                     .AddManual<IBotCredentials>(Credentials)
                     .AddManual(_db)
                     .AddManual(Client)
@@ -159,35 +152,18 @@ namespace NadekoBot
                     .AddManual(botConfigProvider)
                     .AddManual<NadekoBot>(this)
                     .AddManual<IUnitOfWork>(uow)
-<<<<<<< HEAD:src/NadekoBot/NadekoBot.cs
-                    .AddManual<IDataCache>(new RedisCache(Client.CurrentUser.Id))
-
-                .AddManual<GameListBZ98Service>(bz98Service)
-                .AddManual<GameListBZ2Service>(bz2Service)
-                .AddManual<GamesListService>(gamesListService)
-
-                    .LoadFrom(Assembly.GetEntryAssembly())
-                .Build();
-=======
+                #region gamesList
+                    .AddManual<GameListBZ98Service>(bz98Service)
+                    .AddManual<GameListBZ2Service>(bz2Service)
+                    .AddManual<GamesListService>(gamesListService)
+                #endregion
                     .AddManual<IDataCache>(Cache);
 
                 Services.LoadFrom(Assembly.GetAssembly(typeof(CommandHandler)));
->>>>>>> 1.9:NadekoBot.Core/Services/NadekoBot.cs
 
                 var commandHandler = Services.GetService<CommandHandler>();
                 commandHandler.AddServices(Services);
 
-<<<<<<< HEAD:src/NadekoBot/NadekoBot.cs
-            //setup typereaders
-            CommandService.AddTypeReader<PermissionAction>(new PermissionActionTypeReader());
-                CommandService.AddTypeReader<CommandInfo>(new CommandTypeReader());
-                CommandService.AddTypeReader<CommandOrCrInfo>(new CommandOrCrTypeReader());
-            CommandService.AddTypeReader<ModuleInfo>(new ModuleTypeReader(CommandService));
-            CommandService.AddTypeReader<ModuleOrCrInfo>(new ModuleOrCrTypeReader(CommandService));
-            CommandService.AddTypeReader<IGuild>(new GuildTypeReader(Client));
-                CommandService.AddTypeReader<GuildDateTime>(new GuildDateTimeTypeReader());
-        }
-=======
                 LoadTypeReaders(typeof(NadekoBot).Assembly);
             }
             Services.Unload(typeof(IUnitOfWork)); // unload it after the startup
@@ -229,7 +205,6 @@ namespace NadekoBot
             }
 
             return toReturn;
->>>>>>> 1.9:NadekoBot.Core/Services/NadekoBot.cs
         }
 
         private async Task LoginAsync(string token)
@@ -314,28 +289,19 @@ namespace NadekoBot
 
             var _ = await CommandService.AddModulesAsync(this.GetType().GetTypeInfo().Assembly);
 
-            
+
             bool isPublicNadeko = false;
 #if GLOBAL_NADEKO
             isPublicNadeko = true;
 #endif
             //unload modules which are not available on the public bot
 
-<<<<<<< HEAD:src/NadekoBot/NadekoBot.cs
-            if(isPublicNadeko)
-            CommandService
-                .Modules
-                .ToArray()
-                .Where(x => x.Preconditions.Any(y => y.GetType() == typeof(NoPublicBot)))
-                .ForEach(x => CommandService.RemoveModuleAsync(x));
-=======
             if (isPublicNadeko)
                 CommandService
                     .Modules
                     .ToArray()
                     .Where(x => x.Preconditions.Any(y => y.GetType() == typeof(NoPublicBot)))
                     .ForEach(x => CommandService.RemoveModuleAsync(x));
->>>>>>> 1.9:NadekoBot.Core/Services/NadekoBot.cs
 
             Ready.TrySetResult(true);
             HandleStatusChanges();
@@ -355,17 +321,7 @@ namespace NadekoBot
         public async Task RunAndBlockAsync(params string[] args)
         {
             await RunAsync(args).ConfigureAwait(false);
-<<<<<<< HEAD:src/NadekoBot/NadekoBot.cs
-            StartSendingData();
-            if (ShardCoord != null)
-                await ShardCoord.RunAndBlockAsync();
-            else
-            {
             await Task.Delay(-1).ConfigureAwait(false);
-        }
-=======
-            await Task.Delay(-1).ConfigureAwait(false);
->>>>>>> 1.9:NadekoBot.Core/Services/NadekoBot.cs
         }
 
         private void TerribleElevatedPermissionCheck()
@@ -387,8 +343,8 @@ namespace NadekoBot
         {
             new Thread(new ThreadStart(() =>
             {
-            try
-            {
+                try
+                {
                     var p = Process.GetProcessById(parentProcessId);
                     if (p == null)
                         return;
@@ -424,19 +380,12 @@ namespace NadekoBot
                 {
                     var obj = new { Name = "", Url = "" };
                     obj = JsonConvert.DeserializeAnonymousType(streamData, obj);
-<<<<<<< HEAD:src/NadekoBot/NadekoBot.cs
-                    await Client.SetGameAsync(obj.Name, obj.Url, StreamType.Twitch).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-=======
                     await Client.SetGameAsync(obj.Name, obj.Url, ActivityType.Streaming).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
->>>>>>> 1.9:NadekoBot.Core/Services/NadekoBot.cs
                     _log.Warn(ex);
-            }
+                }
             }, CommandFlags.FireAndForget);
         }
 
@@ -445,7 +394,7 @@ namespace NadekoBot
             var obj = new { Name = game, Activity = type };
             var sub = Services.GetService<IDataCache>().Redis.GetSubscriber();
             return sub.PublishAsync(Client.CurrentUser.Id + "_status.game_set", JsonConvert.SerializeObject(obj));
-    }
+        }
 
         public Task SetStreamAsync(string name, string url)
         {

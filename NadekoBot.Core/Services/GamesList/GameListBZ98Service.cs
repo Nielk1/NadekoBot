@@ -15,13 +15,14 @@ using System.Collections.Concurrent;
 using SteamWebAPI2.Interfaces;
 using System.Net.Http;
 using Discord.WebSocket;
+using NadekoBot.Core.Services;
 
 namespace NadekoBot.Services.GamesList
 {
     public class GameListBZ98Service
     {
         private readonly IBotCredentials _creds;
-        private readonly DbService _db;
+        //private readonly DbService _db;
         private readonly DiscordSocketClient _client;
 
         private const string filePath = "C:/Data/BZ98Gamelist.json";
@@ -41,10 +42,10 @@ namespace NadekoBot.Services.GamesList
         /// </summary>
         static SteamUser steamInterface;
 
-        public GameListBZ98Service(IBotCredentials creds, DbService db, DiscordSocketClient client)
+        public GameListBZ98Service(IBotCredentials creds, /*DbService db,*/ DiscordSocketClient client)
         {
             _creds = creds;
-            _db = db;
+            //_db = db;
             _client = client;
 
             // Build SteamUser SteamWebAPI interface
