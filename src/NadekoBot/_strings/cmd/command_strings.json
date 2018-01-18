@@ -1,4 +1,3 @@
-
 {
   "h": {
     "Cmd": "help h",
@@ -3293,6 +3292,13 @@
     "usage": [
       "{0}xpreset @b1nzy",
       "{0}xpreset"
+    ]
+  },
+  "games": {
+    "cmd": "games",
+    "desc": "List multiplayer game sessions..",
+    "usage": [
+      "{0}games"
     ]
   }
 }
