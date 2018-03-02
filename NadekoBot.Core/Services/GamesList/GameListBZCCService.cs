@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.API;
 using Discord.WebSocket;
+using NadekoBot.Core.Services;
 using NadekoBot.Extensions;
 using NadekoBot.Services;
 using Newtonsoft.Json;
@@ -16,13 +17,15 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GameListBZCCService
+    public class GameListBZCCService : INService
     {
         //private readonly IBotCredentials _creds;
         //private readonly DbService _db;
         private readonly DiscordSocketClient _client;
 
         //public ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
+
+        private readonly SteamService _steam;
 
         /// <summary>
         /// Workshop name cache
@@ -33,7 +36,7 @@ namespace NadekoBot.Services.GamesList
 
         private Logger _log;
 
-        public GameListBZCCService(/*IBotCredentials creds, DbService db,*/ DiscordSocketClient client)
+        public GameListBZCCService(/*IBotCredentials creds, DbService db,*/ DiscordSocketClient client, SteamService steam)
         {
             //_creds = creds;
             //_db = db;
@@ -58,6 +61,8 @@ namespace NadekoBot.Services.GamesList
             }
             sw.Stop();
             _log.Debug($"Loaded in {sw.Elapsed.TotalSeconds:F2}s");*/
+
+            _steam = steam;
         }
 
         public async Task<BZCCRaknetData> GetGames()
@@ -311,7 +316,7 @@ namespace NadekoBot.Services.GamesList
                 {
                     Task<string> modNameTask = Task.Run(async () =>
                     {
-                        string modNameRet = await GameListBZ98Service.GetSteamWorkshopName(workshopIdNum.ToString());
+                        string modNameRet = await _steam.GetSteamWorkshopName(workshopIdNum.ToString());
                         return modNameRet;
                     });
                     var modName = modNameTask.Result;
@@ -387,7 +392,7 @@ namespace NadekoBot.Services.GamesList
                     if (pl.Length > 0)
                     {
                         embed.AddField(efb => efb.WithName("(K/D/S) Players").WithValue(
-                            string.Join("\r\n", pl.Select(player => $"{player.k}/{player.d}/{player.s}"))
+                            string.Join("\r\n", pl.Select(player => $"{player.k}/{player.d}/{player.s} {player.n}"))
                         ).WithIsInline(false));
                     }
                 }
@@ -529,6 +534,12 @@ namespace NadekoBot.Services.GamesList
         internal void SetBzccService(GameListBZCCService bZCCService)
         {
             _bzcc = bZCCService;
+        }
+
+        private SteamService _steam;
+        internal void SetSteamService(SteamService steam)
+        {
+            _steam = steam;
         }
     }
 }

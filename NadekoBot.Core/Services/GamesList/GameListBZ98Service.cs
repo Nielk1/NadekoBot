@@ -19,38 +19,23 @@ using NadekoBot.Core.Services;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GameListBZ98Service
+    public class GameListBZ98Service : INService
     {
         private readonly IBotCredentials _creds;
         //private readonly DbService _db;
         private readonly DiscordSocketClient _client;
 
+        private readonly SteamService _steam;
+
         private const string filePath = "C:/Data/BZ98Gamelist.json";
 
-        /// <summary>
-        /// Steam PlayerSummary cache
-        /// </summary>
-        static ConcurrentDictionary<ulong, Tuple<DateTime, PlayerSummaryModel>> steamPlayerCache = new ConcurrentDictionary<ulong, Tuple<DateTime, PlayerSummaryModel>>();
-
-        /// <summary>
-        /// Workshop name cache
-        /// </summary>
-        static ConcurrentDictionary<string, Tuple<DateTime, string>> steamWorkshopNameCache = new ConcurrentDictionary<string, Tuple<DateTime, string>>();
-
-        /// <summary>
-        /// SteamUser WebAPI Interface
-        /// </summary>
-        static SteamUser steamInterface;
-
-        public GameListBZ98Service(IBotCredentials creds, /*DbService db,*/ DiscordSocketClient client)
+        public GameListBZ98Service(IBotCredentials creds, /*DbService db,*/ DiscordSocketClient client, SteamService steam)
         {
             _creds = creds;
             //_db = db;
             _client = client;
 
-            // Build SteamUser SteamWebAPI interface
-            if (!string.IsNullOrWhiteSpace(_creds.SteamApiKey))
-                steamInterface = new SteamUser(_creds.SteamApiKey);
+            _steam = steam;
         }
 
         public async Task<BZ98ServerData> GetGames()
@@ -60,6 +45,7 @@ namespace NadekoBot.Services.GamesList
             if (string.IsNullOrWhiteSpace(gameData.Item1)) return null;
 
             var LobbyData = JsonConvert.DeserializeObject<Dictionary<string, Lobby>>(gameData.Item1);
+            LobbyData.ForEach(dr => dr.Value.SetSteamService(_steam));
             return new BZ98ServerData() {
                 Games = LobbyData.Where(dr => !dr.Value.isChat
                                            && (!dr.Value.isPrivate || (dr.Value.isPrivate && dr.Value.IsPassworded == true))
@@ -100,9 +86,8 @@ namespace NadekoBot.Services.GamesList
         /// <param name="id">ID of user in BZ98</param>
         /// <param name="type">Auth type of user in BZ98</param>
         /// <returns></returns>
-        public static UserData GetUserData(string id, string type)
+        public async Task<UserData> GetUserData(string id, string type)
         {
-            if (steamInterface == null) return null;
             if (string.IsNullOrWhiteSpace(id)) return null;
             if (string.IsNullOrWhiteSpace(type)) return null;
 
@@ -111,40 +96,14 @@ namespace NadekoBot.Services.GamesList
                 ulong playerID = 0;
                 if (ulong.TryParse(id.Substring(1), out playerID))
                 {
-                    Tuple<DateTime, PlayerSummaryModel> newPlayerData = null;
-                    if (steamPlayerCache.TryGetValue(playerID, out newPlayerData))
-                    {
-                        if (newPlayerData.Item1 > DateTime.UtcNow)
-                        {
-                            newPlayerData = null;
-                        }
-                    }
-
-                    if (newPlayerData == null)
-                    {
-                        Task<ISteamWebResponse<PlayerSummaryModel>> playerDataTask = Task.Run(async () =>
-                        {
-                            ISteamWebResponse<PlayerSummaryModel> msg = await steamInterface.GetPlayerSummaryAsync(playerID);
-                            return msg;
-                        });
-
-                        var playerData = playerDataTask.Result;
-
-                        newPlayerData = new Tuple<DateTime, PlayerSummaryModel>(DateTime.UtcNow.AddHours(1), playerData.Data);
-
-                        steamPlayerCache.AddOrUpdate(playerID, newPlayerData,
-                            (key, existingVal) =>
-                            {
-                                return newPlayerData;
-                            });
-                    }
+                    PlayerSummaryModel newPlayerData = await _steam.GetSteamUserData(playerID);
 
                     if (newPlayerData != null)
                     {
                         return new UserData()
                         {
-                            AvatarUrl = newPlayerData.Item2.AvatarFullUrl,
-                            ProfileUrl = newPlayerData.Item2.ProfileUrl
+                            AvatarUrl = newPlayerData.AvatarFullUrl,
+                            ProfileUrl = newPlayerData.ProfileUrl
                         };
                     }
                 }
@@ -153,54 +112,6 @@ namespace NadekoBot.Services.GamesList
             return null;
         }
 
-        public static async Task<string> GetSteamWorkshopName(string workshopId)
-        {
-            if (string.IsNullOrWhiteSpace(workshopId)) return null;
-
-            Tuple<DateTime, string> newWorkshopName = null;
-            if (steamWorkshopNameCache.TryGetValue(workshopId, out newWorkshopName))
-            {
-                if (newWorkshopName.Item1 > DateTime.UtcNow)
-                {
-                    newWorkshopName = null;
-                }
-            }
-
-            if (newWorkshopName == null)
-            {
-                try
-                {
-                    using (var http = new HttpClient())
-                    {
-                        var reqString = $"http://steamcommunity.com/sharedfiles/filedetails/?id={workshopId}";
-                        var rawText = (await http.GetStringAsync(reqString).ConfigureAwait(false));
-
-                        var matches = System.Text.RegularExpressions.Regex.Matches(rawText, "<\\s*div\\s+class\\s*=\\s*\"workshopItemTitle\"\\s*>(.*)<\\s*/\\s*div\\s*>");
-                        string found = null;
-                        if (matches.Count > 0)
-                        {
-                            if (matches[0].Groups.Count > 1)
-                            {
-                                found = matches[0].Groups[1].Value.Trim();
-                            }
-                        }
-
-                        newWorkshopName = new Tuple<DateTime, string>(DateTime.UtcNow.AddHours(24), found);
-                        steamWorkshopNameCache.AddOrUpdate(workshopId, newWorkshopName,
-                         (key, existingVal) =>
-                         {
-                             return newWorkshopName;
-                         });
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //_log.Warn(ex, "Steam Workshop scan failed");
-                }
-            }
-
-            return newWorkshopName.Item2;
-        }
 
         public static async Task<string> GetShellMap(string mapFile)
         {
@@ -685,7 +596,7 @@ namespace NadekoBot.Services.GamesList
             {
                 Task<string> modNameTask = Task.Run(async () =>
                 {
-                    string modNameRet = await GameListBZ98Service.GetSteamWorkshopName(WorkshopID);
+                    string modNameRet = await _steam.GetSteamWorkshopName(WorkshopID);
                     return modNameRet;
                 });
                 var modName = modNameTask.Result;
@@ -701,6 +612,12 @@ namespace NadekoBot.Services.GamesList
             }
 
             return retVal;
+        }
+
+        private SteamService _steam;
+        internal void SetSteamService(SteamService steam)
+        {
+            _steam = steam;
         }
     }
 
@@ -723,7 +640,7 @@ namespace NadekoBot.Services.GamesList
 
         public string GetFormattedName()
         {
-            UserData userData = GameListBZ98Service.GetUserData(id, authType);
+            UserData userData = null;// GameListBZ98Service.GetUserData(id, authType);
 
             if (userData != null && !string.IsNullOrWhiteSpace(userData.ProfileUrl))
             {

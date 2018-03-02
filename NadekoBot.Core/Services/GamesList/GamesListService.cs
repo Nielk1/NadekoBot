@@ -3,10 +3,11 @@ using Discord.WebSocket;
 using NadekoBot.Extensions;
 using System.Threading.Tasks;
 using System.Linq;
+using NadekoBot.Core.Services;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GamesListService
+    public class GamesListService : INService
     {
         private readonly DiscordSocketClient _client;
         //private readonly DbService _db;

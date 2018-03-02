@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.API;
 using Discord.WebSocket;
+using NadekoBot.Core.Services;
 using NadekoBot.Extensions;
 using NadekoBot.Services;
 using Newtonsoft.Json;
@@ -16,12 +17,12 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GameListBZ2Service
+    public class GameListBZ2Service : INService
     {
         //private readonly IBotCredentials _creds;
         //private readonly DbService _db;
         private readonly DiscordSocketClient _client;
-
+        
         //public ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
 
         private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZ2&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId&__pluginShowSource=true&__pluginQueryServers=true&__pluginShowStatus=true";
