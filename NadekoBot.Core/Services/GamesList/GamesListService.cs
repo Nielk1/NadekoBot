@@ -15,9 +15,13 @@ namespace NadekoBot.Services.GamesList
 
         private readonly GameListBZ98Service _bz98;
         private readonly GameListBZ2Service _bz2;
+        private readonly GameListBZCCService _bzcc;
 
         //public GamesListService(DiscordSocketClient client, DbService db, ILocalization localization, NadekoStrings strings, GameListBZ98Service bz98, GameListBZ2Service bz2)
-        public GamesListService(DiscordSocketClient client, /*DbService db,*/ GameListBZ98Service bz98, GameListBZ2Service bz2)
+        public GamesListService(DiscordSocketClient client, /*DbService db,*/
+            GameListBZ98Service bz98,
+            GameListBZ2Service bz2,
+            GameListBZCCService bzcc)
         {
             _client = client;
             //_db = db;
@@ -26,6 +30,7 @@ namespace NadekoBot.Services.GamesList
 
             _bz98 = bz98;
             _bz2 = bz2;
+            _bzcc = bzcc;
         }
 
         public bool IsValidGameType(string type)
@@ -36,6 +41,7 @@ namespace NadekoBot.Services.GamesList
                 case "bzr":
                 case "bz98":
                 case "bz98r":
+                case "bzcc":
                     return true;
             }
 
@@ -54,6 +60,35 @@ namespace NadekoBot.Services.GamesList
                 case "bz98r":
                     await GamesBZ98(channel);
                     break;
+                case "bzcc":
+                    await GamesBZCC(channel);
+                    break;
+            }
+        }
+
+        public async Task GamesBZCC(ITextChannel channel)
+        {
+            using (channel.EnterTypingState())
+            {
+                var gamelist = await _bzcc.GetGames();
+                if (gamelist == null)
+                {
+                    await channel.SendErrorAsync("Failed to get game list.").ConfigureAwait(false);
+                    return;
+                }
+
+                EmbedBuilder top = gamelist.GetTopEmbed();
+                await channel.EmbedAsync(top).ConfigureAwait(false);
+
+                var games = gamelist.GET;//.Where(dr => !dr.IsMarker());
+                int itr = 1;
+                int cnt = games.Count();
+                var gamesIter = games.Select(dr => dr.GetEmbed(itr++, cnt)).ToList();
+
+                foreach (var game in gamesIter)
+                {
+                    await channel.EmbedAsync(await game).ConfigureAwait(false);
+                }
             }
         }
 

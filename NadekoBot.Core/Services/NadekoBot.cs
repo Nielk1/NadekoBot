@@ -137,9 +137,10 @@ namespace NadekoBot
                 #region gamesList
                 var bz98Service = new GameListBZ98Service(Credentials, /*_db,*/ Client);
                 var bz2Service = new GameListBZ2Service(/*Credentials, _db,*/ Client);
+                var bzccService = new GameListBZCCService(/*Credentials, _db,*/ Client);
 
                 //var gamesListService = new GamesListService(Client, _db, Localization, Strings, bz98Service, bz2Service);
-                var gamesListService = new GamesListService(Client, /*_db,*/ bz98Service, bz2Service);
+                var gamesListService = new GamesListService(Client, /*_db,*/ bz98Service, bz2Service, bzccService);
                 #endregion
 
                 //initialize Services

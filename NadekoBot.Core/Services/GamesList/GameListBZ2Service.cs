@@ -143,7 +143,7 @@ namespace NadekoBot.Services.GamesList
                 embed.AddField(efb => efb.WithName("IonDriver").WithValue("❓ Unknown").WithIsInline(true));
             }
             //////////////////////////////////////////////////////////////////////////////////////////////
-            embed.AddField(efb => efb.WithName("Raknet").WithValue("⛔ Dead").WithIsInline(true));
+            //embed.AddField(efb => efb.WithName("Raknet").WithValue("⛔ Dead").WithIsInline(true));
             //////////////////////////////////////////////////////////////////////////////////////////////
             if (isMatesFamily)
             {
@@ -184,7 +184,7 @@ namespace NadekoBot.Services.GamesList
                 embed.AddField(efb => efb.WithName("MatesFamily (Primary)").WithValue("❓ Unknown").WithIsInline(true));
             }
             //////////////////////////////////////////////////////////////////////////////////////////////
-            if (isKebbzNet)
+            /*if (isKebbzNet)
             {
                 if (statusKebbzNet == "new")
                 {
@@ -221,7 +221,7 @@ namespace NadekoBot.Services.GamesList
             else
             {
                 embed.AddField(efb => efb.WithName("Kebbznet").WithValue("❓ Unknown").WithIsInline(true));
-            }
+            }*/
             //////////////////////////////////////////////////////////////////////////////////////////////
 
             return embed;
@@ -360,8 +360,10 @@ namespace NadekoBot.Services.GamesList
                 footer += " " + Format.Sanitize(pong.CompressedData.Mods);
             }
 
+            string embedMessage = await GetGameDataString();
+            if (embedMessage.Length > 2048) embedMessage = embedMessage.Substring(0, 2048 - 1) + @"…";
             EmbedBuilder embed = new EmbedBuilder()
-                .WithDescription(await GetGameDataString())
+                .WithDescription(embedMessage)
                 .WithFooter(efb => efb.WithText(footer));
 
             string prop = await _bz2.GetBZ2GameProperty("shell", Format.Sanitize(m));
