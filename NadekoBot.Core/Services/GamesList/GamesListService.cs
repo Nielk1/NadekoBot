@@ -16,30 +16,34 @@ namespace NadekoBot.Services.GamesList
         //private readonly ILocalization _localization;
         //private readonly NadekoStrings _strings;
 
-        private readonly GameListBZ98Service _bz98;
-        private readonly GameListBZ2Service _bz2;
-        private readonly GameListBZCCService _bzcc;
+        private GameListBZ98Service _bz98;
+        private GameListBZ2Service _bz2;
+        private GameListBZCCService _bzcc;
 
         //public GamesListService(DiscordSocketClient client, DbService db, ILocalization localization, NadekoStrings strings, GameListBZ98Service bz98, GameListBZ2Service bz2)
         public GamesListService(
-            DiscordSocketClient client, /*DbService db,*/
-            GameListBZ98Service bz98,
-            GameListBZ2Service bz2,
-            GameListBZCCService bzcc)
+            DiscordSocketClient client//, /*DbService db,*/
+            //GameListBZ98Service bz98,
+            //GameListBZ2Service bz2,
+            //GameListBZCCService bzcc
+            )
         {
             _client = client;
             //_db = db;
             //_localization = localization;
             //_strings = strings;
 
-            _bz98 = bz98;
-            _bz2 = bz2;
-            _bzcc = bzcc;
+            //_bz98 = bz98;
+            //_bz2 = bz2;
+            //_bzcc = bzcc;
 
             //IEnumerable<INGameList> GameLists = services.Where(x => x.GetType().GetInterfaces().Contains(typeof(INGameList))).Select(x => (INGameList)x).ToList();
-
             //_bzcc = (GameListBZCCService)(GameLists.Where(dr => dr.GetType() == typeof(GameListBZCCService)).First());
         }
+
+        public void AddGameListBZ98Service(GameListBZ98Service x) { _bz98 = x; }
+        public void AddGameListBZ2Service(GameListBZ2Service x) { _bz2 = x; }
+        public void AddGameListBZCCService(GameListBZCCService x) { _bzcc = x; }
 
         public bool IsValidGameType(string type)
         {

@@ -27,7 +27,8 @@ namespace NadekoBot.Services.GamesList
         //public ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
 
         private readonly SteamService _steam;
-
+        private readonly GamesListService _gameList;
+        
         /// <summary>
         /// Workshop name cache
         /// </summary>
@@ -37,7 +38,7 @@ namespace NadekoBot.Services.GamesList
 
         private Logger _log;
 
-        public GameListBZCCService(/*IBotCredentials creds, DbService db,*/ DiscordSocketClient client, SteamService steam)
+        public GameListBZCCService(/*IBotCredentials creds, DbService db,*/ DiscordSocketClient client, SteamService steam, GamesListService gameList)
         {
             //_creds = creds;
             //_db = db;
@@ -64,6 +65,9 @@ namespace NadekoBot.Services.GamesList
             _log.Debug($"Loaded in {sw.Elapsed.TotalSeconds:F2}s");*/
 
             _steam = steam;
+
+            _gameList = gameList;
+            _gameList.AddGameListBZCCService(this);
         }
 
         public async Task<BZCCRaknetData> GetGames()
