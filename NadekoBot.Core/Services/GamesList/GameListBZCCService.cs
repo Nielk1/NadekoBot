@@ -2,6 +2,7 @@
 using Discord.API;
 using Discord.WebSocket;
 using NadekoBot.Core.Services;
+using NadekoBot.Core.Services.GamesList;
 using NadekoBot.Extensions;
 using NadekoBot.Services;
 using Newtonsoft.Json;
@@ -17,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GameListBZCCService : INService
+    public class GameListBZCCService : INService, INGameList
     {
         //private readonly IBotCredentials _creds;
         //private readonly DbService _db;

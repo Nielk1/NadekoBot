@@ -4,6 +4,8 @@ using NadekoBot.Extensions;
 using System.Threading.Tasks;
 using System.Linq;
 using NadekoBot.Core.Services;
+using NadekoBot.Core.Services.GamesList;
+using System.Collections.Generic;
 
 namespace NadekoBot.Services.GamesList
 {
@@ -19,10 +21,12 @@ namespace NadekoBot.Services.GamesList
         private readonly GameListBZCCService _bzcc;
 
         //public GamesListService(DiscordSocketClient client, DbService db, ILocalization localization, NadekoStrings strings, GameListBZ98Service bz98, GameListBZ2Service bz2)
-        public GamesListService(DiscordSocketClient client, /*DbService db,*/
+        public GamesListService(
+            DiscordSocketClient client, /*DbService db,*/
             GameListBZ98Service bz98,
             GameListBZ2Service bz2,
-            GameListBZCCService bzcc)
+            //GameListBZCCService bzcc,
+            NServiceProvider services)
         {
             _client = client;
             //_db = db;
@@ -31,7 +35,11 @@ namespace NadekoBot.Services.GamesList
 
             _bz98 = bz98;
             _bz2 = bz2;
-            _bzcc = bzcc;
+            //_bzcc = bzcc;
+
+            IEnumerable<INGameList> GameLists = services.Where(x => x.GetType().GetInterfaces().Contains(typeof(INGameList))).Select(x => (INGameList)x).ToList();
+
+            _bzcc = (GameListBZCCService)(GameLists.Where(dr => dr.GetType() == typeof(GameListBZCCService)).First());
         }
 
         public bool IsValidGameType(string type)

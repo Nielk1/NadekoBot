@@ -16,10 +16,11 @@ using SteamWebAPI2.Interfaces;
 using System.Net.Http;
 using Discord.WebSocket;
 using NadekoBot.Core.Services;
+using NadekoBot.Core.Services.GamesList;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GameListBZ98Service : INService
+    public class GameListBZ98Service : INService, INGameList
     {
         private readonly IBotCredentials _creds;
         //private readonly DbService _db;
