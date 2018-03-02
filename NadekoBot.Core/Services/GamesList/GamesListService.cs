@@ -25,8 +25,7 @@ namespace NadekoBot.Services.GamesList
             DiscordSocketClient client, /*DbService db,*/
             GameListBZ98Service bz98,
             GameListBZ2Service bz2,
-            //GameListBZCCService bzcc,
-            NServiceProvider services)
+            GameListBZCCService bzcc)
         {
             _client = client;
             //_db = db;
@@ -35,11 +34,11 @@ namespace NadekoBot.Services.GamesList
 
             _bz98 = bz98;
             _bz2 = bz2;
-            //_bzcc = bzcc;
+            _bzcc = bzcc;
 
-            IEnumerable<INGameList> GameLists = services.Where(x => x.GetType().GetInterfaces().Contains(typeof(INGameList))).Select(x => (INGameList)x).ToList();
+            //IEnumerable<INGameList> GameLists = services.Where(x => x.GetType().GetInterfaces().Contains(typeof(INGameList))).Select(x => (INGameList)x).ToList();
 
-            _bzcc = (GameListBZCCService)(GameLists.Where(dr => dr.GetType() == typeof(GameListBZCCService)).First());
+            //_bzcc = (GameListBZCCService)(GameLists.Where(dr => dr.GetType() == typeof(GameListBZCCService)).First());
         }
 
         public bool IsValidGameType(string type)
