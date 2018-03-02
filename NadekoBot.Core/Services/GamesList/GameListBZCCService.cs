@@ -433,13 +433,13 @@ namespace NadekoBot.Services.GamesList
             }
 
             {
-                switch (gt)
+                switch (gt ?? "-1")
                 {
                     case "0":
                         builder.AppendLine(@"Type    | All");
                         break;
                     case "1":
-                        switch (gtd)
+                        switch (gtd ?? "-1")
                         {
                             case "0":
                                 builder.AppendLine(@"Type    | DM");
