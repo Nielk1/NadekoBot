@@ -58,8 +58,8 @@ namespace NadekoBot.Services.GamesList
             return _gameLists//.Where(x => x.GuildId == guildId)
                 //.OrderByDescending(x => x.Xp + x.AwardedXp)
                 .OrderBy(x => x.Title)
-                .Skip(page * 20)
-                .Take(20)
+                .Skip(page * 10)
+                .Take(10)
                 .ToArray();
         }
 

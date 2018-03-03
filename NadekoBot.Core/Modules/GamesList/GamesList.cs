@@ -55,19 +55,15 @@ namespace NadekoBot.Modules.GamesList
                     return embed.WithDescription("-");
                 else
                 {
-                    string textContents = string.Empty;
-                    int maxLength = games.Max(y => y.Code.Length);
                     for (int i = 0; i < games.Length; i++)
                     {
-                        //embed.AddField(
-                        //    $"{games[i].Emoji} {games[i].Name}",
-                        //    $"`{Prefix}games {games[i].Code}`");
-                        textContents += $"{games[i].Emoji ?? "🔵"} `{Prefix}games {games[i].Code.PadRight(maxLength)}` {games[i].Title}\r";
+                        embed.AddField(
+                            $"{games[i].Emoji} {games[i].Title}",
+                            $"`{Prefix}games {games[i].Code}`");
                     }
-                    embed.Description = textContents;
                     return embed;
                 }
-            }, _service.GamesListLength, 20, addPaginatedFooter: false);
+            }, _service.GamesListLength, 10, addPaginatedFooter: false);
         }
     }
 }
