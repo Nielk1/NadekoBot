@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Common.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Services.GamesList;
@@ -7,13 +8,13 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Modules.GamesList
 {
-    public class GamesList : NadekoTopLevelModule
+    public class GamesList : NadekoTopLevelModule<GamesListService>
     {
-        private readonly GamesListService _service;
+        private readonly DiscordSocketClient _client;
 
-        public GamesList(GamesListService service)
+        public GamesList(DiscordSocketClient client)
         {
-            _service = service;
+            _client = client;
         }
 
         [NadekoCommand, Usage, Description, Aliases]
@@ -21,7 +22,7 @@ namespace NadekoBot.Modules.GamesList
         {
             var channel = Context.Channel as ITextChannel;
 
-            if (string.IsNullOrWhiteSpace(type) || !_service.IsValidGameType(type))
+            /*if (string.IsNullOrWhiteSpace(type) || !_service.IsValidGameType(type))
             {
                 var embed = new EmbedBuilder().WithOkColor()
                                 .WithTitle("Games List")
@@ -29,9 +30,39 @@ namespace NadekoBot.Modules.GamesList
                                                  $"<:game_icon_battlezone2:342134902587785219> `{Prefix}games bz2`");
                 await channel.EmbedAsync(embed).ConfigureAwait(false);
                 return;
-            }
+            }*/
 
-            await _service.GetGames(channel, type, restOfLine);
+            await _service.GetGames(Prefix, channel, type, restOfLine);
+        }
+
+        [NadekoCommand(memberName: "GamesList"), Usage, Description, Aliases]
+        public Task GamesListFunc(int page = 1)
+        {
+            if (--page < 0 || page > 100)
+                return Task.CompletedTask;
+
+            return Context.Channel.SendPaginatedConfirmAsync(_client, page, async (curPage) =>
+            {
+                var games = _service.GetGamesList(curPage);
+
+                var embed = new EmbedBuilder()
+                    .WithTitle(GetText("gameslist_list"))
+                    .WithOkColor();
+
+                //if (!games.Any())
+                if (games.Length == 0)
+                    return embed.WithDescription("-");
+                else
+                {
+                    for (int i = 0; i < games.Length; i++)
+                    {
+                        embed.AddField(
+                            $"{games[i].Emoji} {games[i].Name}",
+                            $"`{Prefix}games {games[i].Code}`");
+                    }
+                    return embed;
+                }
+            }, 1000, 10, addPaginatedFooter: false);
         }
     }
 }

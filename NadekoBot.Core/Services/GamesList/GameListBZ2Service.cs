@@ -18,8 +18,12 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GameListBZ2Service : INService, INGameList
+    public class GameListBZ2Service : INService, IGameList
     {
+        public string Emoji => @"<:game_icon_battlezone2:342134902587785219>";
+        public string Name => "Battlezone 2: Combat Commander";
+        public string Code => "bz2";
+
         //private readonly IBotCredentials _creds;
         //private readonly DbService _db;
         private readonly DiscordSocketClient _client;
@@ -59,6 +63,7 @@ namespace NadekoBot.Services.GamesList
 
             _gameList = gameList;
             _gameList.AddGameListBZ2Service(this);
+            _gameList.RegisterGameList(this);
         }
 
         public async Task<RaknetData> GetGames()

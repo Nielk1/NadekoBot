@@ -4,7 +4,10 @@ using System.Text;
 
 namespace NadekoBot.Core.Services.GamesList
 {
-    public interface INGameList
+    public interface IGameList
     {
+        string Emoji { get; }
+        string Name { get; }
+        string Code { get; }
     }
 }

@@ -20,6 +20,8 @@ namespace NadekoBot.Services.GamesList
         private GameListBZ2Service _bz2;
         private GameListBZCCService _bzcc;
 
+        private readonly List<IGameList> _gameLists;
+
         //public GamesListService(DiscordSocketClient client, DbService db, ILocalization localization, NadekoStrings strings, GameListBZ98Service bz98, GameListBZ2Service bz2)
         public GamesListService(
             DiscordSocketClient client//, /*DbService db,*/
@@ -37,13 +39,27 @@ namespace NadekoBot.Services.GamesList
             //_bz2 = bz2;
             //_bzcc = bzcc;
 
-            //IEnumerable<INGameList> GameLists = services.Where(x => x.GetType().GetInterfaces().Contains(typeof(INGameList))).Select(x => (INGameList)x).ToList();
-            //_bzcc = (GameListBZCCService)(GameLists.Where(dr => dr.GetType() == typeof(GameListBZCCService)).First());
+            _gameLists = new List<IGameList>();
         }
 
         public void AddGameListBZ98Service(GameListBZ98Service x) { _bz98 = x; }
         public void AddGameListBZ2Service(GameListBZ2Service x) { _bz2 = x; }
         public void AddGameListBZCCService(GameListBZCCService x) { _bzcc = x; }
+
+        public void RegisterGameList(IGameList gameList)
+        {
+            _gameLists.Add(gameList);
+        }
+
+        public IGameList[] GetGamesList(int page)
+        {
+            return _gameLists//.Where(x => x.GuildId == guildId)
+                //.OrderByDescending(x => x.Xp + x.AwardedXp)
+                .OrderBy(x => x.Name)
+                .Skip(page * 9)
+                .Take(9)
+                .ToArray();
+        }
 
         public bool IsValidGameType(string type)
         {
@@ -60,7 +76,7 @@ namespace NadekoBot.Services.GamesList
             return false;
         }
 
-        public async Task GetGames(ITextChannel channel, string type, string restOfLine)
+        public async Task GetGames(string Prefix, ITextChannel channel, string type, string restOfLine)
         {
             switch (type.ToLowerInvariant())
             {

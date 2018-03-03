@@ -20,8 +20,12 @@ using NadekoBot.Core.Services.GamesList;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GameListBZ98Service : INService, INGameList
+    public class GameListBZ98Service : INService, IGameList
     {
+        public string Emoji => @"<:game_icon_battlezone98redux:342134901975547916>";
+        public string Name => "Battlezone 98 Redux";
+        public string Code => "bzr";
+
         private readonly IBotCredentials _creds;
         //private readonly DbService _db;
         private readonly DiscordSocketClient _client;
@@ -41,6 +45,7 @@ namespace NadekoBot.Services.GamesList
 
             _gameList = gameList;
             _gameList.AddGameListBZ98Service(this);
+            _gameList.RegisterGameList(this);
         }
 
         public async Task<BZ98ServerData> GetGames()
