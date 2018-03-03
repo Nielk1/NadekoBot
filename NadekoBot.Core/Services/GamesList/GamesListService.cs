@@ -22,6 +22,8 @@ namespace NadekoBot.Services.GamesList
 
         private readonly List<IGameList> _gameLists;
 
+        public int GamesListLength { get { return _gameLists?.Count ?? 0; } }
+
         //public GamesListService(DiscordSocketClient client, DbService db, ILocalization localization, NadekoStrings strings, GameListBZ98Service bz98, GameListBZ2Service bz2)
         public GamesListService(
             DiscordSocketClient client//, /*DbService db,*/
@@ -51,13 +53,13 @@ namespace NadekoBot.Services.GamesList
             _gameLists.Add(gameList);
         }
 
-        public IGameList[] GetGamesList(int page)
+        public IGameList[] GetGamesList(ulong guildId, int page)
         {
             return _gameLists//.Where(x => x.GuildId == guildId)
                 //.OrderByDescending(x => x.Xp + x.AwardedXp)
-                .OrderBy(x => x.Name)
-                .Skip(page * 9)
-                .Take(9)
+                .OrderBy(x => x.Title)
+                .Skip(page * 20)
+                .Take(20)
                 .ToArray();
         }
 

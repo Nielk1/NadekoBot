@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using NadekoBot.Common.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Services.GamesList;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace NadekoBot.Modules.GamesList
@@ -41,9 +42,9 @@ namespace NadekoBot.Modules.GamesList
             if (--page < 0 || page > 100)
                 return Task.CompletedTask;
 
-            return Context.Channel.SendPaginatedConfirmAsync(_client, page, async (curPage) =>
+            return Context.Channel.SendPaginatedConfirmAsync(_client, page, /*async*/ (curPage) =>
             {
-                var games = _service.GetGamesList(curPage);
+                var games = _service.GetGamesList(Context.Guild.Id, curPage);
 
                 var embed = new EmbedBuilder()
                     .WithTitle(GetText("gameslist_list"))
@@ -54,15 +55,19 @@ namespace NadekoBot.Modules.GamesList
                     return embed.WithDescription("-");
                 else
                 {
+                    string textContents = string.Empty;
+                    int maxLength = games.Max(y => y.Code.Length);
                     for (int i = 0; i < games.Length; i++)
                     {
-                        embed.AddField(
-                            $"{games[i].Emoji} {games[i].Name}",
-                            $"`{Prefix}games {games[i].Code}`");
+                        //embed.AddField(
+                        //    $"{games[i].Emoji} {games[i].Name}",
+                        //    $"`{Prefix}games {games[i].Code}`");
+                        textContents += $"{games[i].Emoji ?? "🔵"} `{Prefix}games {games[i].Code.PadRight(maxLength)}` {games[i].Title}\r";
                     }
+                    embed.Description = textContents;
                     return embed;
                 }
-            }, 1000, 10, addPaginatedFooter: false);
+            }, _service.GamesListLength, 20, addPaginatedFooter: false);
         }
     }
 }

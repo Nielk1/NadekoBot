@@ -23,7 +23,7 @@ namespace NadekoBot.Services.GamesList
     public class GameListBZ98Service : INService, IGameList
     {
         public string Emoji => @"<:game_icon_battlezone98redux:342134901975547916>";
-        public string Name => "Battlezone 98 Redux";
+        public string Title => "Battlezone 98 Redux";
         public string Code => "bzr";
 
         private readonly IBotCredentials _creds;

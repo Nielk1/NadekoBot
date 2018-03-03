@@ -21,7 +21,7 @@ namespace NadekoBot.Services.GamesList
     public class GameListBZCCService : INService, IGameList
     {
         public string Emoji => null;
-        public string Name => "Battlezone Combat Commander";
+        public string Title => "Battlezone Combat Commander";
         public string Code => "bzcc";
 
         //private readonly IBotCredentials _creds;

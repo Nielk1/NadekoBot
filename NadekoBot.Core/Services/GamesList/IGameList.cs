@@ -7,7 +7,7 @@ namespace NadekoBot.Core.Services.GamesList
     public interface IGameList
     {
         string Emoji { get; }
-        string Name { get; }
+        string Title { get; }
         string Code { get; }
     }
 }
