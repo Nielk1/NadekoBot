@@ -47,7 +47,7 @@ namespace NadekoBot.Modules.GamesList
                 var games = _service.GetGamesList(Context.Guild.Id, curPage);
 
                 var embed = new EmbedBuilder()
-                    .WithTitle(GetText("gameslist_list"))
+                    .WithTitle(GetText("gameslist"))
                     .WithOkColor();
 
                 //if (!games.Any())
