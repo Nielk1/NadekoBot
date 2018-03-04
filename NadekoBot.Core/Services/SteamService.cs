@@ -58,13 +58,16 @@ namespace NadekoBot.Core.Services
                     return msg;
                 });
 
-                newPlayerData = new Tuple<DateTime, PlayerSummaryModel>(DateTime.UtcNow.AddHours(1), playerData.Data);
+                if (playerData != null)
+                {
+                    newPlayerData = new Tuple<DateTime, PlayerSummaryModel>(DateTime.UtcNow.AddHours(1), playerData.Data);
 
-                steamPlayerCache.AddOrUpdate(id, newPlayerData,
-                    (key, existingVal) =>
-                    {
-                        return newPlayerData;
-                    });
+                    steamPlayerCache.AddOrUpdate(id, newPlayerData,
+                        (key, existingVal) =>
+                        {
+                            return newPlayerData;
+                        });
+                }
             }
             return newPlayerData?.Item2;
         }
