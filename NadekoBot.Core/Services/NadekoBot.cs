@@ -134,13 +134,14 @@ namespace NadekoBot
 
                 IBotConfigProvider botConfigProvider = new BotConfigProvider(_db, _botConfig, Cache);
 
-                #region gamesList
-                var bz98Service = new GameListBZ98Service(Credentials, /*_db,*/ Client);
-                var bz2Service = new GameListBZ2Service(/*Credentials, _db,*/ Client);
-
-                //var gamesListService = new GamesListService(Client, _db, Localization, Strings, bz98Service, bz2Service);
-                var gamesListService = new GamesListService(Client, /*_db,*/ bz98Service, bz2Service);
-                #endregion
+//                #region gamesList
+//                var bz98Service = new GameListBZ98Service(Credentials, /*_db,*/ Client);
+//                var bz2Service = new GameListBZ2Service(/*Credentials, _db,*/ Client);
+//                var bzccService = new GameListBZCCService(/*Credentials, _db,*/ Client);
+//
+//                //var gamesListService = new GamesListService(Client, _db, Localization, Strings, bz98Service, bz2Service);
+//                var gamesListService = new GamesListService(Client, /*_db,*/ bz98Service, bz2Service, bzccService);
+//                #endregion
 
                 //initialize Services
                 Services = new NServiceProvider()
@@ -151,11 +152,11 @@ namespace NadekoBot
                     .AddManual(botConfigProvider)
                     .AddManual<NadekoBot>(this)
                     .AddManual<IUnitOfWork>(uow)
-                #region gamesList
-                    .AddManual<GameListBZ98Service>(bz98Service)
-                    .AddManual<GameListBZ2Service>(bz2Service)
-                    .AddManual<GamesListService>(gamesListService)
-                #endregion
+//                #region gamesList
+//                    .AddManual<GameListBZ98Service>(bz98Service)
+//                    .AddManual<GameListBZ2Service>(bz2Service)
+//                    .AddManual<GamesListService>(gamesListService)
+//                #endregion
                     .AddManual<IDataCache>(Cache);
 
                 Services.LoadFrom(Assembly.GetAssembly(typeof(CommandHandler)));

@@ -16,58 +16,164 @@ using SteamWebAPI2.Interfaces;
 using System.Net.Http;
 using Discord.WebSocket;
 using NadekoBot.Core.Services;
+using NadekoBot.Core.Services.GamesList;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GameListBZ98Service
+    public class GameListBZ98Service : INService, IGameList
     {
+        public string Emoji => @"<:game_icon_battlezone98redux:342134901975547916>";
+        public string Title => "Battlezone 98 Redux";
+        public string Code => "bzr";
+
         private readonly IBotCredentials _creds;
         //private readonly DbService _db;
         private readonly DiscordSocketClient _client;
 
+        private readonly SteamService _steam;
+        private readonly GamesListService _gameList;
+
         private const string filePath = "C:/Data/BZ98Gamelist.json";
 
-        /// <summary>
-        /// Steam PlayerSummary cache
-        /// </summary>
-        static ConcurrentDictionary<ulong, Tuple<DateTime, PlayerSummaryModel>> steamPlayerCache = new ConcurrentDictionary<ulong, Tuple<DateTime, PlayerSummaryModel>>();
-
-        /// <summary>
-        /// Workshop name cache
-        /// </summary>
-        static ConcurrentDictionary<string, Tuple<DateTime, string>> steamWorkshopNameCache = new ConcurrentDictionary<string, Tuple<DateTime, string>>();
-
-        /// <summary>
-        /// SteamUser WebAPI Interface
-        /// </summary>
-        static SteamUser steamInterface;
-
-        public GameListBZ98Service(IBotCredentials creds, /*DbService db,*/ DiscordSocketClient client)
+        public GameListBZ98Service(IBotCredentials creds, /*DbService db,*/ DiscordSocketClient client, SteamService steam, GamesListService gameList)
         {
             _creds = creds;
             //_db = db;
             _client = client;
 
-            // Build SteamUser SteamWebAPI interface
-            if (!string.IsNullOrWhiteSpace(_creds.SteamApiKey))
-                steamInterface = new SteamUser(_creds.SteamApiKey);
+            _steam = steam;
+
+            _gameList = gameList;
+            _gameList.AddGameListBZ98Service(this);
+            _gameList.RegisterGameList(this);
         }
 
-        public async Task<BZ98ServerData> GetGames()
+        public async Task<DataGameList> GetGamesNew()
         {
             Tuple<string, DateTime> gameData = await TryReadText(filePath, TimeSpan.FromSeconds(5));
 
             if (string.IsNullOrWhiteSpace(gameData.Item1)) return null;
 
             var LobbyData = JsonConvert.DeserializeObject<Dictionary<string, Lobby>>(gameData.Item1);
-            return new BZ98ServerData() {
-                Games = LobbyData.Where(dr => !dr.Value.isChat
-                                           && (!dr.Value.isPrivate || (dr.Value.isPrivate && dr.Value.IsPassworded == true))
-                                           && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && ("0123456789".Contains(dr.Value.clientVersion[0]))) // not mobile which starts with MB or something
-                                           && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && (dr.Value.clientVersion != "0.0.0")) // not test game
-                                       ).Select(dr => dr.Value).ToList(),
-                Modified = gameData.Item2
+            //return new BZ98ServerData()
+            //{
+            //    Games = LobbyData.Where(dr => !dr.Value.isChat
+            //                               && (!dr.Value.isPrivate || (dr.Value.isPrivate && dr.Value.IsPassworded == true))
+            //                               && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && ("0123456789".Contains(dr.Value.clientVersion[0]))) // not mobile which starts with MB or something
+            //                               && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && (dr.Value.clientVersion != "0.0.0")) // not test game
+            //                           ).Select(dr => dr.Value).ToList(),
+            //    Modified = gameData.Item2
+            //};
+
+            DataGameList data = new DataGameList()
+            {
+                GameTitle = this.Title,
+                Header = new DataGameListHeader()
+                {
+                    Description = "List of games currently on BZ98 Redux matchmaking server",
+                    Image = "http://discord.battlezone.report/resources/logos/bz98r.png",
+                    Credit = $"Fetched by Nielk1's BZ98Bridge Bot"
+                }
             };
+
+            data.Header.ServerStatus = new DataGameListServerStatus[] {
+                new DataGameListServerStatus(){ Name = "Rebellion", Status = EDataGameListServerStatus.NotSet, Updated = gameData.Item2 }
+            };
+
+            data.Games = (await Task.WhenAll(
+                LobbyData
+                .Where(dr => !dr.Value.isChat
+                          && (!dr.Value.isPrivate || (dr.Value.isPrivate && dr.Value.IsPassworded == true))
+                          //&& ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && ("0123456789".Contains(dr.Value.clientVersion[0]))) // not mobile which starts with MB or something
+                          && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && (dr.Value.clientVersion != "0.0.0")) // not test game
+                      ).Select(dr => dr.Value)
+                .Select(async raw =>
+                {
+                    DataGameListGame game = new DataGameListGame();
+
+                    game.Name = raw.Name;
+                    game.Image = await GetShellMap(raw.MapFile) ?? "http://discord.battlezone.report/resources/logos/nomap.png";
+
+                    game.CurPlayers = raw.userCount;
+                    game.MaxPlayers = raw.PlayerLimit;
+
+                    if (raw.isLocked)
+                    {
+                        game.Status = EDataGameListServerGameStatus.Locked;
+                    }
+                    else if (raw.IsPassworded == true)
+                    {
+                        game.Status = EDataGameListServerGameStatus.Passworded;
+                    }
+                    else
+                    {
+                        game.Status = EDataGameListServerGameStatus.Open;
+                    }
+
+                    game.MapFilename = raw.MapFile;
+                    game.Footer = raw.MapFile + @".bzn";
+                    if (!string.IsNullOrWhiteSpace(raw.clientVersion)) game.Footer += $" <{raw.clientVersion}>";
+
+                    {
+                        raw.users.OrderBy(dr => dr.Value.metadata.ContainsKey("team") ? int.Parse(dr.Value.metadata["team"]) : 0)
+                           .ForEach(async dr =>
+                           {
+                               string team = dr.Value.metadata.ContainsKey("team") ? dr.Value.metadata["team"] : string.Empty;
+                               string vehicle = dr.Value.metadata.ContainsKey("vehicle") ? dr.Value.metadata["vehicle"] : string.Empty;
+
+                               int teamInt = 0;
+                               UserData userData = await GetUserData(dr.Value.id, dr.Value.authType);
+
+                               game.Players.Add(new DataGameListPlayer()
+                               {
+                                   Index = int.TryParse(team, out teamInt) ? (int?)teamInt : null,
+                                   Name = dr.Value.name,
+                                   PlayerClass = vehicle,
+                                   Url = userData?.ProfileUrl
+                               });
+                           });
+
+                        game.PlayersHeader = "Players";
+                    }
+
+                    {
+                        ulong workshopIdNum = 0;
+                        if (!string.IsNullOrWhiteSpace(raw.WorkshopID) && ulong.TryParse(raw.WorkshopID, out workshopIdNum) && workshopIdNum > 0)
+                        {
+                            Task<string> modNameTask = Task.Run(async () =>
+                            {
+                                string modNameRet = await _steam.GetSteamWorkshopName(raw.WorkshopID);
+                                return modNameRet;
+                            });
+                            var modName = modNameTask.Result;
+
+                            if (!string.IsNullOrWhiteSpace(modName))
+                            {
+                                game.TopInfo.Add($"Mod: [{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={raw.WorkshopID})");
+                            }
+                            else
+                            {
+                                game.TopInfo.Add("Mod: " + Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={raw.WorkshopID}"));
+                            }
+                        }
+                    }
+
+                    game.Properties.Add(new Tuple<string, string>("Map", "[" + raw.MapFile + "]"));
+                    game.Properties.Add(new Tuple<string, string>("State", raw.IsEnded ? "Ended" : raw.IsLaunched ? "Launched" : "In Shell"));
+                    if (raw.TimeLimit.HasValue && raw.TimeLimit.Value > 0) game.Properties.Add(new Tuple<string, string>("TimeLimit", raw.TimeLimit.Value.ToString()));
+                    if (raw.KillLimit.HasValue && raw.KillLimit.Value > 0) game.Properties.Add(new Tuple<string, string>("KillLimit", raw.KillLimit.Value.ToString()));
+                    if (raw.Lives.HasValue && raw.Lives.Value > 0) game.Properties.Add(new Tuple<string, string>("Lives", raw.Lives.Value.ToString()));
+                    if (raw.SyncJoin.HasValue) game.Properties.Add(new Tuple<string, string>("SyncJoin", raw.SyncJoin.Value ? "On" : "Off"));
+                    if (raw.SatelliteEnabled.HasValue) game.Properties.Add(new Tuple<string, string>("Satellite", raw.SatelliteEnabled.Value ? "On" : "Off"));
+                    if (raw.BarracksEnabled.HasValue) game.Properties.Add(new Tuple<string, string>("Barracks", raw.BarracksEnabled.Value ? "On" : "Off"));
+                    if (raw.SniperEnabled.HasValue) game.Properties.Add(new Tuple<string, string>("Sniper", raw.SniperEnabled.Value ? "On" : "Off"));
+                    if (raw.SplinterEnabled.HasValue) game.Properties.Add(new Tuple<string, string>("Splinter", raw.SplinterEnabled.Value ? "On" : "Off"));
+
+                    return game;
+                })
+            )).ToArray();
+
+            return data;
         }
 
         public static async Task<Tuple<string,DateTime>> TryReadText(string filepath, TimeSpan timeout)
@@ -100,9 +206,8 @@ namespace NadekoBot.Services.GamesList
         /// <param name="id">ID of user in BZ98</param>
         /// <param name="type">Auth type of user in BZ98</param>
         /// <returns></returns>
-        public static UserData GetUserData(string id, string type)
+        public async Task<UserData> GetUserData(string id, string type)
         {
-            if (steamInterface == null) return null;
             if (string.IsNullOrWhiteSpace(id)) return null;
             if (string.IsNullOrWhiteSpace(type)) return null;
 
@@ -111,40 +216,14 @@ namespace NadekoBot.Services.GamesList
                 ulong playerID = 0;
                 if (ulong.TryParse(id.Substring(1), out playerID))
                 {
-                    Tuple<DateTime, PlayerSummaryModel> newPlayerData = null;
-                    if (steamPlayerCache.TryGetValue(playerID, out newPlayerData))
-                    {
-                        if (newPlayerData.Item1 > DateTime.UtcNow)
-                        {
-                            newPlayerData = null;
-                        }
-                    }
-
-                    if (newPlayerData == null)
-                    {
-                        Task<ISteamWebResponse<PlayerSummaryModel>> playerDataTask = Task.Run(async () =>
-                        {
-                            ISteamWebResponse<PlayerSummaryModel> msg = await steamInterface.GetPlayerSummaryAsync(playerID);
-                            return msg;
-                        });
-
-                        var playerData = playerDataTask.Result;
-
-                        newPlayerData = new Tuple<DateTime, PlayerSummaryModel>(DateTime.UtcNow.AddHours(1), playerData.Data);
-
-                        steamPlayerCache.AddOrUpdate(playerID, newPlayerData,
-                            (key, existingVal) =>
-                            {
-                                return newPlayerData;
-                            });
-                    }
+                    PlayerSummaryModel newPlayerData = await _steam.GetSteamUserData(playerID);
 
                     if (newPlayerData != null)
                     {
                         return new UserData()
                         {
-                            AvatarUrl = newPlayerData.Item2.AvatarFullUrl,
-                            ProfileUrl = newPlayerData.Item2.ProfileUrl
+                            AvatarUrl = newPlayerData.AvatarFullUrl,
+                            ProfileUrl = newPlayerData.ProfileUrl
                         };
                     }
                 }
@@ -153,54 +232,6 @@ namespace NadekoBot.Services.GamesList
             return null;
         }
 
-        public static async Task<string> GetSteamWorkshopName(string workshopId)
-        {
-            if (string.IsNullOrWhiteSpace(workshopId)) return null;
-
-            Tuple<DateTime, string> newWorkshopName = null;
-            if (steamWorkshopNameCache.TryGetValue(workshopId, out newWorkshopName))
-            {
-                if (newWorkshopName.Item1 > DateTime.UtcNow)
-                {
-                    newWorkshopName = null;
-                }
-            }
-
-            if (newWorkshopName == null)
-            {
-                try
-                {
-                    using (var http = new HttpClient())
-                    {
-                        var reqString = $"http://steamcommunity.com/sharedfiles/filedetails/?id={workshopId}";
-                        var rawText = (await http.GetStringAsync(reqString).ConfigureAwait(false));
-
-                        var matches = System.Text.RegularExpressions.Regex.Matches(rawText, "<\\s*div\\s+class\\s*=\\s*\"workshopItemTitle\"\\s*>(.*)<\\s*/\\s*div\\s*>");
-                        string found = null;
-                        if (matches.Count > 0)
-                        {
-                            if (matches[0].Groups.Count > 1)
-                            {
-                                found = matches[0].Groups[1].Value.Trim();
-                            }
-                        }
-
-                        newWorkshopName = new Tuple<DateTime, string>(DateTime.UtcNow.AddHours(24), found);
-                        steamWorkshopNameCache.AddOrUpdate(workshopId, newWorkshopName,
-                         (key, existingVal) =>
-                         {
-                             return newWorkshopName;
-                         });
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //_log.Warn(ex, "Steam Workshop scan failed");
-                }
-            }
-
-            return newWorkshopName.Item2;
-        }
 
         public static async Task<string> GetShellMap(string mapFile)
         {
@@ -242,52 +273,6 @@ namespace NadekoBot.Services.GamesList
     {
         public List<Lobby> Games { get; set; }
         public DateTime Modified { get; set; }
-
-        public EmbedBuilder GetTopEmbed()
-        {
-            return new EmbedBuilder()
-                .WithColor(new Color(255, 255, 255))
-                .WithTitle("Battlezone 98 Redux Game List")
-                //.WithUrl()
-                .WithDescription($"List of games currently on BZ98 Redux matchmaking server\n`{Games.Count} Game(s)`")
-                .WithThumbnailUrl("http://discord.battlezone.report/resources/logos/bz98r.png")
-                .WithFooter(efb => efb.WithText($"Last fetched by Nielk1's BZ98Bridge Bot {TimeAgoUtc(Modified)}"));
-        }
-
-        private static string TimeAgoUtc(DateTime dt)
-        {
-            TimeSpan span = DateTime.UtcNow - dt;
-            if (span.Days > 365)
-            {
-                int years = (span.Days / 365);
-                if (span.Days % 365 != 0)
-                    years += 1;
-                return String.Format("about {0} {1} ago",
-                years, years == 1 ? "year" : "years");
-            }
-            if (span.Days > 30)
-            {
-                int months = (span.Days / 30);
-                if (span.Days % 31 != 0)
-                    months += 1;
-                return String.Format("about {0} {1} ago",
-                months, months == 1 ? "month" : "months");
-            }
-            if (span.Days > 0)
-                return String.Format("about {0} {1} ago",
-                span.Days, span.Days == 1 ? "day" : "days");
-            if (span.Hours > 0)
-                return String.Format("about {0} {1} ago",
-                span.Hours, span.Hours == 1 ? "hour" : "hours");
-            if (span.Minutes > 0)
-                return String.Format("about {0} {1} ago",
-                span.Minutes, span.Minutes == 1 ? "minute" : "minutes");
-            if (span.Seconds > 5)
-                return String.Format("about {0} seconds ago", span.Seconds);
-            if (span.Seconds <= 5)
-                return "just now";
-            return string.Empty;
-        }
     }
 
     public class Lobby
@@ -547,161 +532,6 @@ namespace NadekoBot.Services.GamesList
 
             return null;
         }
-
-        public EmbedBuilder GetEmbed(int idx, int total)
-        {
-            string footer = $"[{idx}/{total}] ({MapFile}) <{clientVersion}>";
-
-            EmbedBuilder embed = new EmbedBuilder()
-                .WithDescription(ToString())
-                .WithFooter(efb => efb.WithText(footer));
-
-
-            string prop = null;
-            Task<string> propTask = Task.Run(async () =>
-            {
-                string propRet = await GameListBZ98Service.GetShellMap(MapFile);
-                return propRet;
-            });
-            prop = propTask.Result;
-
-            embed.WithThumbnailUrl(prop ?? "http://discord.battlezone.report/resources/logos/nomap.png");
-
-            string playerCountData = string.Empty;
-            bool fullPlayers = false;
-            {
-                playerCountData = " [" + userCount + "/" + (PlayerLimit ?? memberLimit) + "]";
-                fullPlayers = (userCount >= (PlayerLimit ?? memberLimit));
-            }
-
-            if (isLocked)
-            {
-                embed.WithColor(new Color(0xbe, 0x19, 0x31))
-                     .WithTitle("⛔ " + Format.Sanitize(Name) + playerCountData);
-            }
-            else if (IsPassworded == true)
-            {
-                embed.WithColor(new Color(0xff, 0xac, 0x33))
-                     .WithTitle("🔐 " + Format.Sanitize(Name) + playerCountData);
-            }
-            else
-            {
-                float fullnessRatio = 1.0f * userCount / (PlayerLimit ?? memberLimit);
-
-                if (fullnessRatio >= 1.0f)
-                {
-                    embed.WithOkColor().WithTitle("🌕 " + Format.Sanitize(Name) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.75f)
-                {
-                    embed.WithOkColor().WithTitle("🌖 " + Format.Sanitize(Name) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.50f)
-                {
-                    embed.WithOkColor().WithTitle("🌗 " + Format.Sanitize(Name) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.25f)
-                {
-                    embed.WithOkColor().WithTitle("🌘 " + Format.Sanitize(Name) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.0f)
-                {
-                    embed.WithOkColor().WithTitle("🌑 " + Format.Sanitize(Name) + playerCountData);
-                }
-                else
-                {
-                    embed.WithOkColor().WithTitle("👽 " + Format.Sanitize(Name) + playerCountData); // this should never happen
-                }
-            }
-
-            if (users.Count > 0)
-            {
-                embed.AddField(efb => efb.WithName("Players").WithValue(GetPlayersString()).WithIsInline(false));
-            }
-
-            return embed;
-        }
-
-        public string GetPlayersString()
-        {
-            StringBuilder builder = new StringBuilder();
-
-            int t = 0;
-            int v = 0;
-
-            users.ForEach(dr =>
-            {
-                t = Math.Max(t, dr.Value.metadata.ContainsKey("team") ? dr.Value.metadata["team"].Length : 0);
-                v = Math.Max(v, dr.Value.metadata.ContainsKey("vehicle") ? dr.Value.metadata["vehicle"].Length : 0);
-            });
-
-            users.OrderBy(dr => dr.Value.metadata.ContainsKey("team") ? int.Parse(dr.Value.metadata["team"]) : 0)
-                .ForEach(dr =>
-                {
-                    string team = dr.Value.metadata.ContainsKey("team") ? dr.Value.metadata["team"] : string.Empty;
-                    string vehicle = dr.Value.metadata.ContainsKey("vehicle") ? dr.Value.metadata["vehicle"] : string.Empty;
-
-                    string codeBlock = $"{team.PadLeft(t, '0')}{(t > 0 ? " " : string.Empty)}{vehicle.PadRight(v, ' ')}";
-                    codeBlock = Format.Sanitize(codeBlock);
-                    if (codeBlock.Length == 0) codeBlock = " ";
-                    builder.AppendLine($"`{codeBlock}` {dr.Value.GetFormattedName()}");
-                });
-
-            //return Format.Code(builder.ToString(), "css");
-            return builder.ToString();
-        }
-
-        public override string ToString()
-        {
-            //string name = Battlezone.GetBZ2GameProperty("name", m);
-            //string version = Battlezone.GetBZ2GameProperty("version", v);
-            //string mod = Battlezone.GetBZ2GameProperty("mod", d);
-
-            List<Tuple<string, string>> lines = new List<Tuple<string, string>>();
-            lines.Add(new Tuple<string, string>("Map", "[" + MapFile + "]"));
-            lines.Add(new Tuple<string, string>("State", IsEnded ? "Ended" : IsLaunched ? "Launched" : "In Shell"));
-            if (TimeLimit.HasValue && TimeLimit.Value > 0) lines.Add(new Tuple<string, string>("TimeLimit", TimeLimit.Value.ToString()));
-            if (KillLimit.HasValue && KillLimit.Value > 0) lines.Add(new Tuple<string, string>("KillLimit", KillLimit.Value.ToString()));
-            if (Lives.HasValue && Lives.Value > 0) lines.Add(new Tuple<string, string>("Lives", Lives.Value.ToString()));
-            if (SyncJoin.HasValue) lines.Add(new Tuple<string, string>("SyncJoin", SyncJoin.Value ? "On" : "Off"));
-            if (SatelliteEnabled.HasValue) lines.Add(new Tuple<string, string>("Satellite", SatelliteEnabled.Value ? "On" : "Off"));
-            if (BarracksEnabled.HasValue) lines.Add(new Tuple<string, string>("Barracks", BarracksEnabled.Value ? "On" : "Off"));
-            if (SniperEnabled.HasValue) lines.Add(new Tuple<string, string>("Sniper", SniperEnabled.Value ? "On" : "Off"));
-            if (SplinterEnabled.HasValue) lines.Add(new Tuple<string, string>("Splinter", SplinterEnabled.Value ? "On" : "Off"));
-
-            StringBuilder builder = new StringBuilder();
-
-            int lenKey = lines.Max(dr => dr.Item1.Length);
-
-            lines.ForEach(dr =>
-            {
-                builder.AppendLine($"{dr.Item1.PadRight(lenKey)} | {dr.Item2}");
-            });
-
-            string retVal = Format.Code(builder.ToString(), "css");
-
-            ulong workshopIdNum = 0;
-            if (!string.IsNullOrWhiteSpace(WorkshopID) && ulong.TryParse(WorkshopID,out workshopIdNum) && workshopIdNum > 0)
-            {
-                Task<string> modNameTask = Task.Run(async () =>
-                {
-                    string modNameRet = await GameListBZ98Service.GetSteamWorkshopName(WorkshopID);
-                    return modNameRet;
-                });
-                var modName = modNameTask.Result;
-
-                if (!string.IsNullOrWhiteSpace(modName))
-                {
-                    retVal = $"Mod: [{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={WorkshopID})" + "\n" + retVal;
-                }
-                else
-                {
-                    retVal = "Mod: " + Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={WorkshopID}") + "\n" + retVal;
-                }
-            }
-
-            return retVal;
-        }
     }
 
     public class User
@@ -719,21 +549,6 @@ namespace NadekoBot.Services.GamesList
         public string[] lanAddresses { get; set; }
         /////////////////////////////////////////////
         public bool isAuth { get; set; }
-
-
-        public string GetFormattedName()
-        {
-            UserData userData = GameListBZ98Service.GetUserData(id, authType);
-
-            if (userData != null && !string.IsNullOrWhiteSpace(userData.ProfileUrl))
-            {
-                return $"[{Format.Sanitize(name)}]({userData.ProfileUrl})";
-            }
-            else
-            {
-                return Format.Sanitize(name);
-            }
-        }
     }
 
     /// <summary>
