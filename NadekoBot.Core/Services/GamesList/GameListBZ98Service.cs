@@ -129,7 +129,7 @@ namespace NadekoBot.Services.GamesList
                                    Index = int.TryParse(team, out teamInt) ? (int?)teamInt : null,
                                    Name = dr.Value.name,
                                    PlayerClass = vehicle,
-                                   Url = userData.ProfileUrl
+                                   Url = userData?.ProfileUrl
                                });
                            });
 

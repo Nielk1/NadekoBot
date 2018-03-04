@@ -223,7 +223,7 @@ namespace NadekoBot.Services.GamesList
                                     Index = dr.Team,
                                     Name = dr.Name,
                                     PlayerClass = $"{(dr.Kills.HasValue ? dr.Kills.Value : 0).ToString().PadLeft(k, '0')}/{(dr.Deaths.HasValue ? dr.Deaths.Value : 0).ToString().PadLeft(d, '0')}/{scoresign}{Math.Abs((dr.Score.HasValue ? dr.Score.Value : 0)).ToString().PadLeft(s, '0')}",
-                                    Url = userData.ProfileUrl
+                                    Url = userData?.ProfileUrl
                                 });
                             });
 
