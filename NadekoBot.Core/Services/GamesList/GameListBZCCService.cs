@@ -7,6 +7,7 @@ using NadekoBot.Extensions;
 using NadekoBot.Services;
 using Newtonsoft.Json;
 using NLog;
+using Steam.Models.SteamCommunity;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -195,6 +196,41 @@ namespace NadekoBot.Services.GamesList
                         }
 
                         {
+                            int k = 1;
+                            int d = 1;
+                            int s = 1;
+                            bool scoreNeedsSign = false;
+
+                            raw.pl.ForEach(dr =>
+                            {
+                                k = Math.Max(k, (dr.Kills.HasValue ? dr.Kills.Value : 0).ToString().Length);
+                                d = Math.Max(d, (dr.Deaths.HasValue ? dr.Deaths.Value : 0).ToString().Length);
+                                s = Math.Max(s, Math.Abs(dr.Score.HasValue ? dr.Score.Value : 0).ToString().Length);
+                                scoreNeedsSign = scoreNeedsSign || (dr.Score < 0);
+                            });
+
+                            raw.pl.ForEach(async dr =>
+                            {
+                                string scoresign = "0";
+                                if ((dr.Score.HasValue ? dr.Score.Value : 0) > 0) scoresign = "+";
+                                if ((dr.Score.HasValue ? dr.Score.Value : 0) < 0) scoresign = "-";
+                                if (!scoreNeedsSign) scoresign = string.Empty;
+
+                                UserData userData = await GetUserData(dr.PlayerID);
+
+                                game.Players.Add(new DataGameListPlayer()
+                                {
+                                    Index = dr.Team,
+                                    Name = dr.Name,
+                                    PlayerClass = $"{(dr.Kills.HasValue ? dr.Kills.Value : 0).ToString().PadLeft(k, '0')}/{(dr.Deaths.HasValue ? dr.Deaths.Value : 0).ToString().PadLeft(d, '0')}/{scoresign}{Math.Abs((dr.Score.HasValue ? dr.Score.Value : 0)).ToString().PadLeft(s, '0')}",
+                                    Url = userData.ProfileUrl
+                                });
+                            });
+
+                            game.PlayersHeader = "[T] (K/D/S) Players";
+                        }
+
+                        {
                             string name = await GetBZCCGameProperty("name", raw.MapFile);
 
                             if (string.IsNullOrWhiteSpace(name))
@@ -346,18 +382,29 @@ namespace NadekoBot.Services.GamesList
             }
         }
 
-        public async Task<BZCCRaknetData> GetGames()
+        public async Task<UserData> GetUserData(string id)
         {
-            using (var http = new HttpClient())
+            if (string.IsNullOrWhiteSpace(id)) return null;
+
+            if (id[0] == 'S')
             {
-                var res = await http.GetStringAsync(queryUrl).ConfigureAwait(false);
-                var gamelist = JsonConvert.DeserializeObject<BZCCRaknetData>(res);
-                gamelist.SetBzccService(this);
-                //if (gamelist?.Title == null)
-                //    return null;
-                //gamelist.Poster = await NadekoBot.Google.ShortenUrl(gamelist.Poster);
-                return gamelist;
+                ulong playerID = 0;
+                if (ulong.TryParse(id.Substring(1), out playerID))
+                {
+                    PlayerSummaryModel newPlayerData = await _steam.GetSteamUserData(playerID);
+
+                    if (newPlayerData != null)
+                    {
+                        return new UserData()
+                        {
+                            AvatarUrl = newPlayerData.AvatarFullUrl,
+                            ProfileUrl = newPlayerData.ProfileUrl
+                        };
+                    }
+                }
             }
+
+            return null;
         }
 
         public async Task<string> GetBZCCGameProperty(string termType, string term)
@@ -392,121 +439,6 @@ namespace NadekoBot.Services.GamesList
         public List<BZCCGame> GET { get; set; }
 
         public Dictionary<string, ProxyStatus> proxyStatus { get; set; }
-
-        public EmbedBuilder GetTopEmbed()
-        {
-            bool isOnRebellion = GET.Any(game => game.IsOnRebellion());
-            bool isOnIonDriver = GET.Any(game => game.IsOnIonDriver());
-
-            bool haveRebellionStatus = proxyStatus.ContainsKey("Rebellion");
-
-            bool isRebellionUp = haveRebellionStatus && proxyStatus["Rebellion"].success == true;
-
-            string statusRebellion = haveRebellionStatus ? proxyStatus["Rebellion"].status : null;
-
-            DateTime? dateRebellion = haveRebellionStatus ? proxyStatus["Rebellion"].updated : null;
-
-            EmbedBuilder embed = new EmbedBuilder()
-                .WithColor(new Color(255, 255, 255))
-                .WithTitle("Battlezone II Game List")
-                //.WithUrl()
-                .WithDescription($"List of games currently on Battlezone CC matchmaking servers\n`{GET/*.Where(game => !game.IsMarker())*/.Count()} Game(s)`")
-                .WithThumbnailUrl("http://discord.battlezone.report/resources/logos/BZCC.png")
-                .WithFooter(efb => efb.WithText("Brought to you by Nielk1's BZCC Bot"));
-            //////////////////////////////////////////////////////////////////////////////////////////////
-            //if (isIonDriverUp)
-            //{
-            //    embed.AddField(efb => efb.WithName("IonDriver").WithValue("✅ Online").WithIsInline(true));
-            //}
-            //else
-            //{
-            //    embed.AddField(efb => efb.WithName("IonDriver").WithValue("❓ Unknown").WithIsInline(true));
-            //}
-            //////////////////////////////////////////////////////////////////////////////////////////////
-            //embed.AddField(efb => efb.WithName("Raknet").WithValue("⛔ Dead").WithIsInline(true));
-            //////////////////////////////////////////////////////////////////////////////////////////////
-            if (isRebellionUp)
-            {
-                if (statusRebellion == "new")
-                {
-                    embed.AddField(efb => efb.WithName("Rebellion (Primary)").WithValue($"✅ Online\n`Updated {TimeAgoUtc(dateRebellion.Value)}`").WithIsInline(true));
-                }
-                else if (statusRebellion == "cached" && dateRebellion.HasValue)
-                {
-                    embed.AddField(efb => efb.WithName("Rebellion (Primary)").WithValue($"✅ Online\n`Updated {TimeAgoUtc(dateRebellion.Value)}`").WithIsInline(true));
-                }
-                else
-                {
-                    embed.AddField(efb => efb.WithName("Rebellion (Primary)").WithValue("✅ Online").WithIsInline(true));
-                }
-            }
-            else if (isOnRebellion || isRebellionUp)
-            {
-                if (statusRebellion == "new")
-                {
-                    embed.AddField(efb => efb.WithName("Rebellion (Primary)").WithValue($"⚠ No Marker\n`Updated {TimeAgoUtc(dateRebellion.Value)}`").WithIsInline(true));
-                }
-                else if (statusRebellion == "cached" && dateRebellion.HasValue)
-                {
-                    embed.AddField(efb => efb.WithName("Rebellion (Primary)").WithValue($"⚠ No Marker\n`Updated {TimeAgoUtc(dateRebellion.Value)}`").WithIsInline(true));
-                }
-                else
-                {
-                    embed.AddField(efb => efb.WithName("Rebellion (Primary)").WithValue("⚠ No Marker").WithIsInline(true));
-                }
-            }
-            else if (!isRebellionUp)
-            {
-                embed.AddField(efb => efb.WithName("Rebellion (Primary)").WithValue("❌ Offline").WithIsInline(true));
-            }
-            else
-            {
-                embed.AddField(efb => efb.WithName("Rebellion (Primary)").WithValue("❓ Unknown").WithIsInline(true));
-            }
-            //////////////////////////////////////////////////////////////////////////////////////////////
-
-            return embed;
-        }
-
-        private static string TimeAgoUtc(DateTime dt)
-        {
-            TimeSpan span = DateTime.UtcNow - dt;
-            if (span.Days > 365)
-            {
-                int years = (span.Days / 365);
-                if (span.Days % 365 != 0)
-                    years += 1;
-                return String.Format("about {0} {1} ago",
-                years, years == 1 ? "year" : "years");
-            }
-            if (span.Days > 30)
-            {
-                int months = (span.Days / 30);
-                if (span.Days % 31 != 0)
-                    months += 1;
-                return String.Format("about {0} {1} ago",
-                months, months == 1 ? "month" : "months");
-            }
-            if (span.Days > 0)
-                return String.Format("about {0} {1} ago",
-                span.Days, span.Days == 1 ? "day" : "days");
-            if (span.Hours > 0)
-                return String.Format("about {0} {1} ago",
-                span.Hours, span.Hours == 1 ? "hour" : "hours");
-            if (span.Minutes > 0)
-                return String.Format("about {0} {1} ago",
-                span.Minutes, span.Minutes == 1 ? "minute" : "minutes");
-            if (span.Seconds > 5)
-                return String.Format("about {0} seconds ago", span.Seconds);
-            if (span.Seconds <= 5)
-                return "just now";
-            return string.Empty;
-        }
-
-        internal void SetBzccService(GameListBZCCService bZCCService)
-        {
-            GET.ForEach(dr => dr.SetBzccService(bZCCService));
-        }
     }
 
     ///// All possible types of NATs (except NAT_TYPE_COUNT, which is an internal value) 
@@ -542,7 +474,7 @@ namespace NadekoBot.Services.GamesList
         public string s { get; set; } // score
         public string t { get; set; } // team
 
-        [JsonIgnore] public string Name { get { return Encoding.UTF8.GetString(Convert.FromBase64String(n)); } }
+        [JsonIgnore] public string Name { get { return string.IsNullOrWhiteSpace(n) ? null : Encoding.UTF8.GetString(Convert.FromBase64String(n)); } }
         [JsonIgnore] public int? Kills { get { int tmp = 0; return int.TryParse(k, out tmp) ? (int?)tmp : null; } }
         [JsonIgnore] public int? Deaths { get { int tmp = 0; return int.TryParse(d, out tmp) ? (int?)tmp : null; } }
         [JsonIgnore] public int? Score { get { int tmp = 0; return int.TryParse(s, out tmp) ? (int?)tmp : null; } }
@@ -597,8 +529,8 @@ namespace NadekoBot.Services.GamesList
         [JsonIgnore] public int? TimeLimit { get { int tmp = 0; return int.TryParse(ti, out tmp) ? (int?)tmp : null; } }
         [JsonIgnore] public int? KillLimit { get { int tmp = 0; return int.TryParse(ki, out tmp) ? (int?)tmp : null; } }
 
-        [JsonIgnore] public string Name { get { return Encoding.UTF8.GetString(Convert.FromBase64String(n).TakeWhile(chr => chr != 0x00).ToArray()); } }
-        [JsonIgnore] public string MOTD { get { return Encoding.UTF8.GetString(Convert.FromBase64String(h)); } }
+        [JsonIgnore] public string Name { get { return string.IsNullOrWhiteSpace(n) ? null : Encoding.UTF8.GetString(Convert.FromBase64String(n).TakeWhile(chr => chr != 0x00).ToArray()); } }
+        [JsonIgnore] public string MOTD { get { return string.IsNullOrWhiteSpace(h) ? null : Encoding.UTF8.GetString(Convert.FromBase64String(h)); } }
 
         [JsonIgnore] public string[] Mods { get { return mm?.Split(';') ?? new string[] { }; } }
         
@@ -612,247 +544,6 @@ namespace NadekoBot.Services.GamesList
         public bool IsOnIonDriver()
         {
             return proxySource == null;
-        }
-
-        public async Task<EmbedBuilder> GetEmbed(int idx, int total)
-        {
-            string footer = $"[{idx}/{total}] ({MapFile}.bzn)";
-            if(!string.IsNullOrWhiteSpace(mm) && mm != "0")
-            {
-                footer += " " + Format.Sanitize(mm);
-            }
-
-            string embedMessage = await GetGameDataString();
-            {
-                ulong workshopIdNum = 0;
-                if (!string.IsNullOrWhiteSpace(mm) && ulong.TryParse(mm.Split(';')?.First() ?? "", out workshopIdNum) && workshopIdNum > 0)
-                {
-                    Task<string> modNameTask = Task.Run(async () =>
-                    {
-                        string modNameRet = await _steam.GetSteamWorkshopName(workshopIdNum.ToString());
-                        return modNameRet;
-                    });
-                    var modName = modNameTask.Result;
-
-                    if (!string.IsNullOrWhiteSpace(modName))
-                    {
-                        embedMessage = $"Mod: [{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={workshopIdNum.ToString()})" + "\n" + embedMessage;
-                    }
-                    else
-                    {
-                        embedMessage = "Mod: " + Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={workshopIdNum.ToString()}") + "\n" + embedMessage;
-                    }
-                }
-            }
-            if (embedMessage.Length > 2048) embedMessage = embedMessage.Substring(0, 2048 - 1) + @"…";
-            EmbedBuilder embed = new EmbedBuilder()
-                .WithDescription(embedMessage)
-                .WithFooter(efb => efb.WithText(footer));
-
-            string prop = await _bzcc.GetBZCCGameProperty("shell", Format.Sanitize(MapFile));
-            embed.WithThumbnailUrl(prop ?? "http://discord.battlezone.report/resources/logos/nomap.png");
-
-            string playerCountData = string.Empty;
-            bool fullPlayers = false;
-            
-            {
-                playerCountData = " [" + pl.Length + "/" + pm + "]";
-                fullPlayers = (pl.Length >= int.Parse(pm));
-            }
-
-            if (l == "1")
-            {
-                embed.WithColor(new Color(0xbe, 0x19, 0x31))
-                     .WithTitle("⛔ " + Format.Sanitize(n) + playerCountData);
-            }
-            else if (k == "1")
-            {
-                embed.WithColor(new Color(0xff, 0xac, 0x33))
-                     .WithTitle("🔐 " + Format.Sanitize(n) + playerCountData);
-            }
-            else
-            {
-                float fullnessRatio = 1.0f * pl.Length / int.Parse(pm);
-
-                if (fullnessRatio >= 1.0f)
-                {
-                    embed.WithOkColor().WithTitle("🌕 " + Format.Sanitize(n) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.75f)
-                {
-                    embed.WithOkColor().WithTitle("🌖 " + Format.Sanitize(n) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.50f)
-                {
-                    embed.WithOkColor().WithTitle("🌗 " + Format.Sanitize(n) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.25f)
-                {
-                    embed.WithOkColor().WithTitle("🌘 " + Format.Sanitize(n) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.0f)
-                {
-                    embed.WithOkColor().WithTitle("🌑 " + Format.Sanitize(n) + playerCountData);
-                }
-                else
-                {
-                    embed.WithOkColor().WithTitle("👽 " + Format.Sanitize(n) + playerCountData); // this should never happen
-                }
-            }
-
-            {
-                {
-                    if (pl.Length > 0)
-                    {
-                        embed.AddField(efb => efb.WithName("(K/D/S) Players").WithValue(
-                            string.Join("\r\n", pl.Select(player => $"{player.k}/{player.d}/{player.s} {player.n}"))
-                        ).WithIsInline(false));
-                    }
-                }
-            }
-
-            return embed;
-        }
-
-        public async Task<string> GetGameDataString()
-        {
-            string name = await _bzcc.GetBZCCGameProperty("name", MapFile);
-
-
-            StringBuilder builder = new StringBuilder();
-
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                builder.AppendLine($@"Map     | [{MapFile}]");
-            }
-            else
-            {
-                builder.AppendLine($@"Map     | {name}");
-            }
-
-            if (string.IsNullOrWhiteSpace(v))
-            {
-                builder.AppendLine($@"Version | [{v}]");
-            }
-
-            if (string.IsNullOrWhiteSpace(d))
-            {
-                builder.AppendLine($@"Mod     | [{d}]");
-            }
-
-            switch (proxySource)
-            {
-                case "Rebellion":
-                    builder.AppendLine(@"List    | Rebellion");
-                    break;
-                default:
-                    builder.AppendLine(@"List    | IonDriver");
-                    break;
-            }
-
-            {
-                switch (gt ?? "-1")
-                {
-                    case "0":
-                        builder.AppendLine(@"Type    | All");
-                        break;
-                    case "1":
-                        switch (gtd ?? "-1")
-                        {
-                            case "0":
-                                builder.AppendLine(@"Type    | DM");
-                                break;
-                            case "1":
-                                builder.AppendLine(@"Type    | KOTH");
-                                break;
-                            case "2":
-                                builder.AppendLine(@"Type    | CTF");
-                                break;
-                            case "3":
-                                builder.AppendLine(@"Type    | Loot");
-                                break;
-                            case "4":
-                                builder.AppendLine(@"Type    | DM [RESERVED]");
-                                break;
-                            case "5":
-                                builder.AppendLine(@"Type    | Race");
-                                break;
-                            case "6":
-                                builder.AppendLine(@"Type    | Race (Vehicle Only)");
-                                break;
-                            case "7":
-                                builder.AppendLine(@"Type    | DM (Vehicle Only)");
-                                break;
-                            default:
-                                builder.AppendLine(@"Type    | DM [UNKNOWN]");
-                                break;
-                        }
-                        break;
-                    case "2":
-                        //if (pong.TeamsOn && pong.OnlyOneTeam)
-                        //{
-                        //    builder.AppendLine(@"Type    | MPI");
-                        //}
-                        //else
-                        //{
-                        //    builder.AppendLine(@"Type    | Strat");
-                        //}
-                        builder.AppendLine(@"Type    | Strat/MPI");
-                        break;
-                    case "3":
-                        builder.AppendLine(@"Type    | MPI [Invalid]");
-                        break;
-                }
-
-                switch (si)
-                {
-                    case "1":
-                        builder.AppendLine($"Time    | Not playing or in shell for {gtm} minutes");
-                        break;
-                    case "3":
-                        builder.AppendLine($"Time    | Playing for {gtm} minutes");
-                        break;
-                }
-
-                builder.AppendLine($"TPS     | {tps}");
-
-                if (int.Parse(pgm) > 0)
-                    builder.AppendLine($"MaxPing | {pgm}");
-
-                if (int.Parse(ti) > 0)
-                    builder.AppendLine($"TimeLim | {ti}");
-
-                if (int.Parse(ki) > 0)
-                    builder.AppendLine($"KillLim | {ki}");
-            }
-
-            string retVal = Format.Code(builder.ToString(), "css");
-
-            //if (pong != null && pong.CompressedData != null)
-            {
-                //if (pong.CompressedData.MapURL.Length > 0)
-                //{
-                //    retVal = Format.Sanitize(pong.CompressedData.MapURL) + "\n" + retVal;
-                //}
-
-                if (h.Length > 0)
-                {
-                    retVal = Format.Sanitize(h) + "\n" + retVal;
-                }
-            }
-
-            return retVal;
-        }
-
-        internal void SetBzccService(GameListBZCCService bZCCService)
-        {
-            _bzcc = bZCCService;
-        }
-
-        private SteamService _steam;
-        internal void SetSteamService(SteamService steam)
-        {
-            _steam = steam;
         }
     }
 }

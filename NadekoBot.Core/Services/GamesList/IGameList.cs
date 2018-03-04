@@ -52,7 +52,18 @@ namespace NadekoBot.Core.Services.GamesList
 
         public List<Tuple<string, string>> Properties = new List<Tuple<string, string>>();
 
+        public string PlayersHeader { get; set; }
+        public List<DataGameListPlayer> Players = new List<DataGameListPlayer>();
+
         public string Footer { get; set; }
+    }
+
+    public class DataGameListPlayer
+    {
+        public int? Index { get; set; }
+        public string Name { get; set; }
+        public string Url { get; set; }
+        public string PlayerClass { get; set; }
     }
 
     public enum EDataGameListServerStatus

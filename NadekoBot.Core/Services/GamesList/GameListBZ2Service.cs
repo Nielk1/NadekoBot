@@ -248,6 +248,40 @@ namespace NadekoBot.Services.GamesList
 
                             if (raw.pong != null)
                             {
+                                if(raw.pong.CompressedData != null)
+                                {
+                                    int k = 1;
+                                    int d = 1;
+                                    int s = 1;
+                                    bool scoreNeedsSign = false;
+
+                                    raw.pong.CompressedData.Players.ForEach(dr =>
+                                    {
+                                        k = Math.Max(k, dr.Kills.ToString().Length);
+                                        d = Math.Max(d, dr.Deaths.ToString().Length);
+                                        s = Math.Max(s, Math.Abs(dr.Score).ToString().Length);
+                                        scoreNeedsSign = scoreNeedsSign || (dr.Score < 0);
+                                    });
+
+                                    raw.pong.CompressedData.Players.ForEach(dr =>
+                                    {
+                                        string scoresign = "0";
+                                        if (dr.Score > 0) scoresign = "+";
+                                        if (dr.Score < 0) scoresign = "-";
+                                        if (!scoreNeedsSign) scoresign = string.Empty;
+
+                                        game.Players.Add(new DataGameListPlayer()
+                                        {
+                                            Index = dr.Team,
+                                            Name = dr.UserName,
+                                            PlayerClass = $"{dr.Kills.ToString().PadLeft(k, '0')}/{dr.Deaths.ToString().PadLeft(d, '0')}/{scoresign}{Math.Abs(dr.Score).ToString().PadLeft(s, '0')}",
+                                            Url = null
+                                        });
+                                    });
+
+                                    game.PlayersHeader = "(K/D/S) Players";
+                                }
+
                                 switch (raw.pong.GameType)
                                 {
                                     case 0:
@@ -453,274 +487,6 @@ namespace NadekoBot.Services.GamesList
         {
             return IsMatesFamilyMarker() || IsKebbzNetMarker() || IsIonDriverMarker();
         }
-
-        public async Task<EmbedBuilder> GetEmbed(int idx, int total)
-        {
-            string footer = $"[{idx}/{total}] ({MapFile}.bzn)";
-            if (pong != null && pong.CompressedData != null && pong.CompressedData.Mods.Length > 0)
-            {
-                footer += " " + Format.Sanitize(pong.CompressedData.Mods);
-            }
-
-            string embedMessage = await GetGameDataString();
-            if (embedMessage.Length > 2048) embedMessage = embedMessage.Substring(0, 2048 - 1) + @"…";
-            EmbedBuilder embed = new EmbedBuilder()
-                .WithDescription(embedMessage)
-                .WithFooter(efb => efb.WithText(footer));
-
-            string prop = await _bz2.GetBZ2GameProperty("shell", Format.Sanitize(MapFile));
-            embed.WithThumbnailUrl(prop ?? "http://discord.battlezone.report/resources/logos/nomap.png");
-
-            string playerCountData = string.Empty;
-            bool fullPlayers = false;
-            if (pong != null)
-            {
-                playerCountData = " [" + pong.CurPlayers + "/" + pong.MaxPlayers + "]";
-                fullPlayers = (pong.CurPlayers >= pong.MaxPlayers);
-            }
-
-            if (l == "1")
-            {
-                embed.WithColor(new Color(0xbe, 0x19, 0x31))
-                     .WithTitle("⛔ " + Format.Sanitize(Name) + playerCountData);
-            }
-            else if (k == "1")
-            {
-                embed.WithColor(new Color(0xff, 0xac, 0x33))
-                     .WithTitle("🔐 " + Format.Sanitize(Name) + playerCountData);
-            }
-            else if (pong == null)
-            {
-                embed.WithColor(new Color(0xff, 0xff, 0x00))
-                     .WithTitle("❓ " + Format.Sanitize(Name) + playerCountData);
-            }
-            else if (pong != null)
-            {
-                float fullnessRatio = 1.0f * pong.CurPlayers / pong.MaxPlayers;
-
-                if (fullnessRatio >= 1.0f)
-                {
-                    embed.WithOkColor().WithTitle("🌕 " + Format.Sanitize(Name) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.75f)
-                {
-                    embed.WithOkColor().WithTitle("🌖 " + Format.Sanitize(Name) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.50f)
-                {
-                    embed.WithOkColor().WithTitle("🌗 " + Format.Sanitize(Name) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.25f)
-                {
-                    embed.WithOkColor().WithTitle("🌘 " + Format.Sanitize(Name) + playerCountData);
-                }
-                else if (fullnessRatio >= 0.0f)
-                {
-                    embed.WithOkColor().WithTitle("🌑 " + Format.Sanitize(Name) + playerCountData);
-                }
-                else
-                {
-                    embed.WithOkColor().WithTitle("👽 " + Format.Sanitize(Name) + playerCountData); // this should never happen
-                }
-            }
-            else // this one should never happen
-            {
-                embed.WithColor(new Color(0xff, 0xff, 0x00))
-                     .WithTitle("⚠ " + Format.Sanitize(Name) + playerCountData);
-            }
-
-            if (pong != null)
-            {
-                if (pong.CompressedData != null)
-                {
-                    if (pong.CompressedData.Players.Length > 0)
-                    {
-                        embed.AddField(efb => efb.WithName("(K/D/S) Players").WithValue(pong.CompressedData.GetPlayersString()).WithIsInline(false));
-                    }
-                }
-            }
-
-            return embed;
-        }
-
-        public async Task<string> GetGameDataString()
-        {
-            string name = await _bz2.GetBZ2GameProperty("name", MapFile);
-            string version = await _bz2.GetBZ2GameProperty("version", v);
-            string mod = await _bz2.GetBZ2GameProperty("mod", d);
-
-
-            StringBuilder builder = new StringBuilder();
-
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                builder.AppendLine($@"Map     | [{MapFile}]");
-            }
-            else
-            {
-                builder.AppendLine($@"Map     | {name}");
-            }
-
-            if (string.IsNullOrWhiteSpace(version))
-            {
-                builder.AppendLine($@"Version | [{v}]");
-            }
-            else
-            {
-                builder.AppendLine($@"Version | {version}");
-            }
-
-            if (string.IsNullOrWhiteSpace(mod))
-            {
-                builder.AppendLine($@"Mod     | [{d}]");
-            }
-            else
-            {
-                builder.AppendLine($@"Mod     | {mod}");
-            }
-
-            switch (t)
-            {
-                case "0":
-                    builder.AppendLine(@"NAT     | NONE"); /// Works with anyone
-                    break;
-                case "1":
-                    builder.AppendLine(@"NAT     | FULL CONE"); /// Accepts any datagrams to a port that has been previously used. Will accept the first datagram from the remote peer.
-                    break;
-                case "2":
-                    builder.AppendLine(@"NAT     | ADDRESS RESTRICTED"); /// Accepts datagrams to a port as long as the datagram source IP address is a system we have already sent to. Will accept the first datagram if both systems send simultaneously. Otherwise, will accept the first datagram after we have sent one datagram.
-                    break;
-                case "3":
-                    builder.AppendLine(@"NAT     | PORT RESTRICTED"); /// Same as address-restricted cone NAT, but we had to send to both the correct remote IP address and correct remote port. The same source address and port to a different destination uses the same mapping.
-                    break;
-                case "4":
-                    builder.AppendLine(@"NAT     | SYMMETRIC"); /// A different port is chosen for every remote destination. The same source address and port to a different destination uses a different mapping. Since the port will be different, the first external punchthrough attempt will fail. For this to work it requires port-prediction (MAX_PREDICTIVE_PORT_RANGE>1) and that the router chooses ports sequentially.
-                    break;
-                case "5":
-                    builder.AppendLine(@"NAT     | UNKNOWN"); /// Hasn't been determined. NATTypeDetectionClient does not use this, but other plugins might
-                    break;
-                case "6":
-                    builder.AppendLine(@"NAT     | DETECTION IN PROGRESS"); /// In progress. NATTypeDetectionClient does not use this, but other plugins might
-                    break;
-                case "7":
-                    builder.AppendLine(@"NAT     | SUPPORTS UPNP"); /// Didn't bother figuring it out, as we support UPNP, so it is equivalent to NAT_TYPE_NONE. NATTypeDetectionClient does not use this, but other plugins might
-                    break;
-                default:
-                    builder.AppendLine(@"NAT     | [" + t + "]");
-                    break;
-            }
-
-            switch (proxySource)
-            {
-                case "masterserver.matesfamily.org":
-                    builder.AppendLine(@"List    | MatesFamily");
-                    break;
-                case "gamelist.kebbz.com":
-                    builder.AppendLine(@"List    | KebbzNet");
-                    break;
-                default:
-                    builder.AppendLine(@"List    | IonDriver");
-                    break;
-            }
-
-            if (pong != null)
-            {
-                switch (pong.GameType)
-                {
-                    case 0:
-                        builder.AppendLine(@"Type    | All");
-                        break;
-                    case 1:
-                        switch (pong.GameSubType)
-                        {
-                            case 0:
-                                builder.AppendLine(@"Type    | DM");
-                                break;
-                            case 1:
-                                builder.AppendLine(@"Type    | KOTH");
-                                break;
-                            case 2:
-                                builder.AppendLine(@"Type    | CTF");
-                                break;
-                            case 3:
-                                builder.AppendLine(@"Type    | Loot");
-                                break;
-                            case 4:
-                                builder.AppendLine(@"Type    | DM [RESERVED]");
-                                break;
-                            case 5:
-                                builder.AppendLine(@"Type    | Race");
-                                break;
-                            case 6:
-                                builder.AppendLine(@"Type    | Race (Vehicle Only)");
-                                break;
-                            case 7:
-                                builder.AppendLine(@"Type    | DM (Vehicle Only)");
-                                break;
-                            default:
-                                builder.AppendLine(@"Type    | DM [UNKNOWN]");
-                                break;
-                        }
-                        break;
-                    case 2:
-                        if (pong.TeamsOn && pong.OnlyOneTeam)
-                        {
-                            builder.AppendLine(@"Type    | MPI");
-                        }
-                        else
-                        {
-                            builder.AppendLine(@"Type    | Strat");
-                        }
-                        break;
-                    case 3:
-                        builder.AppendLine(@"Type    | MPI [Invalid]");
-                        break;
-                }
-
-                switch (pong.ServerInfoMode)
-                {
-                    case 1:
-                        builder.AppendLine($"Time    | Not playing or in shell for {pong.GameTimeMinutes} minutes");
-                        break;
-                    case 3:
-                        builder.AppendLine($"Time    | Playing for {pong.GameTimeMinutes} minutes");
-                        break;
-                }
-
-                builder.AppendLine($"TPS     | {pong.TPS}");
-
-                if (pong.MaxPing > 0)
-                    builder.AppendLine($"MaxPing | {pong.MaxPing}");
-
-                if (pong.TimeLimit > 0)
-                    builder.AppendLine($"TimeLim | {pong.TimeLimit}");
-
-                if (pong.KillLimit > 0)
-                    builder.AppendLine($"KillLim | {pong.KillLimit}");
-            }
-
-            string retVal = Format.Code(builder.ToString(), "css");
-
-            if (pong != null && pong.CompressedData != null)
-            {
-                if (pong.CompressedData.MapURL.Length > 0)
-                {
-                    retVal = Format.Sanitize(pong.CompressedData.MapURL) + "\n" + retVal;
-                }
-
-                if (pong.CompressedData.MOTD.Length > 0)
-                {
-                    retVal = Format.Sanitize(pong.CompressedData.MOTD) + "\n" + retVal;
-                }
-            }
-
-            return retVal;
-        }
-
-        internal void SetBz2Service(GameListBZ2Service bZ2Service)
-        {
-            _bz2 = bZ2Service;
-        }
     }
 
     public class RaknetPongResponse
@@ -756,36 +522,6 @@ namespace NadekoBot.Services.GamesList
         public string MapURL { get; set; }
         public string MOTD { get; set; }
         public RaknetPongPlayerInfo[] Players { get; set; }
-
-        public string GetPlayersString()
-        {
-            StringBuilder builder = new StringBuilder();
-
-            int k = 1;
-            int d = 1;
-            int s = 1;
-            bool scoreNeedsSign = false;
-
-            Players.ForEach(dr =>
-            {
-                k = Math.Max(k, dr.Kills.ToString().Length);
-                d = Math.Max(d, dr.Deaths.ToString().Length);
-                s = Math.Max(s, Math.Abs(dr.Score).ToString().Length);
-                scoreNeedsSign = scoreNeedsSign || (dr.Score < 0);
-            });
-
-            Players.ForEach(dr =>
-            {
-                string scoresign = "0";
-                if (dr.Score > 0) scoresign = "+";
-                if (dr.Score < 0) scoresign = "-";
-                if (!scoreNeedsSign) scoresign = string.Empty;
-                builder.AppendLine($"`{dr.Kills.ToString().PadLeft(k, '0')}/{dr.Deaths.ToString().PadLeft(d, '0')}/{scoresign}{Math.Abs(dr.Score).ToString().PadLeft(s, '0')}` {Format.Sanitize(dr.UserName)}");
-            });
-
-            //return Format.Code(builder.ToString(), "css");
-            return builder.ToString();
-        }
     }
 
     public class RaknetPongPlayerInfo

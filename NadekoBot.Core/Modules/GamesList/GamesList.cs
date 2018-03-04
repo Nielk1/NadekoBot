@@ -155,8 +155,7 @@ namespace NadekoBot.Modules.GamesList
             if (!string.IsNullOrWhiteSpace(game.Image)) embed.WithThumbnailUrl(game.Image);
 
             string footer = $"[{index + 1}/{GamesList.Length}]";
-            if (!string.IsNullOrWhiteSpace(game.Footer)) footer = game.Footer;
-
+            if (!string.IsNullOrWhiteSpace(game.Footer)) footer += " " + game.Footer;
             embed.WithFooter(efb => efb.WithText(footer));
 
             {
@@ -172,6 +171,25 @@ namespace NadekoBot.Modules.GamesList
                 string retVal = Format.Code(builder.ToString(), "css");
 
                 embed.WithDescription(retVal);
+            }
+
+            if (game.Players.Count > 0)
+            {
+                int indexPad = game.Players.Select(player => (player.Index.HasValue ? player.Index.Value.ToString() : string.Empty).Length).Max();
+                int classPad = game.Players.Select(player => (player.PlayerClass ?? string.Empty).Length).Max();
+
+                embed.AddField(efb => efb.WithName(game.PlayersHeader ?? "Players")
+                                         .WithValue(game.Players.Select(player =>
+                                         {
+                                             string[] Parts = new string[]
+                                             {
+                                                (indexPad != 0 ? ($"`{(player.Index.HasValue ? player.Index.Value.ToString() : string.Empty).PadLeft(indexPad)}`") : null),
+                                                (indexPad != 0 ? ($"`{((player.PlayerClass ?? string.Empty).PadRight(classPad)).Replace("`", "\\`")}`") : null),
+                                                (string.IsNullOrWhiteSpace(player.Url) ? Format.Sanitize(player.Name) : $"[{Format.Sanitize(player.Name)}]({player.Url})")
+                                             };
+
+                                             return string.Join(" ", Parts);
+                                         })).WithIsInline(false));
             }
 
             return embed;
