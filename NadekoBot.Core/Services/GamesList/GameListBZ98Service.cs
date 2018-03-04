@@ -95,6 +95,22 @@ namespace NadekoBot.Services.GamesList
                     game.Name = raw.Name;
                     game.Image = await GetShellMap(raw.MapFile) ?? "http://discord.battlezone.report/resources/logos/nomap.png";
 
+                    game.CurPlayers = raw.userCount;
+                    game.MaxPlayers = raw.PlayerLimit;
+
+                    if (raw.isLocked)
+                    {
+                        game.Status = EDataGameListServerGameStatus.Locked;
+                    }
+                    else if (raw.IsPassworded == true)
+                    {
+                        game.Status = EDataGameListServerGameStatus.Passworded;
+                    }
+                    else
+                    {
+                        game.Status = EDataGameListServerGameStatus.Open;
+                    }
+
                     return game;
                 })
             )).ToArray();

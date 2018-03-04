@@ -52,8 +52,8 @@ namespace NadekoBot.Modules.GamesList
                     .WithColor(new Color(255, 255, 255))
                     .WithTitle($"{list.GameTitle} {GetText("gamelist")}")
                     .WithDescription($"{list.Header.Description}\n`{list.Games?.Length ?? 0} Game(s)`");
-                if (!string.IsNullOrWhiteSpace(list.Header.Image)) embed = embed.WithThumbnailUrl(list.Header.Image);
-                if (!string.IsNullOrWhiteSpace(list.Header.Credit)) embed = embed.WithFooter(efb => efb.WithText(list.Header.Credit));
+                if (!string.IsNullOrWhiteSpace(list.Header.Image)) embed.WithThumbnailUrl(list.Header.Image);
+                if (!string.IsNullOrWhiteSpace(list.Header.Credit)) embed.WithFooter(efb => efb.WithText(list.Header.Credit));
 
                 foreach (DataGameListServerStatus status in list.Header.ServerStatus)
                 {
@@ -84,8 +84,10 @@ namespace NadekoBot.Modules.GamesList
                     //return Task.CompletedTask;
                 }
 
+                int page = 0;
+                int.TryParse(restOfLine.Trim(), out page);
                 // this appears to pre-generate the pages because I don't have to cache this
-                await Context.Channel.SendPaginatedConfirmAsync(_client, 0, /*async*/ (curPage) =>
+                await Context.Channel.SendPaginatedConfirmAsync(_client, page, /*async*/ (curPage) =>
                 {
                     return GetGameEmbed(list.Games, curPage);
                 }, list.Games?.Length ?? 0, 1, addPaginatedFooter: false);
@@ -96,14 +98,29 @@ namespace NadekoBot.Modules.GamesList
         private EmbedBuilder GetGameEmbed(DataGameListGame[] GamesList, int index = 0)
         {
             var game = GamesList[index];
-            EmbedBuilder localembed = new EmbedBuilder()
-                .WithColor(new Color(255, 255, 255))
-                .WithTitle($"{game.Name}")
-                .WithDescription($"-");
-            if (!string.IsNullOrWhiteSpace(game.Image)) localembed = localembed.WithThumbnailUrl(game.Image);
-            localembed = localembed.WithFooter(efb => efb.WithText($"{index + 1}/{GamesList.Length}"));
 
-            return localembed;
+            EmbedBuilder embed = new EmbedBuilder();
+
+            string playerCountData = string.Empty;
+            if (game.CurPlayers.HasValue || game.MaxPlayers.HasValue)
+            {
+                playerCountData = $" [{(game.CurPlayers.HasValue ? game.CurPlayers.Value.ToString() : "?")}{(game.MaxPlayers.HasValue ? $"/{game.MaxPlayers.Value.ToString()}" : string.Empty)}]";
+            }
+
+            switch (game.Status)
+            {
+                case EDataGameListServerGameStatus.Locked: embed.WithColor(new Color(0xbe, 0x19, 0x31)).WithTitle($"⛔ {game.Name}{playerCountData}"); break;
+                case EDataGameListServerGameStatus.Passworded: embed.WithColor(new Color(0xff, 0xac, 0x33)).WithTitle($"🔐 {game.Name}{playerCountData}"); break;
+                case EDataGameListServerGameStatus.Open: embed.WithOkColor().WithTitle($"🔵 {game.Name}{playerCountData}"); break;
+                case EDataGameListServerGameStatus.Unknown: embed.WithColor(new Color(0xff, 0xff, 0x00)).WithTitle($"❓ {game.Name}{playerCountData}"); break;
+                case EDataGameListServerGameStatus.NotSet:
+                default: embed.WithColor(new Color(0x55, 0x55, 0x55)).WithTitle($"{game.Name}{playerCountData}"); break;
+            }
+            embed.WithDescription($"-");
+            if (!string.IsNullOrWhiteSpace(game.Image)) embed.WithThumbnailUrl(game.Image);
+            embed.WithFooter(efb => efb.WithText($"{index + 1}/{GamesList.Length}"));
+
+            return embed;
         }
 
         [NadekoCommand(memberName: "GamesList"), Usage, Description, Aliases]

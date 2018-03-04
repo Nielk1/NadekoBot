@@ -134,6 +134,26 @@ namespace NadekoBot.Services.GamesList
                         game.Name = raw.Name;
                         game.Image = await GetBZ2GameProperty("shell", raw.MapFile) ?? "http://discord.battlezone.report/resources/logos/nomap.png";
 
+                        game.CurPlayers = raw.CurPlayers;
+                        game.MaxPlayers = raw.MaxPlayers;
+
+                        if (raw.Locked)
+                        {
+                            game.Status = EDataGameListServerGameStatus.Locked;
+                        }
+                        else if (raw.Passworded)
+                        {
+                            game.Status = EDataGameListServerGameStatus.Passworded;
+                        }
+                        else if (!raw.CurPlayers.HasValue || !raw.MaxPlayers.HasValue)
+                        {
+                            game.Status = EDataGameListServerGameStatus.Unknown;
+                        }
+                        else
+                        {
+                            game.Status = EDataGameListServerGameStatus.Open;
+                        }
+
                         return game;
                     }))).ToArray();
 
@@ -392,6 +412,12 @@ namespace NadekoBot.Services.GamesList
         public string v { get; set; } // varchar(8)   | GAMEVERSION_KEY
         public string p { get; set; } // varchar(16)  | GAMEPORT_KEY
         public string l { get; set; } // locked
+
+        [JsonIgnore] public int? CurPlayers { get { return pong?.CurPlayers; } }
+        [JsonIgnore] public int? MaxPlayers { get { return pong?.MaxPlayers; } }
+
+        [JsonIgnore] public bool Locked { get { return l == "1"; } }
+        [JsonIgnore] public bool Passworded { get { return k == "1"; } }
 
         private GameListBZ2Service _bz2;
 

@@ -40,6 +40,11 @@ namespace NadekoBot.Core.Services.GamesList
     {
         public string Name { get; set; }
         public string Image { get; set; }
+
+        public int? CurPlayers { get; set; }
+        public int? MaxPlayers { get; set; }
+
+        public EDataGameListServerGameStatus Status { get; set; }
     }
 
     public enum EDataGameListServerStatus
@@ -48,6 +53,15 @@ namespace NadekoBot.Core.Services.GamesList
         Online,
         Offline,
         NoGames,
+        Unknown,
+    }
+
+    public enum EDataGameListServerGameStatus
+    {
+        NotSet,
+        Open,
+        Locked,
+        Passworded,
         Unknown,
     }
 }

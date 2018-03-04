@@ -141,6 +141,26 @@ namespace NadekoBot.Services.GamesList
                     game.Name = raw.Name;
                     game.Image = "http://discord.battlezone.report/resources/logos/nomap.png";
 
+                    game.CurPlayers = raw.CurPlayers;
+                    game.MaxPlayers = raw.MaxPlayers;
+
+                    if (raw.Locked)
+                    {
+                        game.Status = EDataGameListServerGameStatus.Locked;
+                    }
+                    else if (raw.Passworded)
+                    {
+                        game.Status = EDataGameListServerGameStatus.Passworded;
+                    }
+                    else if (!raw.MaxPlayers.HasValue)
+                    {
+                        game.Status = EDataGameListServerGameStatus.Unknown;
+                    }
+                    else
+                    {
+                        game.Status = EDataGameListServerGameStatus.Open;
+                    }
+
                     return game;
                 }).ToArray();
 
@@ -376,6 +396,12 @@ namespace NadekoBot.Services.GamesList
 
         public string gtm { get; set; } // game time min
         public string pgm { get; set; } // max players
+
+        [JsonIgnore] public int CurPlayers { get { return pl.Length; } }
+        [JsonIgnore] public int? MaxPlayers { get { int tmp = 0; return int.TryParse(pm, out tmp) ? (int?)tmp : null; } }
+
+        [JsonIgnore] public bool Locked { get { return l == "1"; } }
+        [JsonIgnore] public bool Passworded { get { return k == "1"; } }
 
         private BZCCPlayerData[] pl { get; set; }
 
