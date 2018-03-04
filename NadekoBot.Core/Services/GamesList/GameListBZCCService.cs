@@ -167,7 +167,7 @@ namespace NadekoBot.Services.GamesList
                         game.MapFilename = raw.MapFile;
                         game.Footer = raw.MapFile + @".bzn";
 
-                        if (string.IsNullOrWhiteSpace(raw.MOTD))
+                        if (!string.IsNullOrWhiteSpace(raw.MOTD))
                         {
                             game.TopInfo.Add(Format.Sanitize(raw.MOTD));
                         }
