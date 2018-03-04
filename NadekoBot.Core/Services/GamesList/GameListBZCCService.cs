@@ -397,7 +397,7 @@ namespace NadekoBot.Services.GamesList
         public string gtm { get; set; } // game time min
         public string pgm { get; set; } // max players
 
-        [JsonIgnore] public int CurPlayers { get { return pl.Length; } }
+        [JsonIgnore] public int CurPlayers { get { return pl?.Length ?? 0; } }
         [JsonIgnore] public int? MaxPlayers { get { int tmp = 0; return int.TryParse(pm, out tmp) ? (int?)tmp : null; } }
 
         [JsonIgnore] public bool Locked { get { return l == "1"; } }
