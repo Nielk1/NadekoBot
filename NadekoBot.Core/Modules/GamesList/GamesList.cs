@@ -57,17 +57,29 @@ namespace NadekoBot.Modules.GamesList
                 foreach (DataGameListServerStatus status in list.Header.ServerStatus)
                 {
                     string StatusText = string.Empty;
-                    switch(status.Status)
+                    switch (status.Status)
                     {
-                        case EDataGameListServerStatus.Online: StatusText += "✅ Online";  break;
-                        case EDataGameListServerStatus.Offline: StatusText += "❌ Offline";  break;
-                        case EDataGameListServerStatus.NoMarker: StatusText += "⚠ No Marker";  break;
-                        case EDataGameListServerStatus.Unknown: StatusText += "❓ Unknown";  break;
+                        case EDataGameListServerStatus.Online: StatusText += "✅ Online"; break;
+                        case EDataGameListServerStatus.Offline: StatusText += "❌ Offline"; break;
+                        case EDataGameListServerStatus.NoMarker: StatusText += "⚠ No Marker"; break;
+                        case EDataGameListServerStatus.Unknown: StatusText += "❓ Unknown"; break;
                     }
                     if (status.Updated.HasValue) StatusText += $"\n`Updated {GamesListService.TimeAgoUtc(status.Updated.Value)}`";
 
-                    embed.AddField(efb => efb.WithName(status.Name).WithValue(StatusText).WithIsInline(true));
+                    embed.AddField(efb =>
+                    {
+                        if (string.IsNullOrWhiteSpace(StatusText))
+                        {
+                            efb.WithName(status.Name).WithIsInline(true);
+                        }
+                        else
+                        {
+                            efb.WithName(status.Name).WithValue(StatusText).WithIsInline(true);
+                        }
+                    });
                 }
+                await channel.EmbedAsync(embed).ConfigureAwait(false);
+                return;
             }
 
             //Format.Sanitize
