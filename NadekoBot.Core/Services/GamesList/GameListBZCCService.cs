@@ -332,6 +332,8 @@ namespace NadekoBot.Services.GamesList
 
         public async Task<string> GetBZCCGameProperty(string termType, string term)
         {
+            if (string.IsNullOrWhiteSpace(term)) return null;
+
             //if (new string[] { "version", "mod" }.Contains(termType))
             //{
             //    using (var http = new HttpClient())
@@ -524,7 +526,7 @@ namespace NadekoBot.Services.GamesList
 
         public string g { get; set; } // ex "4M-CB73@GX" (seems to go with NAT type 5???)
         public string n { get; set; } // varchar(256) | Name of client game session, base64 and null terminate.
-        [JsonProperty("n")] public string MapFile { get; set; } // varchar(68)  | Name of client map, no bzn extension.
+        [JsonProperty("m")] public string MapFile { get; set; } // varchar(68)  | Name of client map, no bzn extension.
         public string k { get; set; } // tinyint      | Password Flag.
         public string d { get; set; } // varchar(16)  | MODSLISTCRC_KEY
         public string t { get; set; } // tinyint      | NATTYPE_KEY //nat type 5 seems bad, 7 seems to mean direct connect

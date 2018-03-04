@@ -332,6 +332,8 @@ namespace NadekoBot.Services.GamesList
 
         public async Task<string> GetBZ2GameProperty(string termType, string term)
         {
+            if (string.IsNullOrWhiteSpace(term)) return null;
+
             if (new string[] { "version", "mod" }.Contains(termType))
             {
                 using (var http = new HttpClient())
