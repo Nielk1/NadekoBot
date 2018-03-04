@@ -209,7 +209,7 @@ namespace NadekoBot.Services.GamesList
                                 scoreNeedsSign = scoreNeedsSign || (dr.Score < 0);
                             });
 
-                            raw.pl.ForEach(async dr =>
+                            raw.pl.OrderBy(dr => dr.Team.HasValue ? dr.Team.Value : 0).ForEach(async dr =>
                             {
                                 string scoresign = "0";
                                 if ((dr.Score.HasValue ? dr.Score.Value : 0) > 0) scoresign = "+";

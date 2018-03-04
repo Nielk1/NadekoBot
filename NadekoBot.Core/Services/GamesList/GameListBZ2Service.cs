@@ -263,7 +263,7 @@ namespace NadekoBot.Services.GamesList
                                         scoreNeedsSign = scoreNeedsSign || (dr.Score < 0);
                                     });
 
-                                    raw.pong.CompressedData.Players.ForEach(dr =>
+                                    raw.pong.CompressedData.Players.OrderBy(dr => dr.Team).ForEach(dr =>
                                     {
                                         string scoresign = "0";
                                         if (dr.Score > 0) scoresign = "+";
