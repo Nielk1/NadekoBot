@@ -44,6 +44,7 @@ namespace NadekoBot.Services.GamesList
             //_bzcc = bzcc;
 
             _gameLists = new List<IGameList>();
+            _gameListsKeyed = new Dictionary<string, IGameList>();
         }
 
         public void AddGameListBZ98Service(GameListBZ98Service x) { _bz98 = x; }
