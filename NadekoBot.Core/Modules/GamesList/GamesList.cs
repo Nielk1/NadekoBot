@@ -87,7 +87,7 @@ namespace NadekoBot.Modules.GamesList
                 await Context.Channel.SendPaginatedConfirmAsync(_client, 0, /*async*/ (curPage) =>
                 {
                     return GetGameEmbed(curPage);
-                }, _service.GamesListLength, 1, addPaginatedFooter: false);
+                }, LastGameList?.Length ?? 0, 1, addPaginatedFooter: false);
             }
             //Format.Sanitize
         }
