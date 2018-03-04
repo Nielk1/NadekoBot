@@ -16,7 +16,7 @@ namespace NadekoBot.Core.Services.GamesList
 
     public class DataGameList
     {
-        public string GameTitle;
+        public string GameTitle { get; set; }
         public DataGameListHeader Header { get; set; }
         public DataGameListGame[] Games { get; set; }
     }
@@ -48,7 +48,11 @@ namespace NadekoBot.Core.Services.GamesList
 
         public string MapFilename { get; set; }
 
+        public List<string> TopInfo = new List<string>();
+
         public List<Tuple<string, string>> Properties = new List<Tuple<string, string>>();
+
+        public string Footer { get; set; }
     }
 
     public enum EDataGameListServerStatus

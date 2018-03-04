@@ -112,6 +112,30 @@ namespace NadekoBot.Services.GamesList
                     }
 
                     game.MapFilename = raw.MapFile;
+                    game.Footer = raw.MapFile + @".bzn";
+                    if (!string.IsNullOrWhiteSpace(raw.clientVersion)) game.Footer += $" {raw.clientVersion}";
+
+                    {
+                        ulong workshopIdNum = 0;
+                        if (!string.IsNullOrWhiteSpace(raw.WorkshopID) && ulong.TryParse(raw.WorkshopID, out workshopIdNum) && workshopIdNum > 0)
+                        {
+                            Task<string> modNameTask = Task.Run(async () =>
+                            {
+                                string modNameRet = await _steam.GetSteamWorkshopName(raw.WorkshopID);
+                                return modNameRet;
+                            });
+                            var modName = modNameTask.Result;
+
+                            if (!string.IsNullOrWhiteSpace(modName))
+                            {
+                                game.TopInfo.Add($"Mod: [{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={raw.WorkshopID})");
+                            }
+                            else
+                            {
+                                game.TopInfo.Add("Mod: " + Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={raw.WorkshopID}"));
+                            }
+                        }
+                    }
 
                     game.Properties.Add(new Tuple<string, string>("Map", "[" + raw.MapFile + "]"));
                     game.Properties.Add(new Tuple<string, string>("State", raw.IsEnded ? "Ended" : raw.IsLaunched ? "Launched" : "In Shell"));
@@ -129,24 +153,6 @@ namespace NadekoBot.Services.GamesList
             )).ToArray();
 
             return data;
-        }
-
-        public async Task<BZ98ServerData> GetGames()
-        {
-            Tuple<string, DateTime> gameData = await TryReadText(filePath, TimeSpan.FromSeconds(5));
-
-            if (string.IsNullOrWhiteSpace(gameData.Item1)) return null;
-
-            var LobbyData = JsonConvert.DeserializeObject<Dictionary<string, Lobby>>(gameData.Item1);
-            LobbyData.ForEach(dr => dr.Value.SetSteamService(_steam));
-            return new BZ98ServerData() {
-                Games = LobbyData.Where(dr => !dr.Value.isChat
-                                           && (!dr.Value.isPrivate || (dr.Value.isPrivate && dr.Value.IsPassworded == true))
-                                           && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && ("0123456789".Contains(dr.Value.clientVersion[0]))) // not mobile which starts with MB or something
-                                           && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && (dr.Value.clientVersion != "0.0.0")) // not test game
-                                       ).Select(dr => dr.Value).ToList(),
-                Modified = gameData.Item2
-            };
         }
 
         public static async Task<Tuple<string,DateTime>> TryReadText(string filepath, TimeSpan timeout)

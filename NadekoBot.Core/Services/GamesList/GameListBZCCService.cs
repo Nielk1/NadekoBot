@@ -164,6 +164,35 @@ namespace NadekoBot.Services.GamesList
                         }
 
                         game.MapFilename = raw.MapFile;
+                        game.Footer = raw.MapFile + @".bzn";
+
+                        if (string.IsNullOrWhiteSpace(raw.MOTD))
+                        {
+                            game.TopInfo.Add(Format.Sanitize(raw.MOTD));
+                        }
+
+                        foreach (string mod in raw.Mods)
+                        {
+                            ulong workshopIdNum = 0;
+                            if (!string.IsNullOrWhiteSpace(mod) && ulong.TryParse(mod, out workshopIdNum) && workshopIdNum > 0)
+                            {
+                                Task<string> modNameTask = Task.Run(async () =>
+                                {
+                                    string modNameRet = await _steam.GetSteamWorkshopName(mod);
+                                    return modNameRet;
+                                });
+                                var modName = modNameTask.Result;
+
+                                if (!string.IsNullOrWhiteSpace(modName))
+                                {
+                                    game.TopInfo.Add($"Mod: [{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={mod})");
+                                }
+                                else
+                                {
+                                    game.TopInfo.Add("Mod: " + Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={mod}"));
+                                }
+                            }
+                        }
 
                         {
                             string name = await GetBZCCGameProperty("name", raw.MapFile);
@@ -179,13 +208,13 @@ namespace NadekoBot.Services.GamesList
 
                             if (!string.IsNullOrWhiteSpace(raw.v))
                             {
-                                game.Properties.Add(new Tuple<string, string>("Version", $"[{raw.v}]"));
+                                game.Properties.Add(new Tuple<string, string>("Version", $"{raw.v}"));
                             }
 
-                            if (!string.IsNullOrWhiteSpace(raw.d))
+                            /*if (!string.IsNullOrWhiteSpace(raw.d))
                             {
                                 game.Properties.Add(new Tuple<string, string>("Mod", $"[{raw.d}]"));
-                            }
+                            }*/
 
                             if (!string.IsNullOrWhiteSpace(raw.t))
                                 switch (raw.t)
@@ -548,6 +577,8 @@ namespace NadekoBot.Services.GamesList
         public string gtm { get; set; } // game time min
         public string pgm { get; set; } // max ping
 
+        public BZCCPlayerData[] pl { get; set; }
+
         [JsonIgnore] public int CurPlayers { get { return pl?.Length ?? 0; } }
         [JsonIgnore] public int? MaxPlayers { get { int tmp = 0; return int.TryParse(pm, out tmp) ? (int?)tmp : null; } }
 
@@ -566,11 +597,11 @@ namespace NadekoBot.Services.GamesList
         [JsonIgnore] public int? TimeLimit { get { int tmp = 0; return int.TryParse(ti, out tmp) ? (int?)tmp : null; } }
         [JsonIgnore] public int? KillLimit { get { int tmp = 0; return int.TryParse(ki, out tmp) ? (int?)tmp : null; } }
 
-
-        public BZCCPlayerData[] pl { get; set; }
-
         [JsonIgnore] public string Name { get { return Encoding.UTF8.GetString(Convert.FromBase64String(n).TakeWhile(chr => chr != 0x00).ToArray()); } }
+        [JsonIgnore] public string MOTD { get { return Encoding.UTF8.GetString(Convert.FromBase64String(h)); } }
 
+        [JsonIgnore] public string[] Mods { get { return mm?.Split(';') ?? new string[] { }; } }
+        
         private GameListBZCCService _bzcc;
 
         public bool IsOnRebellion()

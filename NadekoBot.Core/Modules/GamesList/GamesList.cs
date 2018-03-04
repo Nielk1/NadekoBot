@@ -111,17 +111,53 @@ namespace NadekoBot.Modules.GamesList
                 playerCountData = $" [{(game.CurPlayers.HasValue ? game.CurPlayers.Value.ToString() : "?")}{(game.MaxPlayers.HasValue ? $"/{game.MaxPlayers.Value.ToString()}" : string.Empty)}]";
             }
 
+            string PlayerCountImage = string.Empty;
+            if (game.CurPlayers.HasValue && game.MaxPlayers.HasValue)
+            {
+                float fullnessRatio = 1.0f * game.CurPlayers.Value / game.MaxPlayers.Value;
+
+                if (fullnessRatio >= 1.0f)
+                {
+                    PlayerCountImage = "🌕 ";
+                }
+                else if (fullnessRatio >= 0.75f)
+                {
+                    PlayerCountImage = "🌖 ";
+                }
+                else if (fullnessRatio >= 0.50f)
+                {
+                    PlayerCountImage = "🌗 ";
+                }
+                else if (fullnessRatio >= 0.25f)
+                {
+                    PlayerCountImage = "🌘 ";
+                }
+                else if (fullnessRatio >= 0.0f)
+                {
+                    PlayerCountImage = "🌑 ";
+                }
+                else
+                {
+                    PlayerCountImage = "👽 ";
+                }
+            }
+
             switch (game.Status)
             {
                 case EDataGameListServerGameStatus.Locked: embed.WithColor(new Color(0xbe, 0x19, 0x31)).WithTitle($"⛔ {game.Name}{playerCountData}"); break;
                 case EDataGameListServerGameStatus.Passworded: embed.WithColor(new Color(0xff, 0xac, 0x33)).WithTitle($"🔐 {game.Name}{playerCountData}"); break;
-                case EDataGameListServerGameStatus.Open: embed.WithOkColor().WithTitle($"🔵 {game.Name}{playerCountData}"); break;
+                case EDataGameListServerGameStatus.Open: embed.WithOkColor().WithTitle($"{PlayerCountImage}{game.Name}{playerCountData}"); break;
                 case EDataGameListServerGameStatus.Unknown: embed.WithColor(new Color(0xff, 0xff, 0x00)).WithTitle($"❓ {game.Name}{playerCountData}"); break;
                 case EDataGameListServerGameStatus.NotSet:
                 default: embed.WithColor(new Color(0x55, 0x55, 0x55)).WithTitle($"{game.Name}{playerCountData}"); break;
             }
+
             if (!string.IsNullOrWhiteSpace(game.Image)) embed.WithThumbnailUrl(game.Image);
-            embed.WithFooter(efb => efb.WithText($"{index + 1}/{GamesList.Length}"));
+
+            string footer = $"[{index + 1}/{GamesList.Length}]";
+            if (!string.IsNullOrWhiteSpace(game.Footer)) footer = game.Footer;
+
+            embed.WithFooter(efb => efb.WithText(footer));
 
             {
                 StringBuilder builder = new StringBuilder();
