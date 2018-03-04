@@ -13,6 +13,7 @@ namespace NadekoBot.Modules.GamesList
     public class GamesList : NadekoTopLevelModule<GamesListService>
     {
         private readonly DiscordSocketClient _client;
+        private DataGameListGame[] LastGameList;
 
         public GamesList(DiscordSocketClient client)
         {
@@ -72,25 +73,36 @@ namespace NadekoBot.Modules.GamesList
                 }
                 await channel.EmbedAsync(embed).ConfigureAwait(false);
 
-                int counter = 0;
-                if (list.Games != null)
-                    foreach (var game in list.Games)
+                LastGameList = list.Games;
+                if (!string.IsNullOrWhiteSpace(restOfLine) && restOfLine.Trim().ToLowerInvariant() == "all")
+                {
+                    for (int x = 0; x < (list.Games?.Length ?? 0); x++)
                     {
-                        counter++;
-                        EmbedBuilder localembed = new EmbedBuilder()
-                            .WithColor(new Color(255, 255, 255))
-                            .WithTitle($"{game.Name}")
-                            .WithDescription($"-");
-                        if (!string.IsNullOrWhiteSpace(game.Image)) localembed = localembed.WithThumbnailUrl(game.Image);
-                        localembed = localembed.WithFooter(efb => efb.WithText($"{counter}/{list.Games.Length}"));
-
-                        await channel.EmbedAsync(localembed).ConfigureAwait(false);
+                        await channel.EmbedAsync(GetGameEmbed(x)).ConfigureAwait(false);
                     }
+                    return;
+                    //return Task.CompletedTask;
+                }
 
-                return;
+                await Context.Channel.SendPaginatedConfirmAsync(_client, 0, /*async*/ (curPage) =>
+                {
+                    return GetGameEmbed(curPage - 1);
+                }, _service.GamesListLength, 10, addPaginatedFooter: false);
             }
-
             //Format.Sanitize
+        }
+
+        private EmbedBuilder GetGameEmbed(int index = 0)
+        {
+            var game = LastGameList[index];
+            EmbedBuilder localembed = new EmbedBuilder()
+                .WithColor(new Color(255, 255, 255))
+                .WithTitle($"{game.Name}")
+                .WithDescription($"-");
+            if (!string.IsNullOrWhiteSpace(game.Image)) localembed = localembed.WithThumbnailUrl(game.Image);
+            localembed = localembed.WithFooter(efb => efb.WithText($"{index + 1}/{LastGameList.Length}"));
+
+            return localembed;
         }
 
         [NadekoCommand(memberName: "GamesList"), Usage, Description, Aliases]
