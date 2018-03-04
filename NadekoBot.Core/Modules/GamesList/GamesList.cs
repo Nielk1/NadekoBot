@@ -79,8 +79,8 @@ namespace NadekoBot.Modules.GamesList
                         counter++;
                         EmbedBuilder localembed = new EmbedBuilder()
                             .WithColor(new Color(255, 255, 255))
-                            .WithTitle($"{game.Name}");
-                            //.WithDescription($"-");
+                            .WithTitle($"{game.Name}")
+                            .WithDescription($"-");
                         if (!string.IsNullOrWhiteSpace(game.Image)) localembed = localembed.WithThumbnailUrl(game.Image);
                         localembed = localembed.WithFooter(efb => efb.WithText($"{counter}/{list.Games.Length}"));
 

@@ -124,14 +124,18 @@ namespace NadekoBot.Services.GamesList
                     data.Header.ServerStatus = new DataGameListServerStatus[] { IonDriverStatus, MatesFamilyStatus };
                 }
 
-                data.Games = gamelist.GET.Select(raw =>
-                {
-                    DataGameListGame game = new DataGameListGame();
+                data.Games = (await Task.WhenAll(
+                    gamelist.GET
+                    .Where(dr => !dr.IsMarker())
+                    .Select(async raw =>
+                    {
+                        DataGameListGame game = new DataGameListGame();
 
-                    game.Name = raw.Name;
+                        game.Name = raw.Name;
+                        game.Image = await GetBZ2GameProperty("shell", raw.MapFile) ?? "http://discord.battlezone.report/resources/logos/nomap.png";
 
-                    return game;
-                }).ToArray();
+                        return game;
+                    }))).ToArray();
 
                 return data;
             }
@@ -379,9 +383,8 @@ namespace NadekoBot.Services.GamesList
         public string proxySource { get; set; }
 
         public string g { get; set; } // ex "4M-CB73@GX" (seems to go with NAT type 5???)
-        [JsonProperty("n")]
-        public string Name { get; set; } // varchar(256) | Name of client game session.
-        public string m { get; set; } // varchar(68)  | Name of client map, no bzn extension.
+        [JsonProperty("n")] public string Name { get; set; } // varchar(256) | Name of client game session.
+        [JsonProperty("m")] public string MapFile { get; set; } // varchar(68)  | Name of client map, no bzn extension.
         public string k { get; set; } // tinyint      | Password Flag.
         public string d { get; set; } // varchar(16)  | MODSLISTCRC_KEY
         public string t { get; set; } // tinyint      | NATTYPE_KEY //nat type 5 seems bad, 7 seems to mean direct connect
@@ -398,21 +401,21 @@ namespace NadekoBot.Services.GamesList
         {
             return proxySource == "masterserver.matesfamily.org"
                 && l == "1"
-                && m == "See http://matesfamily.org/bz2/";
+                && MapFile == "See http://matesfamily.org/bz2/";
         }
 
         public bool IsKebbzNetMarker()
         {
             return proxySource == "gamelist.kebbz.com"
                 && Name == "http://www.bz2maps.us"
-                && m == "bz2maps";
+                && MapFile == "bz2maps";
         }
 
         public bool IsIonDriverMarker()
         {
             return proxySource == null
                 && l == "1"
-                && m == "bismuth";
+                && MapFile == "bismuth";
         }
 
         public bool IsOnMatesFamily()
@@ -437,7 +440,7 @@ namespace NadekoBot.Services.GamesList
 
         public async Task<EmbedBuilder> GetEmbed(int idx, int total)
         {
-            string footer = $"[{idx}/{total}] ({m}.bzn)";
+            string footer = $"[{idx}/{total}] ({MapFile}.bzn)";
             if (pong != null && pong.CompressedData != null && pong.CompressedData.Mods.Length > 0)
             {
                 footer += " " + Format.Sanitize(pong.CompressedData.Mods);
@@ -449,7 +452,7 @@ namespace NadekoBot.Services.GamesList
                 .WithDescription(embedMessage)
                 .WithFooter(efb => efb.WithText(footer));
 
-            string prop = await _bz2.GetBZ2GameProperty("shell", Format.Sanitize(m));
+            string prop = await _bz2.GetBZ2GameProperty("shell", Format.Sanitize(MapFile));
             embed.WithThumbnailUrl(prop ?? "http://discord.battlezone.report/resources/logos/nomap.png");
 
             string playerCountData = string.Empty;
@@ -526,7 +529,7 @@ namespace NadekoBot.Services.GamesList
 
         public async Task<string> GetGameDataString()
         {
-            string name = await _bz2.GetBZ2GameProperty("name", m);
+            string name = await _bz2.GetBZ2GameProperty("name", MapFile);
             string version = await _bz2.GetBZ2GameProperty("version", v);
             string mod = await _bz2.GetBZ2GameProperty("mod", d);
 
@@ -535,7 +538,7 @@ namespace NadekoBot.Services.GamesList
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                builder.AppendLine($@"Map     | [{m}]");
+                builder.AppendLine($@"Map     | [{MapFile}]");
             }
             else
             {

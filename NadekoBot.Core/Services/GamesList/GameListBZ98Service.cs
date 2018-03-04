@@ -81,20 +81,23 @@ namespace NadekoBot.Services.GamesList
                 new DataGameListServerStatus(){ Name = "Rebellion", Status = EDataGameListServerStatus.NotSet, Updated = gameData.Item2 }
             };
 
-            data.Games = LobbyData
+            data.Games = (await Task.WhenAll(
+                LobbyData
                 .Where(dr => !dr.Value.isChat
                           && (!dr.Value.isPrivate || (dr.Value.isPrivate && dr.Value.IsPassworded == true))
-                          && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && ("0123456789".Contains(dr.Value.clientVersion[0]))) // not mobile which starts with MB or something
+                          //&& ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && ("0123456789".Contains(dr.Value.clientVersion[0]))) // not mobile which starts with MB or something
                           && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && (dr.Value.clientVersion != "0.0.0")) // not test game
                       ).Select(dr => dr.Value)
-                .Select(raw =>
+                .Select(async raw =>
                 {
                     DataGameListGame game = new DataGameListGame();
 
                     game.Name = raw.Name;
+                    game.Image = await GetShellMap(raw.MapFile) ?? "http://discord.battlezone.report/resources/logos/nomap.png";
 
                     return game;
-                }).ToArray();
+                })
+            )).ToArray();
 
             return data;
         }

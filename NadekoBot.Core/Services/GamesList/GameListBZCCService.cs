@@ -139,6 +139,7 @@ namespace NadekoBot.Services.GamesList
                     DataGameListGame game = new DataGameListGame();
 
                     game.Name = raw.Name;
+                    game.Image = "http://discord.battlezone.report/resources/logos/nomap.png";
 
                     return game;
                 }).ToArray();
