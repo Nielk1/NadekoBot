@@ -179,7 +179,7 @@ namespace NadekoBot.Modules.GamesList
                 int classPad = game.Players.Select(player => (player.PlayerClass ?? string.Empty).Length).Max();
 
                 embed.AddField(efb => efb.WithName(game.PlayersHeader ?? "Players")
-                                         .WithValue(game.Players.Select(player =>
+                                         .WithValue(string.Join("\n",game.Players.Select(player =>
                                          {
                                              string[] Parts = new string[]
                                              {
@@ -189,7 +189,7 @@ namespace NadekoBot.Modules.GamesList
                                              };
 
                                              return string.Join(" ", Parts);
-                                         })).WithIsInline(false));
+                                         }))).WithIsInline(false));
             }
 
             return embed;
