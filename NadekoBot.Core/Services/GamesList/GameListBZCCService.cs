@@ -534,8 +534,6 @@ namespace NadekoBot.Services.GamesList
 
         [JsonIgnore] public string[] Mods { get { return mm?.Split(';') ?? new string[] { }; } }
         
-        private GameListBZCCService _bzcc;
-
         public bool IsOnRebellion()
         {
             return proxySource == "Rebellion";

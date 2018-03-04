@@ -49,30 +49,22 @@ namespace NadekoBot.Core.Services
                 {
                     newPlayerData = null;
                 }
-
-                if (newPlayerData == null)
+            }
+            if (newPlayerData == null)
+            {
+                ISteamWebResponse<PlayerSummaryModel> playerData = await Task.Run(async () =>
                 {
-                    var playerData = await Task.Run(async () =>
+                    ISteamWebResponse<PlayerSummaryModel> msg = await steamInterface.GetPlayerSummaryAsync(id);
+                    return msg;
+                });
+
+                newPlayerData = new Tuple<DateTime, PlayerSummaryModel>(DateTime.UtcNow.AddHours(1), playerData.Data);
+
+                steamPlayerCache.AddOrUpdate(id, newPlayerData,
+                    (key, existingVal) =>
                     {
-                        ISteamWebResponse<PlayerSummaryModel> msg = await steamInterface.GetPlayerSummaryAsync(id);
-                        return msg;
+                        return newPlayerData;
                     });
-                    //Task<ISteamWebResponse<PlayerSummaryModel>> playerDataTask = Task.Run(async () =>
-                    //{
-                    //    ISteamWebResponse<PlayerSummaryModel> msg = await steamInterface.GetPlayerSummaryAsync(playerID);
-                    //    return msg;
-                    //});
-                    //
-                    //var playerData = playerDataTask.Result;
-
-                    newPlayerData = new Tuple<DateTime, PlayerSummaryModel>(DateTime.UtcNow.AddHours(1), playerData.Data);
-
-                    steamPlayerCache.AddOrUpdate(id, newPlayerData,
-                        (key, existingVal) =>
-                        {
-                            return newPlayerData;
-                        });
-                }
             }
             return newPlayerData?.Item2;
         }
