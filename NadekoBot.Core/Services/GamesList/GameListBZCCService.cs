@@ -177,46 +177,47 @@ namespace NadekoBot.Services.GamesList
                                 game.Properties.Add(new Tuple<string, string>("Map", $"{name}"));
                             }
 
-                            if (string.IsNullOrWhiteSpace(raw.v))
+                            if (!string.IsNullOrWhiteSpace(raw.v))
                             {
                                 game.Properties.Add(new Tuple<string, string>("Version", $"[{raw.v}]"));
                             }
 
-                            if (string.IsNullOrWhiteSpace(raw.d))
+                            if (!string.IsNullOrWhiteSpace(raw.d))
                             {
                                 game.Properties.Add(new Tuple<string, string>("Mod", $"[{raw.d}]"));
                             }
 
-                            switch (raw.t)
-                            {
-                                case "0":
-                                    game.Properties.Add(new Tuple<string, string>("NAT", $"NONE")); /// Works with anyone
-                                    break;
-                                case "1":
-                                    game.Properties.Add(new Tuple<string, string>("NAT", $"FULL CONE")); /// Accepts any datagrams to a port that has been previously used. Will accept the first datagram from the remote peer.
-                                    break;
-                                case "2":
-                                    game.Properties.Add(new Tuple<string, string>("NAT", $"ADDRESS RESTRICTED")); /// Accepts datagrams to a port as long as the datagram source IP address is a system we have already sent to. Will accept the first datagram if both systems send simultaneously. Otherwise, will accept the first datagram after we have sent one datagram.
-                                    break;
-                                case "3":
-                                    game.Properties.Add(new Tuple<string, string>("NAT", $"PORT RESTRICTED")); /// Same as address-restricted cone NAT, but we had to send to both the correct remote IP address and correct remote port. The same source address and port to a different destination uses the same mapping.
-                                    break;
-                                case "4":
-                                    game.Properties.Add(new Tuple<string, string>("NAT", $"SYMMETRIC")); /// A different port is chosen for every remote destination. The same source address and port to a different destination uses a different mapping. Since the port will be different, the first external punchthrough attempt will fail. For this to work it requires port-prediction (MAX_PREDICTIVE_PORT_RANGE>1) and that the router chooses ports sequentially.
-                                    break;
-                                case "5":
-                                    game.Properties.Add(new Tuple<string, string>("NAT", $"UNKNOWN")); /// Hasn't been determined. NATTypeDetectionClient does not use this, but other plugins might
-                                    break;
-                                case "6":
-                                    game.Properties.Add(new Tuple<string, string>("NAT", $"DETECTION IN PROGRESS")); /// In progress. NATTypeDetectionClient does not use this, but other plugins might
-                                    break;
-                                case "7":
-                                    game.Properties.Add(new Tuple<string, string>("NAT", $"SUPPORTS UPNP")); /// Didn't bother figuring it out, as we support UPNP, so it is equivalent to NAT_TYPE_NONE. NATTypeDetectionClient does not use this, but other plugins might
-                                    break;
-                                default:
-                                    game.Properties.Add(new Tuple<string, string>("NAT", $"[" + raw.t + "]"));
-                                    break;
-                            }
+                            if (!string.IsNullOrWhiteSpace(raw.t))
+                                switch (raw.t)
+                                {
+                                    case "0":
+                                        game.Properties.Add(new Tuple<string, string>("NAT", $"NONE")); /// Works with anyone
+                                        break;
+                                    case "1":
+                                        game.Properties.Add(new Tuple<string, string>("NAT", $"FULL CONE")); /// Accepts any datagrams to a port that has been previously used. Will accept the first datagram from the remote peer.
+                                        break;
+                                    case "2":
+                                        game.Properties.Add(new Tuple<string, string>("NAT", $"ADDRESS RESTRICTED")); /// Accepts datagrams to a port as long as the datagram source IP address is a system we have already sent to. Will accept the first datagram if both systems send simultaneously. Otherwise, will accept the first datagram after we have sent one datagram.
+                                        break;
+                                    case "3":
+                                        game.Properties.Add(new Tuple<string, string>("NAT", $"PORT RESTRICTED")); /// Same as address-restricted cone NAT, but we had to send to both the correct remote IP address and correct remote port. The same source address and port to a different destination uses the same mapping.
+                                        break;
+                                    case "4":
+                                        game.Properties.Add(new Tuple<string, string>("NAT", $"SYMMETRIC")); /// A different port is chosen for every remote destination. The same source address and port to a different destination uses a different mapping. Since the port will be different, the first external punchthrough attempt will fail. For this to work it requires port-prediction (MAX_PREDICTIVE_PORT_RANGE>1) and that the router chooses ports sequentially.
+                                        break;
+                                    case "5":
+                                        game.Properties.Add(new Tuple<string, string>("NAT", $"UNKNOWN")); /// Hasn't been determined. NATTypeDetectionClient does not use this, but other plugins might
+                                        break;
+                                    case "6":
+                                        game.Properties.Add(new Tuple<string, string>("NAT", $"DETECTION IN PROGRESS")); /// In progress. NATTypeDetectionClient does not use this, but other plugins might
+                                        break;
+                                    case "7":
+                                        game.Properties.Add(new Tuple<string, string>("NAT", $"SUPPORTS UPNP")); /// Didn't bother figuring it out, as we support UPNP, so it is equivalent to NAT_TYPE_NONE. NATTypeDetectionClient does not use this, but other plugins might
+                                        break;
+                                    default:
+                                        game.Properties.Add(new Tuple<string, string>("NAT", $"[" + raw.t + "]"));
+                                        break;
+                                }
 
                             switch (raw.proxySource)
                             {
