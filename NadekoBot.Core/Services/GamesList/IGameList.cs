@@ -18,6 +18,7 @@ namespace NadekoBot.Core.Services.GamesList
     {
         public string GameTitle;
         public DataGameListHeader Header { get; set; }
+        public DataGameListGame[] Games { get; set; }
     }
 
     public class DataGameListHeader
@@ -33,6 +34,11 @@ namespace NadekoBot.Core.Services.GamesList
         public string Name { get; set; }
         public EDataGameListServerStatus Status { get; set; }
         public DateTime? Updated { get; set; }
+    }
+
+    public class DataGameListGame
+    {
+
     }
 
     public enum EDataGameListServerStatus

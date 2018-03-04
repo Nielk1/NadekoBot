@@ -34,7 +34,7 @@ namespace NadekoBot.Modules.GamesList
                 return;
             }*/
 
-            if (!_service.IsValidGameType(type))
+            if (type == null || !_service.IsValidGameType(type))
             {
                 var embed = new EmbedBuilder().WithErrorColor()
                 .WithTitle(GetText("gameslist"))

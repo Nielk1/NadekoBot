@@ -90,7 +90,7 @@ namespace NadekoBot.Services.GamesList
                     Header = new DataGameListHeader()
                     {
                         Description = "List of games currently on Battlezone CC matchmaking servers",
-                        //Image = "http://discord.battlezone.report/resources/logos/bz2.png",
+                        Image = "http://discord.battlezone.report/resources/logos/bzcc.png",
                         Credit = "Brought to you by Nielk1's Raknet Bot"
                     }
                 };
