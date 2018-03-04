@@ -38,7 +38,8 @@ namespace NadekoBot.Core.Services.GamesList
 
     public class DataGameListGame
     {
-
+        public string Name { get; set; }
+        public string Image { get; set; }
     }
 
     public enum EDataGameListServerStatus
@@ -46,7 +47,7 @@ namespace NadekoBot.Core.Services.GamesList
         NotSet,
         Online,
         Offline,
-        NoMarker,
+        NoGames,
         Unknown,
     }
 }

@@ -117,7 +117,7 @@ namespace NadekoBot.Services.GamesList
                     bool isRebellionUp = haveRebellionStatus && gamelist.proxyStatus["Rebellion"].success == true;
                     string statusRebellion = haveRebellionStatus ? gamelist.proxyStatus["Rebellion"].status : null;
                     DateTime? dateRebellion = haveRebellionStatus ? gamelist.proxyStatus["Rebellion"].updated : null;
-                    DataGameListServerStatus RebellionStatus = new DataGameListServerStatus() { Name = "Rebellion", Updated = dateRebellion };
+                    DataGameListServerStatus RebellionStatus = new DataGameListServerStatus() { Name = "Rebellion (Primary)", Updated = dateRebellion };
                     if (isRebellionUp)
                     {
                         RebellionStatus.Status = EDataGameListServerStatus.Online;
@@ -133,6 +133,15 @@ namespace NadekoBot.Services.GamesList
 
                     data.Header.ServerStatus = new DataGameListServerStatus[] { IonDriverStatus, RebellionStatus };
                 }
+
+                data.Games = gamelist.GET.Select(raw =>
+                {
+                    DataGameListGame game = new DataGameListGame();
+
+                    game.Name = raw.Name;
+
+                    return game;
+                }).ToArray();
 
                 return data;
             }
@@ -325,11 +334,18 @@ namespace NadekoBot.Services.GamesList
     public class BZCCPlayerData
     {
         public string n { get; set; } // name (base 64)
-        public string i { get; set; } // id (player ID)
+
+        [JsonProperty("i")] public string PlayerID { get; set; } // id (player ID)
         public string k { get; set; } // kills
         public string d { get; set; } // deaths
         public string s { get; set; } // score
         public string t { get; set; } // team
+
+        [JsonIgnore] public string Name { get { return Encoding.UTF8.GetString(Convert.FromBase64String(n)); } }
+        [JsonIgnore] public int? Kills { get { int tmp = 0; return int.TryParse(k, out tmp) ? (int?)tmp : null; } }
+        [JsonIgnore] public int? Deaths { get { int tmp = 0; return int.TryParse(d, out tmp) ? (int?)tmp : null; } }
+        [JsonIgnore] public int? Score { get { int tmp = 0; return int.TryParse(s, out tmp) ? (int?)tmp : null; } }
+        [JsonIgnore] public int? Team { get { int tmp = 0; return int.TryParse(t, out tmp) ? (int?)tmp : null; } }
     }
 
     public class BZCCGame
@@ -361,6 +377,8 @@ namespace NadekoBot.Services.GamesList
         public string pgm { get; set; } // max players
 
         private BZCCPlayerData[] pl { get; set; }
+
+        [JsonIgnore] public string Name { get { return Encoding.UTF8.GetString(Convert.FromBase64String(n).TakeWhile(chr => chr != 0x00).ToArray()); } }
 
         private GameListBZCCService _bzcc;
 

@@ -88,17 +88,13 @@ namespace NadekoBot.Services.GamesList
                     bool isIonDriver = gamelist.GET.Any(game => game.IsIonDriverMarker());
                     bool isOnIonDriver = gamelist.GET.Any(game => game.IsOnIonDriver());
                     DataGameListServerStatus IonDriverStatus = new DataGameListServerStatus() { Name = "IonDriver", Updated = null };
-                    if (isIonDriver)
+                    if (isIonDriver || isOnIonDriver)
                     {
                         IonDriverStatus.Status = EDataGameListServerStatus.Online;
                     }
-                    else if (isIonDriver)
-                    {
-                        IonDriverStatus.Status = EDataGameListServerStatus.NoMarker;
-                    }
                     else
                     {
-                        IonDriverStatus.Status = EDataGameListServerStatus.Unknown;
+                        IonDriverStatus.Status = EDataGameListServerStatus.NoGames;
                     }
 
                     bool isMatesFamily = gamelist.GET.Any(game => game.IsMatesFamilyMarker());
@@ -108,13 +104,13 @@ namespace NadekoBot.Services.GamesList
                     string statusMatesFamily = haveMatesFamilyStatus ? gamelist.proxyStatus["masterserver.matesfamily.org"].status : null;
                     DateTime? dateMatesFamily = haveMatesFamilyStatus ? gamelist.proxyStatus["masterserver.matesfamily.org"].updated : null;
                     DataGameListServerStatus MatesFamilyStatus = new DataGameListServerStatus() { Name = "MatesFamily (Primary)", Updated = dateMatesFamily };
-                    if (isMatesFamily)
+                    if (isOnMatesFamily || isMatesFamily)
                     {
                         MatesFamilyStatus.Status = EDataGameListServerStatus.Online;
                     }
-                    else if (isOnMatesFamily || isMatesFamilyUp)
+                    else if (isMatesFamilyUp)
                     {
-                        MatesFamilyStatus.Status = EDataGameListServerStatus.NoMarker;
+                        MatesFamilyStatus.Status = EDataGameListServerStatus.NoGames;
                     }
                     else if (!isMatesFamilyUp)
                     {
@@ -127,6 +123,15 @@ namespace NadekoBot.Services.GamesList
 
                     data.Header.ServerStatus = new DataGameListServerStatus[] { IonDriverStatus, MatesFamilyStatus };
                 }
+
+                data.Games = gamelist.GET.Select(raw =>
+                {
+                    DataGameListGame game = new DataGameListGame();
+
+                    game.Name = raw.Name;
+
+                    return game;
+                }).ToArray();
 
                 return data;
             }
@@ -374,7 +379,8 @@ namespace NadekoBot.Services.GamesList
         public string proxySource { get; set; }
 
         public string g { get; set; } // ex "4M-CB73@GX" (seems to go with NAT type 5???)
-        public string n { get; set; } // varchar(256) | Name of client game session.
+        [JsonProperty("n")]
+        public string Name { get; set; } // varchar(256) | Name of client game session.
         public string m { get; set; } // varchar(68)  | Name of client map, no bzn extension.
         public string k { get; set; } // tinyint      | Password Flag.
         public string d { get; set; } // varchar(16)  | MODSLISTCRC_KEY
@@ -398,7 +404,7 @@ namespace NadekoBot.Services.GamesList
         public bool IsKebbzNetMarker()
         {
             return proxySource == "gamelist.kebbz.com"
-                && n == "http://www.bz2maps.us"
+                && Name == "http://www.bz2maps.us"
                 && m == "bz2maps";
         }
 
@@ -457,17 +463,17 @@ namespace NadekoBot.Services.GamesList
             if (l == "1")
             {
                 embed.WithColor(new Color(0xbe, 0x19, 0x31))
-                     .WithTitle("⛔ " + Format.Sanitize(n) + playerCountData);
+                     .WithTitle("⛔ " + Format.Sanitize(Name) + playerCountData);
             }
             else if (k == "1")
             {
                 embed.WithColor(new Color(0xff, 0xac, 0x33))
-                     .WithTitle("🔐 " + Format.Sanitize(n) + playerCountData);
+                     .WithTitle("🔐 " + Format.Sanitize(Name) + playerCountData);
             }
             else if (pong == null)
             {
                 embed.WithColor(new Color(0xff, 0xff, 0x00))
-                     .WithTitle("❓ " + Format.Sanitize(n) + playerCountData);
+                     .WithTitle("❓ " + Format.Sanitize(Name) + playerCountData);
             }
             else if (pong != null)
             {
@@ -475,33 +481,33 @@ namespace NadekoBot.Services.GamesList
 
                 if (fullnessRatio >= 1.0f)
                 {
-                    embed.WithOkColor().WithTitle("🌕 " + Format.Sanitize(n) + playerCountData);
+                    embed.WithOkColor().WithTitle("🌕 " + Format.Sanitize(Name) + playerCountData);
                 }
                 else if (fullnessRatio >= 0.75f)
                 {
-                    embed.WithOkColor().WithTitle("🌖 " + Format.Sanitize(n) + playerCountData);
+                    embed.WithOkColor().WithTitle("🌖 " + Format.Sanitize(Name) + playerCountData);
                 }
                 else if (fullnessRatio >= 0.50f)
                 {
-                    embed.WithOkColor().WithTitle("🌗 " + Format.Sanitize(n) + playerCountData);
+                    embed.WithOkColor().WithTitle("🌗 " + Format.Sanitize(Name) + playerCountData);
                 }
                 else if (fullnessRatio >= 0.25f)
                 {
-                    embed.WithOkColor().WithTitle("🌘 " + Format.Sanitize(n) + playerCountData);
+                    embed.WithOkColor().WithTitle("🌘 " + Format.Sanitize(Name) + playerCountData);
                 }
                 else if (fullnessRatio >= 0.0f)
                 {
-                    embed.WithOkColor().WithTitle("🌑 " + Format.Sanitize(n) + playerCountData);
+                    embed.WithOkColor().WithTitle("🌑 " + Format.Sanitize(Name) + playerCountData);
                 }
                 else
                 {
-                    embed.WithOkColor().WithTitle("👽 " + Format.Sanitize(n) + playerCountData); // this should never happen
+                    embed.WithOkColor().WithTitle("👽 " + Format.Sanitize(Name) + playerCountData); // this should never happen
                 }
             }
             else // this one should never happen
             {
                 embed.WithColor(new Color(0xff, 0xff, 0x00))
-                     .WithTitle("⚠ " + Format.Sanitize(n) + playerCountData);
+                     .WithTitle("⚠ " + Format.Sanitize(Name) + playerCountData);
             }
 
             if (pong != null)

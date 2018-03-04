@@ -50,7 +50,7 @@ namespace NadekoBot.Modules.GamesList
                 EmbedBuilder embed = new EmbedBuilder()
                     .WithColor(new Color(255, 255, 255))
                     .WithTitle($"{list.GameTitle} {GetText("gamelist")}")
-                    .WithDescription($"{list.Header.Description}\n`{9999} Game(s)`");
+                    .WithDescription($"{list.Header.Description}\n`{list.Games?.Length ?? 0} Game(s)`");
                 if (!string.IsNullOrWhiteSpace(list.Header.Image)) embed = embed.WithThumbnailUrl(list.Header.Image);
                 if (!string.IsNullOrWhiteSpace(list.Header.Credit)) embed = embed.WithFooter(efb => efb.WithText(list.Header.Credit));
 
@@ -61,7 +61,7 @@ namespace NadekoBot.Modules.GamesList
                     {
                         case EDataGameListServerStatus.Online: StatusText += "✅ Online"; break;
                         case EDataGameListServerStatus.Offline: StatusText += "❌ Offline"; break;
-                        case EDataGameListServerStatus.NoMarker: StatusText += "⚠ No Marker"; break;
+                        case EDataGameListServerStatus.NoGames: StatusText += "⚠ No Games"; break;
                         case EDataGameListServerStatus.Unknown: StatusText += "❓ Unknown"; break;
                     }
                     if (status.Updated.HasValue) StatusText += $"\nUpdated {GamesListService.TimeAgoUtc(status.Updated.Value)}";
@@ -71,6 +71,22 @@ namespace NadekoBot.Modules.GamesList
                     embed.AddField(efb => efb.WithName(status.Name).WithValue(StatusText).WithIsInline(true));
                 }
                 await channel.EmbedAsync(embed).ConfigureAwait(false);
+
+                int counter = 0;
+                if (list.Games != null)
+                    foreach (var game in list.Games)
+                    {
+                        counter++;
+                        EmbedBuilder localembed = new EmbedBuilder()
+                            .WithColor(new Color(255, 255, 255))
+                            .WithTitle($"{list.GameTitle}")
+                            .WithDescription($"-");
+                        if (!string.IsNullOrWhiteSpace(game.Image)) localembed = localembed.WithThumbnailUrl(game.Image);
+                        localembed = localembed.WithFooter(efb => efb.WithText($"{counter}/{list.Games.Length}"));
+
+                        await channel.EmbedAsync(localembed).ConfigureAwait(false);
+                    }
+
                 return;
             }
 
