@@ -66,6 +66,72 @@ namespace NadekoBot.Services.GamesList
             _gameList.RegisterGameList(this);
         }
 
+        public async Task<DataGameList> GetGamesNew()
+        {
+            using (var http = new HttpClient())
+            {
+                var res = await http.GetStringAsync(queryUrl).ConfigureAwait(false);
+                var gamelist = JsonConvert.DeserializeObject<RaknetData>(res);
+                //gamelist.SetBz2Service(this);
+                //return gamelist;
+
+                DataGameList data = new DataGameList() {
+                    GameTitle = this.Title,
+                    Header = new DataGameListHeader() {
+                        Description = "List of games currently on Battlezone II matchmaking servers",
+                        Image = "http://discord.battlezone.report/resources/logos/bz2.png",
+                        Credit = "Brought to you by Nielk1's Raknet Bot"
+                    }
+                };
+
+                {
+                    bool isIonDriver = gamelist.GET.Any(game => game.IsIonDriverMarker());
+                    bool isOnIonDriver = gamelist.GET.Any(game => game.IsOnIonDriver());
+                    DataGameListServerStatus IonDriverStatus = new DataGameListServerStatus() { Name = "IonDriver", Updated = null };
+                    if (isIonDriver)
+                    {
+                        IonDriverStatus.Status = EDataGameListServerStatus.Online;
+                    }
+                    else if (isIonDriver)
+                    {
+                        IonDriverStatus.Status = EDataGameListServerStatus.NoMarker;
+                    }
+                    else
+                    {
+                        IonDriverStatus.Status = EDataGameListServerStatus.Unknown;
+                    }
+
+                    bool isMatesFamily = gamelist.GET.Any(game => game.IsMatesFamilyMarker());
+                    bool isOnMatesFamily = gamelist.GET.Any(game => game.IsOnMatesFamily());
+                    bool haveMatesFamilyStatus = gamelist.proxyStatus.ContainsKey("masterserver.matesfamily.org");
+                    bool isMatesFamilyUp = haveMatesFamilyStatus && gamelist.proxyStatus["masterserver.matesfamily.org"].success == true;
+                    string statusMatesFamily = haveMatesFamilyStatus ? gamelist.proxyStatus["masterserver.matesfamily.org"].status : null;
+                    DateTime? dateMatesFamily = haveMatesFamilyStatus ? gamelist.proxyStatus["masterserver.matesfamily.org"].updated : null;
+                    DataGameListServerStatus MatesFamilyStatus = new DataGameListServerStatus() { Name = "MatesFamily (Primary)", Updated = dateMatesFamily };
+                    if (isMatesFamily)
+                    {
+                        MatesFamilyStatus.Status = EDataGameListServerStatus.Online;
+                    }
+                    else if (isOnMatesFamily || isMatesFamilyUp)
+                    {
+                        MatesFamilyStatus.Status = EDataGameListServerStatus.NoMarker;
+                    }
+                    else if (!isMatesFamilyUp)
+                    {
+                        MatesFamilyStatus.Status = EDataGameListServerStatus.Offline;
+                    }
+                    else
+                    {
+                        MatesFamilyStatus.Status = EDataGameListServerStatus.Unknown;
+                    }
+
+                    data.Header.ServerStatus = new DataGameListServerStatus[] { IonDriverStatus, MatesFamilyStatus };
+                }
+
+                return data;
+            }
+        }
+
         public async Task<RaknetData> GetGames()
         {
             using (var http = new HttpClient())
@@ -114,24 +180,24 @@ namespace NadekoBot.Services.GamesList
         public EmbedBuilder GetTopEmbed()
         {
             bool isMatesFamily = GET.Any(game => game.IsMatesFamilyMarker());
-            bool isKebbzNet = GET.Any(game => game.IsKebbzNetMarker());
+            //bool isKebbzNet = GET.Any(game => game.IsKebbzNetMarker());
             bool isIonDriver = GET.Any(game => game.IsIonDriverMarker());
 
             bool isOnMatesFamily = GET.Any(game => game.IsOnMatesFamily());
-            bool isOnKebbzNet = GET.Any(game => game.IsOnKebbzNet());
+            //bool isOnKebbzNet = GET.Any(game => game.IsOnKebbzNet());
             bool isOnIonDriver = GET.Any(game => game.IsOnIonDriver());
 
             bool haveMatesFamilyStatus = proxyStatus.ContainsKey("masterserver.matesfamily.org");
             bool haveKebbzNetStatus = proxyStatus.ContainsKey("gamelist.kebbz.com");
 
             bool isMatesFamilyUp = haveMatesFamilyStatus && proxyStatus["masterserver.matesfamily.org"].success == true;
-            bool isKebbzNetUp = haveKebbzNetStatus && proxyStatus["gamelist.kebbz.com"].success == true;
+            //bool isKebbzNetUp = haveKebbzNetStatus && proxyStatus["gamelist.kebbz.com"].success == true;
 
             string statusMatesFamily = haveMatesFamilyStatus ? proxyStatus["masterserver.matesfamily.org"].status : null;
-            string statusKebbzNet = haveKebbzNetStatus ? proxyStatus["gamelist.kebbz.com"].status : null;
+            //string statusKebbzNet = haveKebbzNetStatus ? proxyStatus["gamelist.kebbz.com"].status : null;
 
             DateTime? dateMatesFamily = haveMatesFamilyStatus ? proxyStatus["masterserver.matesfamily.org"].updated : null;
-            DateTime? dateKebbzNet = haveKebbzNetStatus ? proxyStatus["gamelist.kebbz.com"].updated : null;
+            //DateTime? dateKebbzNet = haveKebbzNetStatus ? proxyStatus["gamelist.kebbz.com"].updated : null;
 
             EmbedBuilder embed = new EmbedBuilder()
                 .WithColor(new Color(255, 255, 255))

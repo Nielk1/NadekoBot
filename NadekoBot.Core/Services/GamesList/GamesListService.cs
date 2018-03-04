@@ -6,6 +6,7 @@ using System.Linq;
 using NadekoBot.Core.Services;
 using NadekoBot.Core.Services.GamesList;
 using System.Collections.Generic;
+using System;
 
 namespace NadekoBot.Services.GamesList
 {
@@ -21,6 +22,7 @@ namespace NadekoBot.Services.GamesList
         private GameListBZCCService _bzcc;
 
         private readonly List<IGameList> _gameLists;
+        private readonly Dictionary<string, IGameList> _gameListsKeyed;
 
         public int GamesListLength { get { return _gameLists?.Count ?? 0; } }
 
@@ -51,6 +53,7 @@ namespace NadekoBot.Services.GamesList
         public void RegisterGameList(IGameList gameList)
         {
             _gameLists.Add(gameList);
+            _gameListsKeyed.Add(gameList.Code, gameList);
         }
 
         public IGameList[] GetGamesList(ulong guildId, int page)
@@ -65,22 +68,16 @@ namespace NadekoBot.Services.GamesList
 
         public bool IsValidGameType(string type)
         {
-            switch(type.ToLowerInvariant())
-            {
-                case "bz2":
-                case "bzr":
-                case "bz98":
-                case "bz98r":
-                case "bzcc":
-                    return true;
-            }
-
-            return false;
+            return _gameListsKeyed.ContainsKey(type.ToLowerInvariant());
         }
 
-        public async Task GetGames(string Prefix, ITextChannel channel, string type, string restOfLine)
+        public async Task<DataGameList> GetGames(string type)
         {
-            switch (type.ToLowerInvariant())
+            IGameList gameList = _gameListsKeyed[type.ToLowerInvariant()];
+
+            return await gameList.GetGamesNew();
+
+            /*switch (type.ToLowerInvariant())
             {
                 case "bz2":
                     await GamesBZ2(channel);
@@ -93,7 +90,42 @@ namespace NadekoBot.Services.GamesList
                 case "bzcc":
                     await GamesBZCC(channel);
                     break;
+            }*/
+        }
+
+        internal static string TimeAgoUtc(DateTime dt)
+        {
+            TimeSpan span = DateTime.UtcNow - dt;
+            if (span.Days > 365)
+            {
+                int years = (span.Days / 365);
+                if (span.Days % 365 != 0)
+                    years += 1;
+                return String.Format("about {0} {1} ago",
+                years, years == 1 ? "year" : "years");
             }
+            if (span.Days > 30)
+            {
+                int months = (span.Days / 30);
+                if (span.Days % 31 != 0)
+                    months += 1;
+                return String.Format("about {0} {1} ago",
+                months, months == 1 ? "month" : "months");
+            }
+            if (span.Days > 0)
+                return String.Format("about {0} {1} ago",
+                span.Days, span.Days == 1 ? "day" : "days");
+            if (span.Hours > 0)
+                return String.Format("about {0} {1} ago",
+                span.Hours, span.Hours == 1 ? "hour" : "hours");
+            if (span.Minutes > 0)
+                return String.Format("about {0} {1} ago",
+                span.Minutes, span.Minutes == 1 ? "minute" : "minutes");
+            if (span.Seconds > 5)
+                return String.Format("about {0} seconds ago", span.Seconds);
+            if (span.Seconds <= 5)
+                return "just now";
+            return string.Empty;
         }
 
         public async Task GamesBZCC(ITextChannel channel)

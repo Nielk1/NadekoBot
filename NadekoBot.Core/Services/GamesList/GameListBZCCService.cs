@@ -75,6 +75,69 @@ namespace NadekoBot.Services.GamesList
             _gameList.RegisterGameList(this);
         }
 
+        public async Task<DataGameList> GetGamesNew()
+        {
+            using (var http = new HttpClient())
+            {
+                var res = await http.GetStringAsync(queryUrl).ConfigureAwait(false);
+                var gamelist = JsonConvert.DeserializeObject<BZCCRaknetData>(res);
+                //gamelist.SetBz2Service(this);
+                //return gamelist;
+
+                DataGameList data = new DataGameList()
+                {
+                    GameTitle = this.Title,
+                    Header = new DataGameListHeader()
+                    {
+                        Description = "List of games currently on Battlezone CC matchmaking servers",
+                        //Image = "http://discord.battlezone.report/resources/logos/bz2.png",
+                        Credit = "Brought to you by Nielk1's Raknet Bot"
+                    }
+                };
+
+                {
+                    bool isOnIonDriver = gamelist.GET.Any(game => game.IsOnIonDriver());
+                    DataGameListServerStatus IonDriverStatus = new DataGameListServerStatus() { Name = "IonDriver", Updated = null };
+                    //if (isIonDriver)
+                    //{
+                    //    IonDriverStatus.Status = EDataGameListServerStatus.Online;
+                    //}
+                    //else if (isIonDriver)
+                    //{
+                    //    IonDriverStatus.Status = EDataGameListServerStatus.NoMarker;
+                    //}
+                    //else
+                    //{
+                    //    IonDriverStatus.Status = EDataGameListServerStatus.Unknown;
+                    //}
+                    IonDriverStatus.Status = EDataGameListServerStatus.NotSet;
+
+                    bool isOnRebellion = gamelist.GET.Any(game => game.IsOnRebellion());
+                    bool haveRebellionStatus = gamelist.proxyStatus.ContainsKey("Rebellion");
+                    bool isRebellionUp = haveRebellionStatus && gamelist.proxyStatus["Rebellion"].success == true;
+                    string statusRebellion = haveRebellionStatus ? gamelist.proxyStatus["Rebellion"].status : null;
+                    DateTime? dateRebellion = haveRebellionStatus ? gamelist.proxyStatus["Rebellion"].updated : null;
+                    DataGameListServerStatus RebellionStatus = new DataGameListServerStatus() { Name = "Rebellion", Updated = dateRebellion };
+                    if (isRebellionUp)
+                    {
+                        RebellionStatus.Status = EDataGameListServerStatus.Online;
+                    }
+                    else if (!isRebellionUp)
+                    {
+                        RebellionStatus.Status = EDataGameListServerStatus.Offline;
+                    }
+                    else
+                    {
+                        RebellionStatus.Status = EDataGameListServerStatus.Unknown;
+                    }
+
+                    data.Header.ServerStatus = new DataGameListServerStatus[] { IonDriverStatus, RebellionStatus };
+                }
+
+                return data;
+            }
+        }
+
         public async Task<BZCCRaknetData> GetGames()
         {
             using (var http = new HttpClient())

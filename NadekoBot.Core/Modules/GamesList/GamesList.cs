@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using NadekoBot.Common.Attributes;
+using NadekoBot.Core.Services.GamesList;
 using NadekoBot.Extensions;
 using NadekoBot.Services.GamesList;
 using System.Linq;
@@ -33,7 +34,43 @@ namespace NadekoBot.Modules.GamesList
                 return;
             }*/
 
-            await _service.GetGames(Prefix, channel, type, restOfLine);
+            if (!_service.IsValidGameType(type))
+            {
+                var embed = new EmbedBuilder().WithErrorColor()
+                .WithTitle(GetText("gameslist"))
+                .WithDescription(GetText("unknowngame", Prefix));
+                await channel.EmbedAsync(embed).ConfigureAwait(false);
+                return;
+            }
+
+            using (channel.EnterTypingState())
+            {
+                DataGameList list = await _service.GetGames(type);
+
+                EmbedBuilder embed = new EmbedBuilder()
+                    .WithColor(new Color(255, 255, 255))
+                    .WithTitle($"{list.GameTitle} {GetText("gamelist")}")
+                    .WithDescription($"{list.Header.Description}\n`{9999} Game(s)`");
+                if (!string.IsNullOrWhiteSpace(list.Header.Image)) embed = embed.WithThumbnailUrl(list.Header.Image);
+                if (!string.IsNullOrWhiteSpace(list.Header.Credit)) embed = embed.WithFooter(efb => efb.WithText(list.Header.Credit));
+
+                foreach (DataGameListServerStatus status in list.Header.ServerStatus)
+                {
+                    string StatusText = string.Empty;
+                    switch(status.Status)
+                    {
+                        case EDataGameListServerStatus.Online: StatusText += "✅ Online";  break;
+                        case EDataGameListServerStatus.Offline: StatusText += "❌ Offline";  break;
+                        case EDataGameListServerStatus.NoMarker: StatusText += "⚠ No Marker";  break;
+                        case EDataGameListServerStatus.Unknown: StatusText += "❓ Unknown";  break;
+                    }
+                    if (status.Updated.HasValue) StatusText += $"\n`Updated {GamesListService.TimeAgoUtc(status.Updated.Value)}`";
+
+                    embed.AddField(efb => efb.WithName(status.Name).WithValue(StatusText).WithIsInline(true));
+                }
+            }
+
+            //Format.Sanitize
         }
 
         [NadekoCommand(memberName: "GamesList"), Usage, Description, Aliases]

@@ -48,6 +48,42 @@ namespace NadekoBot.Services.GamesList
             _gameList.RegisterGameList(this);
         }
 
+        public async Task<DataGameList> GetGamesNew()
+        {
+            Tuple<string, DateTime> gameData = await TryReadText(filePath, TimeSpan.FromSeconds(5));
+
+            if (string.IsNullOrWhiteSpace(gameData.Item1)) return null;
+
+            var LobbyData = JsonConvert.DeserializeObject<Dictionary<string, Lobby>>(gameData.Item1);
+            LobbyData.ForEach(dr => dr.Value.SetSteamService(_steam));
+            //return new BZ98ServerData()
+            //{
+            //    Games = LobbyData.Where(dr => !dr.Value.isChat
+            //                               && (!dr.Value.isPrivate || (dr.Value.isPrivate && dr.Value.IsPassworded == true))
+            //                               && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && ("0123456789".Contains(dr.Value.clientVersion[0]))) // not mobile which starts with MB or something
+            //                               && ((!string.IsNullOrWhiteSpace(dr.Value.clientVersion)) && (dr.Value.clientVersion != "0.0.0")) // not test game
+            //                           ).Select(dr => dr.Value).ToList(),
+            //    Modified = gameData.Item2
+            //};
+
+            DataGameList data = new DataGameList()
+            {
+                GameTitle = this.Title,
+                Header = new DataGameListHeader()
+                {
+                    Description = "List of games currently on BZ98 Redux matchmaking server",
+                    Image = "http://discord.battlezone.report/resources/logos/bz98r.png",
+                    Credit = $"Fetched by Nielk1's BZ98Bridge Bot"
+                }
+            };
+
+            data.Header.ServerStatus = new DataGameListServerStatus[] {
+                new DataGameListServerStatus(){ Name = "Rebellion", Status = EDataGameListServerStatus.NotSet, Updated = gameData.Item2 }
+            };
+
+            return data;
+        }
+
         public async Task<BZ98ServerData> GetGames()
         {
             Tuple<string, DateTime> gameData = await TryReadText(filePath, TimeSpan.FromSeconds(5));
