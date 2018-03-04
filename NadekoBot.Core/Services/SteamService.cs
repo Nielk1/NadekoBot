@@ -74,7 +74,7 @@ namespace NadekoBot.Core.Services
                         });
                 }
             }
-            return newPlayerData.Item2;
+            return newPlayerData?.Item2;
         }
 
         public async Task<string> GetSteamWorkshopName(string workshopId)
