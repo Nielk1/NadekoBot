@@ -64,19 +64,11 @@ namespace NadekoBot.Modules.GamesList
                         case EDataGameListServerStatus.NoMarker: StatusText += "⚠ No Marker"; break;
                         case EDataGameListServerStatus.Unknown: StatusText += "❓ Unknown"; break;
                     }
-                    if (status.Updated.HasValue) StatusText += $"\n`Updated {GamesListService.TimeAgoUtc(status.Updated.Value)}`";
+                    if (status.Updated.HasValue) StatusText += $"\nUpdated {GamesListService.TimeAgoUtc(status.Updated.Value)}";
 
-                    embed.AddField(efb =>
-                    {
-                        if (string.IsNullOrWhiteSpace(StatusText))
-                        {
-                            efb.WithName(status.Name).WithIsInline(true);
-                        }
-                        else
-                        {
-                            efb.WithName(status.Name).WithValue(StatusText).WithIsInline(true);
-                        }
-                    });
+                    if (string.IsNullOrWhiteSpace(StatusText)) StatusText = "-";
+
+                    embed.AddField(efb => efb.WithName(status.Name).WithValue(StatusText).WithIsInline(true));
                 }
                 await channel.EmbedAsync(embed).ConfigureAwait(false);
                 return;
