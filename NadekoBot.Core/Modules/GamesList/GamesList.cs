@@ -85,7 +85,9 @@ namespace NadekoBot.Modules.GamesList
                 }
 
                 int page = 0;
-                int.TryParse(restOfLine.Trim(), out page);
+                int.TryParse(restOfLine?.Trim(), out page);
+                if (page < 0) page = 0;
+                if (page >= (list.Games?.Length ?? 0)) page = list.Games?.Length ?? 0;
                 // this appears to pre-generate the pages because I don't have to cache this
                 await Context.Channel.SendPaginatedConfirmAsync(_client, page, /*async*/ (curPage) =>
                 {
