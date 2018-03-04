@@ -13,7 +13,7 @@ namespace NadekoBot.Modules.GamesList
     public class GamesList : NadekoTopLevelModule<GamesListService>
     {
         private readonly DiscordSocketClient _client;
-        private DataGameListGame[] LastGameList;
+        //private DataGameListGame[] LastGameList;
 
         public GamesList(DiscordSocketClient client)
         {
@@ -73,34 +73,35 @@ namespace NadekoBot.Modules.GamesList
                 }
                 await channel.EmbedAsync(embed).ConfigureAwait(false);
 
-                LastGameList = list.Games;
+                //LastGameList = list.Games;
                 if (!string.IsNullOrWhiteSpace(restOfLine) && restOfLine.Trim().ToLowerInvariant() == "all")
                 {
                     for (int x = 0; x < (list.Games?.Length ?? 0); x++)
                     {
-                        await channel.EmbedAsync(GetGameEmbed(x)).ConfigureAwait(false);
+                        await channel.EmbedAsync(GetGameEmbed(list.Games, x)).ConfigureAwait(false);
                     }
                     return;
                     //return Task.CompletedTask;
                 }
 
+                // this appears to pre-generate the pages because I don't have to cache this
                 await Context.Channel.SendPaginatedConfirmAsync(_client, 0, /*async*/ (curPage) =>
                 {
-                    return GetGameEmbed(curPage);
-                }, LastGameList?.Length ?? 0, 1, addPaginatedFooter: false);
+                    return GetGameEmbed(list.Games, curPage);
+                }, list.Games?.Length ?? 0, 1, addPaginatedFooter: false);
             }
             //Format.Sanitize
         }
 
-        private EmbedBuilder GetGameEmbed(int index = 0)
+        private EmbedBuilder GetGameEmbed(DataGameListGame[] GamesList, int index = 0)
         {
-            var game = LastGameList[index];
+            var game = GamesList[index];
             EmbedBuilder localembed = new EmbedBuilder()
                 .WithColor(new Color(255, 255, 255))
                 .WithTitle($"{game.Name}")
                 .WithDescription($"-");
             if (!string.IsNullOrWhiteSpace(game.Image)) localembed = localembed.WithThumbnailUrl(game.Image);
-            localembed = localembed.WithFooter(efb => efb.WithText($"{index + 1}/{LastGameList.Length}"));
+            localembed = localembed.WithFooter(efb => efb.WithText($"{index + 1}/{GamesList.Length}"));
 
             return localembed;
         }
