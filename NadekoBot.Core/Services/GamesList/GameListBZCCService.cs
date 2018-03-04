@@ -403,7 +403,7 @@ namespace NadekoBot.Services.GamesList
         [JsonIgnore] public bool Locked { get { return l == "1"; } }
         [JsonIgnore] public bool Passworded { get { return k == "1"; } }
 
-        private BZCCPlayerData[] pl { get; set; }
+        public BZCCPlayerData[] pl { get; set; }
 
         [JsonIgnore] public string Name { get { return Encoding.UTF8.GetString(Convert.FromBase64String(n).TakeWhile(chr => chr != 0x00).ToArray()); } }
 
