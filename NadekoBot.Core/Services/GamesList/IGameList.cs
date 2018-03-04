@@ -45,6 +45,10 @@ namespace NadekoBot.Core.Services.GamesList
         public int? MaxPlayers { get; set; }
 
         public EDataGameListServerGameStatus Status { get; set; }
+
+        public string MapFilename { get; set; }
+
+        public List<Tuple<string, string>> Properties = new List<Tuple<string, string>>();
     }
 
     public enum EDataGameListServerStatus

@@ -134,35 +134,183 @@ namespace NadekoBot.Services.GamesList
                     data.Header.ServerStatus = new DataGameListServerStatus[] { IonDriverStatus, RebellionStatus };
                 }
 
-                data.Games = gamelist.GET.Select(raw =>
-                {
-                    DataGameListGame game = new DataGameListGame();
-
-                    game.Name = raw.Name;
-                    game.Image = "http://discord.battlezone.report/resources/logos/nomap.png";
-
-                    game.CurPlayers = raw.CurPlayers;
-                    game.MaxPlayers = raw.MaxPlayers;
-
-                    if (raw.Locked)
+                data.Games = (await Task.WhenAll(
+                    gamelist.GET
+                    .Select(async raw =>
                     {
-                        game.Status = EDataGameListServerGameStatus.Locked;
-                    }
-                    else if (raw.Passworded)
-                    {
-                        game.Status = EDataGameListServerGameStatus.Passworded;
-                    }
-                    else if (!raw.MaxPlayers.HasValue)
-                    {
-                        game.Status = EDataGameListServerGameStatus.Unknown;
-                    }
-                    else
-                    {
-                        game.Status = EDataGameListServerGameStatus.Open;
-                    }
+                        DataGameListGame game = new DataGameListGame();
 
-                    return game;
-                }).ToArray();
+                        game.Name = raw.Name;
+                        game.Image = "http://discord.battlezone.report/resources/logos/nomap.png";
+
+                        game.CurPlayers = raw.CurPlayers;
+                        game.MaxPlayers = raw.MaxPlayers;
+
+                        if (raw.Locked)
+                        {
+                            game.Status = EDataGameListServerGameStatus.Locked;
+                        }
+                        else if (raw.Passworded)
+                        {
+                            game.Status = EDataGameListServerGameStatus.Passworded;
+                        }
+                        else if (!raw.MaxPlayers.HasValue)
+                        {
+                            game.Status = EDataGameListServerGameStatus.Unknown;
+                        }
+                        else
+                        {
+                            game.Status = EDataGameListServerGameStatus.Open;
+                        }
+
+                        game.MapFilename = raw.MapFile;
+
+                        {
+                            string name = await GetBZCCGameProperty("name", raw.MapFile);
+
+                            if (string.IsNullOrWhiteSpace(name))
+                            {
+                                game.Properties.Add(new Tuple<string, string>("Map", $"[{raw.MapFile}]"));
+                            }
+                            else
+                            {
+                                game.Properties.Add(new Tuple<string, string>("Map", $"{name}"));
+                            }
+
+                            if (string.IsNullOrWhiteSpace(raw.v))
+                            {
+                                game.Properties.Add(new Tuple<string, string>("Version", $"[{raw.v}]"));
+                            }
+
+                            if (string.IsNullOrWhiteSpace(raw.d))
+                            {
+                                game.Properties.Add(new Tuple<string, string>("Mod", $"[{raw.d}]"));
+                            }
+
+                            switch (raw.t)
+                            {
+                                case "0":
+                                    game.Properties.Add(new Tuple<string, string>("NAT", $"NONE")); /// Works with anyone
+                                    break;
+                                case "1":
+                                    game.Properties.Add(new Tuple<string, string>("NAT", $"FULL CONE")); /// Accepts any datagrams to a port that has been previously used. Will accept the first datagram from the remote peer.
+                                    break;
+                                case "2":
+                                    game.Properties.Add(new Tuple<string, string>("NAT", $"ADDRESS RESTRICTED")); /// Accepts datagrams to a port as long as the datagram source IP address is a system we have already sent to. Will accept the first datagram if both systems send simultaneously. Otherwise, will accept the first datagram after we have sent one datagram.
+                                    break;
+                                case "3":
+                                    game.Properties.Add(new Tuple<string, string>("NAT", $"PORT RESTRICTED")); /// Same as address-restricted cone NAT, but we had to send to both the correct remote IP address and correct remote port. The same source address and port to a different destination uses the same mapping.
+                                    break;
+                                case "4":
+                                    game.Properties.Add(new Tuple<string, string>("NAT", $"SYMMETRIC")); /// A different port is chosen for every remote destination. The same source address and port to a different destination uses a different mapping. Since the port will be different, the first external punchthrough attempt will fail. For this to work it requires port-prediction (MAX_PREDICTIVE_PORT_RANGE>1) and that the router chooses ports sequentially.
+                                    break;
+                                case "5":
+                                    game.Properties.Add(new Tuple<string, string>("NAT", $"UNKNOWN")); /// Hasn't been determined. NATTypeDetectionClient does not use this, but other plugins might
+                                    break;
+                                case "6":
+                                    game.Properties.Add(new Tuple<string, string>("NAT", $"DETECTION IN PROGRESS")); /// In progress. NATTypeDetectionClient does not use this, but other plugins might
+                                    break;
+                                case "7":
+                                    game.Properties.Add(new Tuple<string, string>("NAT", $"SUPPORTS UPNP")); /// Didn't bother figuring it out, as we support UPNP, so it is equivalent to NAT_TYPE_NONE. NATTypeDetectionClient does not use this, but other plugins might
+                                    break;
+                                default:
+                                    game.Properties.Add(new Tuple<string, string>("NAT", $"[" + raw.t + "]"));
+                                    break;
+                            }
+
+                            switch (raw.proxySource)
+                            {
+                                case "Rebellion":
+                                    game.Properties.Add(new Tuple<string, string>("List", $"Rebellion"));
+                                    break;
+                                default:
+                                    game.Properties.Add(new Tuple<string, string>("List", $"IonDriver"));
+                                    break;
+                            }
+
+                            {
+                                switch (raw.GameType)
+                                {
+                                    case 0:
+                                        game.Properties.Add(new Tuple<string, string>("Type", $"All"));
+                                        break;
+                                    case 1:
+                                        switch (raw.GameSubType)
+                                        {
+                                            case 0:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"DM"));
+                                                break;
+                                            case 1:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"KOTH"));
+                                                break;
+                                            case 2:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"CTF"));
+                                                break;
+                                            case 3:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"Loot"));
+                                                break;
+                                            case 4:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"DM [RESERVED]"));
+                                                break;
+                                            case 5:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"Race"));
+                                                break;
+                                            case 6:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"Race (Vehicle Only)"));
+                                                break;
+                                            case 7:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"DM (Vehicle Only)"));
+                                                break;
+                                            default:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"DM [UNKNOWN]"));
+                                                break;
+                                        }
+                                        break;
+                                    case 2:
+                                        /*if (raw.pong.TeamsOn && raw.pong.OnlyOneTeam)
+                                        {
+                                            game.Properties.Add(new Tuple<string, string>("Type", $"MPI"));
+                                        }
+                                        else
+                                        {
+                                            game.Properties.Add(new Tuple<string, string>("Type", $"Strat"));
+                                        }*/
+                                        game.Properties.Add(new Tuple<string, string>("Type", $"Strat/MPI"));
+                                        break;
+                                    case 3:
+                                        game.Properties.Add(new Tuple<string, string>("Type", $"MPI [Invalid]"));
+                                        break;
+                                }
+
+                                if (raw.GameTimeMinutes.HasValue)
+                                {
+                                    switch (raw.ServerInfoMode)
+                                    {
+                                        case 1:
+                                            game.Properties.Add(new Tuple<string, string>("Time", $"Not playing or in shell for {raw.GameTimeMinutes.Value} minutes"));
+                                            break;
+                                        case 3:
+                                            game.Properties.Add(new Tuple<string, string>("Time", $"Playing for {raw.GameTimeMinutes.Value} minutes"));
+                                            break;
+                                    }
+                                }
+
+                                if (raw.TPS.HasValue && raw.TPS > 0)
+                                    game.Properties.Add(new Tuple<string, string>("TPS", $"{raw.TPS}"));
+
+                                if (raw.MaxPing.HasValue && raw.MaxPing > 0)
+                                    game.Properties.Add(new Tuple<string, string>("MaxPing", $"{raw.MaxPing}"));
+
+                                if (raw.TimeLimit.HasValue && raw.TimeLimit > 0)
+                                    game.Properties.Add(new Tuple<string, string>("TimeLim", $"{raw.TimeLimit}"));
+
+                                if (raw.KillLimit.HasValue && raw.KillLimit > 0)
+                                    game.Properties.Add(new Tuple<string, string>("KillLim", $"{raw.KillLimit}"));
+                            }
+                        }
+
+                        return game;
+                    }))).ToArray();
 
                 return data;
             }
@@ -376,7 +524,7 @@ namespace NadekoBot.Services.GamesList
 
         public string g { get; set; } // ex "4M-CB73@GX" (seems to go with NAT type 5???)
         public string n { get; set; } // varchar(256) | Name of client game session, base64 and null terminate.
-        public string m { get; set; } // varchar(68)  | Name of client map, no bzn extension.
+        [JsonProperty("n")] public string MapFile { get; set; } // varchar(68)  | Name of client map, no bzn extension.
         public string k { get; set; } // tinyint      | Password Flag.
         public string d { get; set; } // varchar(16)  | MODSLISTCRC_KEY
         public string t { get; set; } // tinyint      | NATTYPE_KEY //nat type 5 seems bad, 7 seems to mean direct connect
@@ -395,13 +543,26 @@ namespace NadekoBot.Services.GamesList
         public string ki { get; set; } // kill limit
 
         public string gtm { get; set; } // game time min
-        public string pgm { get; set; } // max players
+        public string pgm { get; set; } // max ping
 
         [JsonIgnore] public int CurPlayers { get { return pl?.Length ?? 0; } }
         [JsonIgnore] public int? MaxPlayers { get { int tmp = 0; return int.TryParse(pm, out tmp) ? (int?)tmp : null; } }
 
         [JsonIgnore] public bool Locked { get { return l == "1"; } }
         [JsonIgnore] public bool Passworded { get { return k == "1"; } }
+
+        [JsonIgnore] public int? GameType { get { int tmp = 0; return int.TryParse(gt, out tmp) ? (int?)tmp : null; } }
+        [JsonIgnore] public int? GameSubType { get { int tmp = 0; return int.TryParse(gtd, out tmp) ? (int?)tmp : null; } }
+
+        [JsonIgnore] public int? ServerInfoMode { get { int tmp = 0; return int.TryParse(si, out tmp) ? (int?)tmp : null; } }
+
+        [JsonIgnore] public int? GameTimeMinutes { get { int tmp = 0; return int.TryParse(gtm, out tmp) ? (int?)tmp : null; } }
+
+        [JsonIgnore] public int? TPS { get { int tmp = 0; return int.TryParse(tps, out tmp) ? (int?)tmp : null; } }
+        [JsonIgnore] public int? MaxPing { get { int tmp = 0; return int.TryParse(pgm, out tmp) ? (int?)tmp : null; } }
+        [JsonIgnore] public int? TimeLimit { get { int tmp = 0; return int.TryParse(ti, out tmp) ? (int?)tmp : null; } }
+        [JsonIgnore] public int? KillLimit { get { int tmp = 0; return int.TryParse(ki, out tmp) ? (int?)tmp : null; } }
+
 
         public BZCCPlayerData[] pl { get; set; }
 
@@ -421,7 +582,7 @@ namespace NadekoBot.Services.GamesList
 
         public async Task<EmbedBuilder> GetEmbed(int idx, int total)
         {
-            string footer = $"[{idx}/{total}] ({m}.bzn)";
+            string footer = $"[{idx}/{total}] ({MapFile}.bzn)";
             if(!string.IsNullOrWhiteSpace(mm) && mm != "0")
             {
                 footer += " " + Format.Sanitize(mm);
@@ -454,7 +615,7 @@ namespace NadekoBot.Services.GamesList
                 .WithDescription(embedMessage)
                 .WithFooter(efb => efb.WithText(footer));
 
-            string prop = await _bzcc.GetBZCCGameProperty("shell", Format.Sanitize(m));
+            string prop = await _bzcc.GetBZCCGameProperty("shell", Format.Sanitize(MapFile));
             embed.WithThumbnailUrl(prop ?? "http://discord.battlezone.report/resources/logos/nomap.png");
 
             string playerCountData = string.Empty;
@@ -521,14 +682,14 @@ namespace NadekoBot.Services.GamesList
 
         public async Task<string> GetGameDataString()
         {
-            string name = await _bzcc.GetBZCCGameProperty("name", m);
+            string name = await _bzcc.GetBZCCGameProperty("name", MapFile);
 
 
             StringBuilder builder = new StringBuilder();
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                builder.AppendLine($@"Map     | [{m}]");
+                builder.AppendLine($@"Map     | [{MapFile}]");
             }
             else
             {

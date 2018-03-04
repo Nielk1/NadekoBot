@@ -6,6 +6,7 @@ using NadekoBot.Core.Services.GamesList;
 using NadekoBot.Extensions;
 using NadekoBot.Services.GamesList;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace NadekoBot.Modules.GamesList
@@ -119,9 +120,23 @@ namespace NadekoBot.Modules.GamesList
                 case EDataGameListServerGameStatus.NotSet:
                 default: embed.WithColor(new Color(0x55, 0x55, 0x55)).WithTitle($"{game.Name}{playerCountData}"); break;
             }
-            embed.WithDescription($"-");
             if (!string.IsNullOrWhiteSpace(game.Image)) embed.WithThumbnailUrl(game.Image);
             embed.WithFooter(efb => efb.WithText($"{index + 1}/{GamesList.Length}"));
+
+            {
+                StringBuilder builder = new StringBuilder();
+
+                int lenKey = game.Properties.Max(dr => dr.Item1.Length);
+
+                game.Properties.ForEach(dr =>
+                {
+                    builder.AppendLine($"{dr.Item1.PadRight(lenKey)} | {dr.Item2}");
+                });
+
+                string retVal = Format.Code(builder.ToString(), "css");
+
+                embed.WithDescription(retVal);
+            }
 
             return embed;
         }

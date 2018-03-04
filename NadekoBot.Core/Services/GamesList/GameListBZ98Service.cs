@@ -111,6 +111,19 @@ namespace NadekoBot.Services.GamesList
                         game.Status = EDataGameListServerGameStatus.Open;
                     }
 
+                    game.MapFilename = raw.MapFile;
+
+                    game.Properties.Add(new Tuple<string, string>("Map", "[" + raw.MapFile + "]"));
+                    game.Properties.Add(new Tuple<string, string>("State", raw.IsEnded ? "Ended" : raw.IsLaunched ? "Launched" : "In Shell"));
+                    if (raw.TimeLimit.HasValue && raw.TimeLimit.Value > 0) game.Properties.Add(new Tuple<string, string>("TimeLimit", raw.TimeLimit.Value.ToString()));
+                    if (raw.KillLimit.HasValue && raw.KillLimit.Value > 0) game.Properties.Add(new Tuple<string, string>("KillLimit", raw.KillLimit.Value.ToString()));
+                    if (raw.Lives.HasValue && raw.Lives.Value > 0) game.Properties.Add(new Tuple<string, string>("Lives", raw.Lives.Value.ToString()));
+                    if (raw.SyncJoin.HasValue) game.Properties.Add(new Tuple<string, string>("SyncJoin", raw.SyncJoin.Value ? "On" : "Off"));
+                    if (raw.SatelliteEnabled.HasValue) game.Properties.Add(new Tuple<string, string>("Satellite", raw.SatelliteEnabled.Value ? "On" : "Off"));
+                    if (raw.BarracksEnabled.HasValue) game.Properties.Add(new Tuple<string, string>("Barracks", raw.BarracksEnabled.Value ? "On" : "Off"));
+                    if (raw.SniperEnabled.HasValue) game.Properties.Add(new Tuple<string, string>("Sniper", raw.SniperEnabled.Value ? "On" : "Off"));
+                    if (raw.SplinterEnabled.HasValue) game.Properties.Add(new Tuple<string, string>("Splinter", raw.SplinterEnabled.Value ? "On" : "Off"));
+
                     return game;
                 })
             )).ToArray();

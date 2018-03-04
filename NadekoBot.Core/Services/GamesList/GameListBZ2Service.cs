@@ -154,6 +154,161 @@ namespace NadekoBot.Services.GamesList
                             game.Status = EDataGameListServerGameStatus.Open;
                         }
 
+                        game.MapFilename = raw.MapFile;
+
+                        {
+                            string name = await GetBZ2GameProperty("name", raw.MapFile);
+                            string version = await GetBZ2GameProperty("version", raw.v);
+                            string mod = await GetBZ2GameProperty("mod", raw.d);
+
+                            if (string.IsNullOrWhiteSpace(name))
+                            {
+                                game.Properties.Add(new Tuple<string, string>("Map", $"[{raw.MapFile}]"));
+                            }
+                            else
+                            {
+                                game.Properties.Add(new Tuple<string, string>("Map", $"{name}"));
+                            }
+
+                            if (string.IsNullOrWhiteSpace(version))
+                            {
+                                game.Properties.Add(new Tuple<string,string>("Version",$"[{raw.v}]"));
+                            }
+                            else
+                            {
+                                game.Properties.Add(new Tuple<string,string>("Version",$"{version}"));
+                            }
+
+                            if (string.IsNullOrWhiteSpace(mod))
+                            {
+                                game.Properties.Add(new Tuple<string,string>("Mod",$"[{raw.d}]"));
+                            }
+                            else
+                            {
+                                game.Properties.Add(new Tuple<string,string>("Mod",$"{mod}"));
+                            }
+
+                            switch (raw.t)
+                            {
+                                case"0":
+                                    game.Properties.Add(new Tuple<string, string>("NAT",$"NONE")); /// Works with anyone
+                                    break;
+                                case"1":
+                                    game.Properties.Add(new Tuple<string,string>("NAT",$"FULL CONE")); /// Accepts any datagrams to a port that has been previously used. Will accept the first datagram from the remote peer.
+                                    break;
+                                case"2":
+                                    game.Properties.Add(new Tuple<string,string>("NAT",$"ADDRESS RESTRICTED")); /// Accepts datagrams to a port as long as the datagram source IP address is a system we have already sent to. Will accept the first datagram if both systems send simultaneously. Otherwise, will accept the first datagram after we have sent one datagram.
+                                    break;
+                                case"3":
+                                    game.Properties.Add(new Tuple<string, string>("NAT",$"PORT RESTRICTED")); /// Same as address-restricted cone NAT, but we had to send to both the correct remote IP address and correct remote port. The same source address and port to a different destination uses the same mapping.
+                                    break;
+                                case"4":
+                                    game.Properties.Add(new Tuple<string,string>("NAT",$"SYMMETRIC")); /// A different port is chosen for every remote destination. The same source address and port to a different destination uses a different mapping. Since the port will be different, the first external punchthrough attempt will fail. For this to work it requires port-prediction (MAX_PREDICTIVE_PORT_RANGE>1) and that the router chooses ports sequentially.
+                                    break;
+                                case"5":
+                                    game.Properties.Add(new Tuple<string,string>("NAT",$"UNKNOWN")); /// Hasn't been determined. NATTypeDetectionClient does not use this, but other plugins might
+                                    break;
+                                case"6":
+                                    game.Properties.Add(new Tuple<string,string>("NAT",$"DETECTION IN PROGRESS")); /// In progress. NATTypeDetectionClient does not use this, but other plugins might
+                                    break;
+                                case"7":
+                                    game.Properties.Add(new Tuple<string,string>("NAT",$"SUPPORTS UPNP")); /// Didn't bother figuring it out, as we support UPNP, so it is equivalent to NAT_TYPE_NONE. NATTypeDetectionClient does not use this, but other plugins might
+                                    break;
+                                default:
+                                    game.Properties.Add(new Tuple<string,string>("NAT",$"[" + raw.t +"]"));
+                                    break;
+                            }
+
+                            switch (raw.proxySource)
+                            {
+                                case"masterserver.matesfamily.org":
+                                    game.Properties.Add(new Tuple<string,string>("List",$"MatesFamily"));
+                                    break;
+                                case"gamelist.kebbz.com":
+                                    game.Properties.Add(new Tuple<string,string>("List",$"KebbzNet"));
+                                    break;
+                                default:
+                                    game.Properties.Add(new Tuple<string,string>("List",$"IonDriver"));
+                                    break;
+                            }
+
+                            if (raw.pong != null)
+                            {
+                                switch (raw.pong.GameType)
+                                {
+                                    case 0:
+                                        game.Properties.Add(new Tuple<string,string>("Type",$"All"));
+                                        break;
+                                    case 1:
+                                        switch (raw.pong.GameSubType)
+                                        {
+                                            case 0:
+                                                game.Properties.Add(new Tuple<string,string>("Type",$"DM"));
+                                                break;
+                                            case 1:
+                                                game.Properties.Add(new Tuple<string,string>("Type",$"KOTH"));
+                                                break;
+                                            case 2:
+                                                game.Properties.Add(new Tuple<string,string>("Type",$"CTF"));
+                                                break;
+                                            case 3:
+                                                game.Properties.Add(new Tuple<string,string>("Type",$"Loot"));
+                                                break;
+                                            case 4:
+                                                game.Properties.Add(new Tuple<string,string>("Type",$"DM [RESERVED]"));
+                                                break;
+                                            case 5:
+                                                game.Properties.Add(new Tuple<string,string>("Type",$"Race"));
+                                                break;
+                                            case 6:
+                                                game.Properties.Add(new Tuple<string,string>("Type",$"Race (Vehicle Only)"));
+                                                break;
+                                            case 7:
+                                                game.Properties.Add(new Tuple<string,string>("Type",$"DM (Vehicle Only)"));
+                                                break;
+                                            default:
+                                                game.Properties.Add(new Tuple<string,string>("Type",$"DM [UNKNOWN]"));
+                                                break;
+                                        }
+                                        break;
+                                    case 2:
+                                        if (raw.pong.TeamsOn && raw.pong.OnlyOneTeam)
+                                        {
+                                            game.Properties.Add(new Tuple<string,string>("Type",$"MPI"));
+                                        }
+                                        else
+                                        {
+                                            game.Properties.Add(new Tuple<string,string>("Type",$"Strat"));
+                                        }
+                                        break;
+                                    case 3:
+                                        game.Properties.Add(new Tuple<string,string>("Type",$"MPI [Invalid]"));
+                                        break;
+                                }
+
+                                switch (raw.pong.ServerInfoMode)
+                                {
+                                    case 1:
+                                        game.Properties.Add(new Tuple<string, string>("Time",$"Not playing or in shell for {raw.pong.GameTimeMinutes} minutes"));
+                                        break;
+                                    case 3:
+                                        game.Properties.Add(new Tuple<string, string>("Time",$"Playing for {raw.pong.GameTimeMinutes} minutes"));
+                                        break;
+                                }
+
+                                game.Properties.Add(new Tuple<string, string>("TPS", $"{raw.pong.TPS}"));
+
+                                if (raw.pong.MaxPing > 0)
+                                    game.Properties.Add(new Tuple<string, string>("MaxPing", $"{raw.pong.MaxPing}"));
+
+                                if (raw.pong.TimeLimit > 0)
+                                    game.Properties.Add(new Tuple<string, string>("TimeLim", $"{raw.pong.TimeLimit}"));
+
+                                if (raw.pong.KillLimit > 0)
+                                    game.Properties.Add(new Tuple<string, string>("KillLim",$"{raw.pong.KillLimit}"));
+                            }
+                        }
+
                         return game;
                     }))).ToArray();
 
