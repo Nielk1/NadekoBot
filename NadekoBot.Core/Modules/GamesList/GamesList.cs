@@ -156,7 +156,7 @@ namespace NadekoBot.Modules.GamesList
 
             string footer = $"[{index + 1}/{GamesList.Length}]";
             if (!string.IsNullOrWhiteSpace(game.Footer)) footer += " " + game.Footer;
-            embed.WithFooter(efb => efb.WithText(footer + " " + game.Players.Count));
+            embed.WithFooter(efb => efb.WithText(footer));
 
             {
                 StringBuilder builder = new StringBuilder();
