@@ -1,19 +1,14 @@
 ﻿using Discord;
-using Discord.API;
 using Discord.WebSocket;
 using NadekoBot.Core.Services;
 using NadekoBot.Core.Services.GamesList;
 using NadekoBot.Extensions;
-using NadekoBot.Services;
 using Newtonsoft.Json;
 using NLog;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace NadekoBot.Services.GamesList

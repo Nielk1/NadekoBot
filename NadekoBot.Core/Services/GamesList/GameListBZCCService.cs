@@ -1,17 +1,14 @@
 ﻿using Discord;
-using Discord.API;
 using Discord.WebSocket;
 using NadekoBot.Core.Services;
 using NadekoBot.Core.Services.GamesList;
 using NadekoBot.Extensions;
-using NadekoBot.Services;
 using Newtonsoft.Json;
 using NLog;
 using Steam.Models.SteamCommunity;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -21,7 +18,7 @@ namespace NadekoBot.Services.GamesList
 {
     public class GameListBZCCService : INService, IGameList
     {
-        public string Emoji => null;
+        public string Emoji => @"<:game_icon_battlezonecc:420076076169953282>";
         public string Title => "Battlezone Combat Commander";
         public string Code => "bzcc";
 
