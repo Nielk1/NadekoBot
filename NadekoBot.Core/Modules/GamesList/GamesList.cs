@@ -170,6 +170,8 @@ namespace NadekoBot.Modules.GamesList
 
                 string retVal = Format.Code(builder.ToString(), "css");
 
+                retVal = string.Join(string.Empty, game.TopInfo.Select(dr => dr + "\n")) + retVal;
+
                 embed.WithDescription(retVal);
             }
 

@@ -279,7 +279,7 @@ namespace NadekoBot.Services.GamesList
                                         });
                                     });
 
-                                    game.PlayersHeader = "(K/D/S) Players";
+                                    game.PlayersHeader = "[T] (K/D/S) Players";
                                 }
 
                                 switch (raw.pong.GameType)
