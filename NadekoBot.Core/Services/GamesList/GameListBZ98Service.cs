@@ -111,8 +111,8 @@ namespace NadekoBot.Services.GamesList
                     if (!string.IsNullOrWhiteSpace(raw.clientVersion)) game.Footer += $" <{raw.clientVersion}>";
 
                     {
-                        raw.users
-                           .ForEach(async dr =>
+                        await Task.WhenAll(raw.users
+                           .Select(async dr =>
                            {
                                string team = dr.Value.metadata.ContainsKey("team") ? dr.Value.metadata["team"] : string.Empty;
                                string vehicle = dr.Value.metadata.ContainsKey("vehicle") ? dr.Value.metadata["vehicle"] : string.Empty;
@@ -127,7 +127,7 @@ namespace NadekoBot.Services.GamesList
                                    PlayerClass = vehicle,
                                    Url = userData?.ProfileUrl
                                });
-                           });
+                           }));
 
                         game.PlayersHeader = "Players";
                     }

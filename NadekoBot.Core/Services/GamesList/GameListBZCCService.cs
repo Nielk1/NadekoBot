@@ -206,7 +206,7 @@ namespace NadekoBot.Services.GamesList
                                 scoreNeedsSign = scoreNeedsSign || (dr.Score < 0);
                             });
 
-                            raw.pl.ForEach(async dr =>
+                            await Task.WhenAll(raw.pl.Select(async dr =>
                             {
                                 int Killv = dr.Kills.HasValue ? dr.Kills.Value : 0;
                                 int Deathsv = dr.Deaths.HasValue ? dr.Deaths.Value : 0;
@@ -226,7 +226,7 @@ namespace NadekoBot.Services.GamesList
                                     PlayerClass = $"{Killv.ToString().PadLeft(k, '0')}/{Deathsv.ToString().PadLeft(d, '0')}/{scoresign}{Math.Abs(Scorev).ToString().PadLeft(s, '0')}",
                                     Url = userData?.ProfileUrl
                                 });
-                            });
+                            }));
 
                             game.PlayersHeader = "[T] (K/D/S) Players";
                         }
