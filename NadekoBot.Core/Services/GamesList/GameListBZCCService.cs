@@ -332,20 +332,23 @@ namespace NadekoBot.Services.GamesList
                                                 game.Properties.Add(new Tuple<string, string>("Type", $"DM (Vehicle Only)"));
                                                 break;
                                             default:
-                                                game.Properties.Add(new Tuple<string, string>("Type", $"DM [UNKNOWN]"));
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"DM [UNKNOWN {raw.GameSubType}]"));
                                                 break;
                                         }
                                         break;
                                     case 2:
-                                        /*if (raw.pong.TeamsOn && raw.pong.OnlyOneTeam)
+                                        switch (raw.GameSubType)
                                         {
-                                            game.Properties.Add(new Tuple<string, string>("Type", $"MPI"));
+                                            case 12:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"STRAT"));
+                                                break;
+                                            case 13:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"MPI"));
+                                                break;
+                                            default:
+                                                game.Properties.Add(new Tuple<string, string>("Type", $"STRAT [UNKNOWN {raw.GameSubType}]"));
+                                                break;
                                         }
-                                        else
-                                        {
-                                            game.Properties.Add(new Tuple<string, string>("Type", $"Strat"));
-                                        }*/
-                                        game.Properties.Add(new Tuple<string, string>("Type", $"Strat/MPI"));
                                         break;
                                     case 3:
                                         game.Properties.Add(new Tuple<string, string>("Type", $"MPI [Invalid]"));
