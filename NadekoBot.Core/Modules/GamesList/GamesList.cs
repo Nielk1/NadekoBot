@@ -170,6 +170,8 @@ namespace NadekoBot.Modules.GamesList
 
                 string retVal = Format.Code(builder.ToString(), "css");
 
+                retVal = string.Join(string.Empty, game.TopInfo.Select(dr => dr + "\n")) + retVal;
+
                 embed.WithDescription(retVal);
             }
 
@@ -179,7 +181,7 @@ namespace NadekoBot.Modules.GamesList
                 int classPad = game.Players.Select(player => (player.PlayerClass ?? string.Empty).Length).Max();
 
                 embed.AddField(efb => efb.WithName(game.PlayersHeader ?? "Players")
-                                         .WithValue(string.Join("\n",game.Players.Select(player =>
+                                         .WithValue(string.Join("\n",game.Players.OrderBy(dr => dr.Index.HasValue ? dr.Index.Value : 0).Select(player =>
                                          {
                                              string[] Parts = new string[]
                                              {

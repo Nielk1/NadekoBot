@@ -263,7 +263,7 @@ namespace NadekoBot.Services.GamesList
                                         scoreNeedsSign = scoreNeedsSign || (dr.Score < 0);
                                     });
 
-                                    raw.pong.CompressedData.Players.OrderBy(dr => dr.Team).ForEach(dr =>
+                                    raw.pong.CompressedData.Players.ForEach(dr =>
                                     {
                                         string scoresign = "0";
                                         if (dr.Score > 0) scoresign = "+";
@@ -279,7 +279,7 @@ namespace NadekoBot.Services.GamesList
                                         });
                                     });
 
-                                    game.PlayersHeader = "(K/D/S) Players";
+                                    game.PlayersHeader = "[T] (K/D/S) Players";
                                 }
 
                                 switch (raw.pong.GameType)
@@ -442,8 +442,6 @@ namespace NadekoBot.Services.GamesList
 
         [JsonIgnore] public bool Locked { get { return l == "1"; } }
         [JsonIgnore] public bool Passworded { get { return k == "1"; } }
-
-        private GameListBZ2Service _bz2;
 
         public RaknetPongResponse pong { get; set; }
 
