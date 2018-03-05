@@ -209,11 +209,15 @@ namespace NadekoBot.Services.GamesList
                                 scoreNeedsSign = scoreNeedsSign || (dr.Score < 0);
                             });
 
-                            raw.pl.OrderBy(dr => dr.Team.HasValue ? dr.Team.Value : 0).ForEach(async dr =>
+                            raw.pl.ForEach(async dr =>
                             {
+                                int Killv = dr.Kills.HasValue ? dr.Kills.Value : 0;
+                                int Deathsv = dr.Deaths.HasValue ? dr.Deaths.Value : 0;
+                                int Scorev = dr.Score.HasValue ? dr.Score.Value : 0;
+
                                 string scoresign = "0";
-                                if ((dr.Score.HasValue ? dr.Score.Value : 0) > 0) scoresign = "+";
-                                if ((dr.Score.HasValue ? dr.Score.Value : 0) < 0) scoresign = "-";
+                                if (Scorev > 0) scoresign = "+";
+                                if (Scorev < 0) scoresign = "-";
                                 if (!scoreNeedsSign) scoresign = string.Empty;
 
                                 UserData userData = await GetUserData(dr.PlayerID);
@@ -222,7 +226,7 @@ namespace NadekoBot.Services.GamesList
                                 {
                                     Index = dr.Team,
                                     Name = dr.Name,
-                                    PlayerClass = $"{(dr.Kills.HasValue ? dr.Kills.Value : 0).ToString().PadLeft(k, '0')}/{(dr.Deaths.HasValue ? dr.Deaths.Value : 0).ToString().PadLeft(d, '0')}/{scoresign}{Math.Abs((dr.Score.HasValue ? dr.Score.Value : 0)).ToString().PadLeft(s, '0')}",
+                                    PlayerClass = $"{Killv.ToString().PadLeft(k, '0')}/{Deathsv.ToString().PadLeft(d, '0')}/{scoresign}{Math.Abs(Scorev).ToString().PadLeft(s, '0')}",
                                     Url = userData?.ProfileUrl
                                 });
                             });

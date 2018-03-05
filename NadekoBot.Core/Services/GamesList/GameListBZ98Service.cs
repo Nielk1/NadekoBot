@@ -115,7 +115,7 @@ namespace NadekoBot.Services.GamesList
                     if (!string.IsNullOrWhiteSpace(raw.clientVersion)) game.Footer += $" <{raw.clientVersion}>";
 
                     {
-                        raw.users.OrderBy(dr => dr.Value.metadata.ContainsKey("team") ? int.Parse(dr.Value.metadata["team"]) : 0)
+                        raw.users
                            .ForEach(async dr =>
                            {
                                string team = dr.Value.metadata.ContainsKey("team") ? dr.Value.metadata["team"] : string.Empty;

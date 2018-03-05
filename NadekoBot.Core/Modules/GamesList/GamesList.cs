@@ -156,7 +156,7 @@ namespace NadekoBot.Modules.GamesList
 
             string footer = $"[{index + 1}/{GamesList.Length}]";
             if (!string.IsNullOrWhiteSpace(game.Footer)) footer += " " + game.Footer;
-            embed.WithFooter(efb => efb.WithText(footer));
+            embed.WithFooter(efb => efb.WithText(footer + " " + game.Players.Count));
 
             {
                 StringBuilder builder = new StringBuilder();
@@ -181,7 +181,7 @@ namespace NadekoBot.Modules.GamesList
                 int classPad = game.Players.Select(player => (player.PlayerClass ?? string.Empty).Length).Max();
 
                 embed.AddField(efb => efb.WithName(game.PlayersHeader ?? "Players")
-                                         .WithValue(string.Join("\n",game.Players.Select(player =>
+                                         .WithValue(string.Join("\n",game.Players.OrderBy(dr => dr.Index.HasValue ? dr.Index.Value : 0).Select(player =>
                                          {
                                              string[] Parts = new string[]
                                              {
