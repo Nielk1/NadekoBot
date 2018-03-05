@@ -24,7 +24,7 @@ namespace NadekoBot.Modules.GamesList
         [NadekoCommand, Usage, Description, Aliases]
         public async Task Games(string type = null, [Remainder] string restOfLine = null)
         {
-            var channel = Context.Channel as ITextChannel;
+            var channel = Context.Channel as IMessageChannel;
 
             /*if (string.IsNullOrWhiteSpace(type) || !_service.IsValidGameType(type))
             {
@@ -205,7 +205,7 @@ namespace NadekoBot.Modules.GamesList
 
             return Context.Channel.SendPaginatedConfirmAsync(_client, page, /*async*/ (curPage) =>
             {
-                var games = _service.GetGamesList(Context.Guild.Id, curPage);
+                var games = _service.GetGamesList(Context?.Guild?.Id, curPage);
 
                 var embed = new EmbedBuilder()
                     .WithTitle(GetText("gameslist"))

@@ -53,7 +53,7 @@ namespace NadekoBot.Services.GamesList
             _gameListsKeyed.Add(gameList.Code, gameList);
         }
 
-        public IGameList[] GetGamesList(ulong guildId, int page)
+        public IGameList[] GetGamesList(ulong? guildId, int page)
         {
             return _gameLists//.Where(x => x.GuildId == guildId)
                 //.OrderByDescending(x => x.Xp + x.AwardedXp)
