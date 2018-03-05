@@ -494,7 +494,7 @@ namespace NadekoBot.Services.GamesList
         public string t { get; set; } // tinyint      | NATTYPE_KEY //nat type 5 seems bad, 7 seems to mean direct connect
         public string v { get; set; } // varchar(8)   | GAMEVERSION_KEY (nice string now)
         public string l { get; set; } // locked
-        public string h { get; set; } // server message (not base64 yet)
+        [JsonProperty("h")] public string MOTD { get; set; } // server message (not base64 yet)
 
         public string mm { get; set; } // mod list ex: "1300825258;1300820029"
         public string gt { get; set; } // game type
@@ -530,7 +530,7 @@ namespace NadekoBot.Services.GamesList
         [JsonIgnore] public int? KillLimit { get { int tmp = 0; return int.TryParse(ki, out tmp) ? (int?)tmp : null; } }
 
         [JsonIgnore] public string Name { get { return string.IsNullOrWhiteSpace(n) ? null : Encoding.UTF8.GetString(Convert.FromBase64String(n).TakeWhile(chr => chr != 0x00).ToArray()); } }
-        [JsonIgnore] public string MOTD { get { try { return string.IsNullOrWhiteSpace(h) ? null : Encoding.UTF8.GetString(Convert.FromBase64String(h)); } catch { return null; } } }
+        //[JsonIgnore] public string MOTD { get { try { return string.IsNullOrWhiteSpace(h) ? null : Encoding.UTF8.GetString(Convert.FromBase64String(h)); } catch { return null; } } }
 
         [JsonIgnore] public string[] Mods { get { return mm?.Split(';') ?? new string[] { }; } }
         

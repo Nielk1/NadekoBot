@@ -443,8 +443,6 @@ namespace NadekoBot.Services.GamesList
         [JsonIgnore] public bool Locked { get { return l == "1"; } }
         [JsonIgnore] public bool Passworded { get { return k == "1"; } }
 
-        private GameListBZ2Service _bz2;
-
         public RaknetPongResponse pong { get; set; }
 
         public bool IsMatesFamilyMarker()
