@@ -29,7 +29,6 @@ namespace NadekoBot.Modules.Administration
             {
                 try
                 {
-
                     var embed = new EmbedBuilder()
                         .WithTitle(GetText("sql_confirm_exec"))
                         .WithDescription(Format.Code(sql));
@@ -52,7 +51,7 @@ namespace NadekoBot.Modules.Administration
                     await Context.Channel.SendErrorAsync(ex.ToString());
                 }
             }
-
+            
             [NadekoCommand, Usage, Description, Aliases]
             [OwnerOnly]
             public Task DeleteWaifus() =>

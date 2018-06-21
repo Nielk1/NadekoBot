@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using NadekoBot.Common.Attributes;
 using NadekoBot.Modules.Administration.Services;
 using Microsoft.EntityFrameworkCore;
-using NadekoBot.Core.Common;
 using Discord;
 
 namespace NadekoBot.Modules.Administration
@@ -18,27 +17,17 @@ namespace NadekoBot.Modules.Administration
         {
             private static readonly object _locker = new object();
             private readonly DbService _db;
-            private readonly IBotConfigProvider _bcp;
 
-            public PlayingRotateCommands(DbService db, IBotConfigProvider bcp)
+            public PlayingRotateCommands(DbService db)
             {
                 _db = db;
-                _bcp = bcp;
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [OwnerOnly]
             public async Task RotatePlaying()
             {
-                bool enabled;
-                using (var uow = _db.UnitOfWork)
-                {
-                    var config = uow.BotConfig.GetOrCreate(set => set);
-
-                    enabled = config.RotatingStatuses = !config.RotatingStatuses;
-                    uow.Complete();
-                }
-                if (enabled)
+                if (_service.ToggleRotatePlaying())
                     await ReplyConfirmLocalized("ropl_enabled").ConfigureAwait(false);
                 else
                     await ReplyConfirmLocalized("ropl_disabled").ConfigureAwait(false);
@@ -46,17 +35,9 @@ namespace NadekoBot.Modules.Administration
 
             [NadekoCommand, Usage, Description, Aliases]
             [OwnerOnly]
-            public async Task AddPlaying(ActivityType t,[Remainder] string status)
+            public async Task AddPlaying(ActivityType t, [Remainder] string status)
             {
-                using (var uow = _db.UnitOfWork)
-                {
-                    var config = uow.BotConfig.GetOrCreate(set => set.Include(x => x.RotatingStatusMessages));
-                    var toAdd = new PlayingStatus { Status = status, Type = t };
-                    config.RotatingStatusMessages.Add(toAdd);
-                    await uow.CompleteAsync();
-                }
-
-                _bcp.Reload();
+                await _service.AddPlaying(t, status);
 
                 await ReplyConfirmLocalized("ropl_added").ConfigureAwait(false);
             }
@@ -83,19 +64,11 @@ namespace NadekoBot.Modules.Administration
             {
                 index -= 1;
 
-                string msg;
-                using (var uow = _db.UnitOfWork)
-                {
-                    var config = uow.BotConfig.GetOrCreate(set => set.Include(x => x.RotatingStatusMessages));
+                var msg = _service.RemovePlayingAsync(index);
 
-                    if (index >= config.RotatingStatusMessages.Count)
-                        return;
-                    msg = config.RotatingStatusMessages[index].Status;
-                    config.RotatingStatusMessages.RemoveAt(index);
-                    await uow.CompleteAsync();
-                }
+                if (msg == null)
+                    return;
 
-                _bcp.Reload();
                 await ReplyConfirmLocalized("reprm", msg).ConfigureAwait(false);
             }
         }

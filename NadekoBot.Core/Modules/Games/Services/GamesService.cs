@@ -17,7 +17,6 @@ using NadekoBot.Core.Services.Impl;
 using Newtonsoft.Json;
 using NLog;
 using NadekoBot.Modules.Games.Common.Acrophobia;
-using NadekoBot.Modules.Games.Common.Connect4;
 using NadekoBot.Modules.Games.Common.Hangman;
 using NadekoBot.Modules.Games.Common.Trivia;
 using NadekoBot.Modules.Games.Common.Nunchi;
@@ -38,7 +37,7 @@ namespace NadekoBot.Modules.Games.Services
         private readonly IImageCache _images;
         private readonly Logger _log;
         private readonly NadekoRandom _rng;
-        private readonly CurrencyService _cs;
+        private readonly ICurrencyService _cs;
         public readonly string TypingArticlesPath = "data/typing_articles3.json";
         private readonly CommandHandler _cmdHandler;
 
@@ -46,7 +45,6 @@ namespace NadekoBot.Modules.Games.Services
 
         //channelId, game
         public ConcurrentDictionary<ulong, Acrophobia> AcrophobiaGames { get; } = new ConcurrentDictionary<ulong, Acrophobia>();
-        public ConcurrentDictionary<ulong, Connect4Game> Connect4Games { get; } = new ConcurrentDictionary<ulong, Connect4Game>();
 
         public ConcurrentDictionary<ulong, Hangman> HangmanGames { get; } = new ConcurrentDictionary<ulong, Hangman>();
         public TermPool TermPool { get; } = new TermPool();
@@ -58,7 +56,7 @@ namespace NadekoBot.Modules.Games.Services
 
         public GamesService(CommandHandler cmd, IBotConfigProvider bc, NadekoBot bot,
             NadekoStrings strings, IDataCache data, CommandHandler cmdHandler,
-            CurrencyService cs)
+            ICurrencyService cs)
         {
             _bc = bc;
             _cmd = cmd;
@@ -103,8 +101,6 @@ namespace NadekoBot.Modules.Games.Services
 
             AcrophobiaGames.ForEach(x => x.Value.Dispose());
             AcrophobiaGames.Clear();
-            Connect4Games.ForEach(x => x.Value.Dispose());
-            Connect4Games.Clear();
             HangmanGames.ForEach(x => x.Value.Dispose());
             HangmanGames.Clear();
             await Task.WhenAll(RunningTrivias.Select(x => x.Value.StopGame()));
@@ -145,10 +141,10 @@ namespace NadekoBot.Modules.Games.Services
         private ConcurrentDictionary<ulong, object> _locks { get; } = new ConcurrentDictionary<ulong, object>();
         public ConcurrentHashSet<ulong> HalloweenAwardedUsers { get; } = new ConcurrentHashSet<ulong>();
 
-        public byte[] GetRandomCurrencyImage()
+        public string GetRandomCurrencyImage()
         {
             var rng = new NadekoRandom();
-            var cur = _images.Currency;
+            var cur = _images.ImageUrls.Currency;
             return cur[rng.Next(0, cur.Length)];
         }
 
@@ -197,15 +193,13 @@ namespace NadekoBot.Modules.Games.Services
                                 : GetText(channel, "curgen_pl", dropAmount, _bc.BotConfig.CurrencySign)
                                     + " " + GetText(channel, "pick_pl", prefix);
                             var file = GetRandomCurrencyImage();
-                            using (var fileStream = file.ToStream())
-                            {
-                                var sent = await channel.SendFileAsync(
-                                    fileStream,
-                                    "drop.gif",
-                                    toSend).ConfigureAwait(false);
 
-                                msgs[0] = sent;
-                            }
+                            var sent = await channel.EmbedAsync(new EmbedBuilder()
+                                .WithOkColor()
+                                .WithDescription(toSend)
+                                .WithImageUrl(file));
+
+                            msgs[0] = sent;
 
                             PlantedFlowers.AddOrUpdate(channel.Id, msgs.ToList(), (id, old) => { old.AddRange(msgs); return old; });
                         }
