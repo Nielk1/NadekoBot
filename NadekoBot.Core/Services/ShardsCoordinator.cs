@@ -80,7 +80,7 @@ namespace NadekoBot.Core.Services
             _key = _creds.RedisKey();
             _redis = ConnectionMultiplexer.Connect("127.0.0.1");
 
-            new RedisImagesCache(_redis, _creds).Reload(); //reload images into redis
+            new RedisImagesCache(_redis, _creds).Reload().GetAwaiter().GetResult(); //reload images into redis
 
             //setup initial shard statuses
             _defaultShardState = new ShardComMessage()
@@ -294,7 +294,7 @@ namespace NadekoBot.Core.Services
                                 _shardStartQueue.Enqueue(s.ShardId);
 
                                 //to prevent shards which are already scheduled for restart to be scheduled again
-                                s.Time = DateTime.UtcNow + TimeSpan.FromSeconds(30 * _shardStartQueue.Count);
+                                s.Time = DateTime.UtcNow + TimeSpan.FromSeconds(60 * _shardStartQueue.Count);
                                 db.ListSetByIndex(_key + "_shardstats", s.ShardId,
                                     JsonConvert.SerializeObject(s), CommandFlags.FireAndForget);
                                 _log.Warn("Shard {0} is scheduled for a restart because it's unresponsive.", s.ShardId);

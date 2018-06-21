@@ -10,8 +10,6 @@ using NadekoBot.Core.Services;
 using NadekoBot.Core.Services.Database.Models;
 using Newtonsoft.Json;
 using NLog;
-using NadekoBot.Extensions;
-using NadekoBot.Core.Common.Caching;
 
 namespace NadekoBot.Modules.Utility.Services
 {
@@ -19,8 +17,7 @@ namespace NadekoBot.Modules.Utility.Services
     {
         private readonly SemaphoreSlim getPledgesLocker = new SemaphoreSlim(1, 1);
 
-        private readonly FactoryCache<PatreonUserAndReward[]> _pledges;
-        public PatreonUserAndReward[] Pledges => _pledges.GetValue();
+        private PatreonUserAndReward[] _pledges;
 
         public readonly Timer Updater;
         private readonly SemaphoreSlim claimLockJustInCase = new SemaphoreSlim(1, 1);
@@ -29,36 +26,20 @@ namespace NadekoBot.Modules.Utility.Services
         public readonly TimeSpan Interval = TimeSpan.FromMinutes(3);
         private readonly IBotCredentials _creds;
         private readonly DbService _db;
-        private readonly CurrencyService _currency;
-        private readonly IDataCache _cache;
-        private readonly string _key;
+        private readonly ICurrencyService _currency;
         private readonly IBotConfigProvider _bc;
 
         public DateTime LastUpdate { get; private set; } = DateTime.UtcNow;
 
         public PatreonRewardsService(IBotCredentials creds, DbService db, 
-            CurrencyService currency,
-            DiscordSocketClient client, IDataCache cache, IBotConfigProvider bc)
+            ICurrencyService currency,
+            DiscordSocketClient client, IBotConfigProvider bc)
         {
             _log = LogManager.GetCurrentClassLogger();
             _creds = creds;
             _db = db;
             _currency = currency;
-            _cache = cache;
-            _key = _creds.RedisKey() + "_patreon_rewards";
             _bc = bc;
-            
-            _pledges = new FactoryCache<PatreonUserAndReward[]>(() =>
-            {
-                var r = _cache.Redis.GetDatabase();
-                var data = r.StringGet(_key);
-                if (data.IsNullOrEmpty)
-                    return null;
-                else
-                {
-                    return JsonConvert.DeserializeObject<PatreonUserAndReward[]>(data);
-                }
-            }, TimeSpan.FromSeconds(20));
 
             if(client.ShardId == 0)
                 Updater = new Timer(async _ => await RefreshPledges(),
@@ -103,14 +84,13 @@ namespace NadekoBot.Modules.Utility.Services
                         }
                     } while (!string.IsNullOrWhiteSpace(data.Links.next));
                 }
-                var db = _cache.Redis.GetDatabase();
-                var toSet = JsonConvert.SerializeObject(rewards.Join(users, (r) => r.relationships?.patron?.data?.id, (u) => u.id, (x, y) => new PatreonUserAndReward()
+                var toSet = rewards.Join(users, (r) => r.relationships?.patron?.data?.id, (u) => u.id, (x, y) => new PatreonUserAndReward()
                 {
                     User = y,
                     Reward = x,
-                }).ToArray());
+                }).ToArray();
 
-                db.StringSet(_key, toSet);
+                _pledges = toSet;
             }
             catch (Exception ex)
             {
@@ -129,7 +109,7 @@ namespace NadekoBot.Modules.Utility.Services
             var now = DateTime.UtcNow;
             try
             {
-                var data = Pledges?.FirstOrDefault(x => x.User.attributes?.social_connections?.discord?.user_id == userId.ToString());
+                var data = _pledges?.FirstOrDefault(x => x.User.attributes?.social_connections?.discord?.user_id == userId.ToString());
 
                 if (data == null)
                     return 0;
@@ -151,7 +131,7 @@ namespace NadekoBot.Modules.Utility.Services
                             AmountRewardedThisMonth = amount,
                         });
 
-                        await _currency.AddAsync(userId, "Patreon reward - new", amount, uow).ConfigureAwait(false);
+                        await _currency.AddAsync(userId, "Patreon reward - new", amount, gamble: true).ConfigureAwait(false);
 
                         await uow.CompleteAsync().ConfigureAwait(false);
                         return amount;
@@ -163,7 +143,7 @@ namespace NadekoBot.Modules.Utility.Services
                         usr.AmountRewardedThisMonth = amount;
                         usr.PatreonUserId = data.User.id;
 
-                        await _currency.AddAsync(userId, "Patreon reward - recurring", amount, uow).ConfigureAwait(false);
+                        await _currency.AddAsync(userId, "Patreon reward - recurring", amount, gamble: true).ConfigureAwait(false);
 
                         await uow.CompleteAsync().ConfigureAwait(false);
                         return amount;
@@ -177,7 +157,7 @@ namespace NadekoBot.Modules.Utility.Services
                         usr.AmountRewardedThisMonth = amount;
                         usr.PatreonUserId = data.User.id;
 
-                        await _currency.AddAsync(usr.UserId, "Patreon reward - update", toAward, uow).ConfigureAwait(false);
+                        await _currency.AddAsync(usr.UserId, "Patreon reward - update", toAward, gamble: true).ConfigureAwait(false);
 
                         await uow.CompleteAsync().ConfigureAwait(false);
                         return toAward;

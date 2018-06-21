@@ -20,7 +20,6 @@ using NadekoBot.Common.ShardCom;
 using NadekoBot.Core.Services.Database;
 using StackExchange.Redis;
 using Newtonsoft.Json;
-using NadekoBot.Core.Common;
 
 using NadekoBot.Services.GamesList;
 
@@ -43,8 +42,8 @@ namespace NadekoBot
          * I don't want to pass botconfig every time I 
          * want to send a confirm or error message, so
          * I'll keep this for now */
-        public static Color OkColor { get; private set; }
-        public static Color ErrorColor { get; private set; }
+        public static Color OkColor { get; set; }
+        public static Color ErrorColor { get; set; }
 
         public TaskCompletionSource<bool> Ready { get; private set; } = new TaskCompletionSource<bool>();
 
@@ -58,6 +57,16 @@ namespace NadekoBot
                 .ListRange(Credentials.RedisKey() + "_shardstats")
                 .Select(x => JsonConvert.DeserializeObject<ShardComMessage>(x))
                 .Sum(x => x.Guilds);
+
+        public int[] ShardGuildCounts =>
+            Cache.Redis.GetDatabase()
+                .ListRange(Credentials.RedisKey() + "_shardstats")
+                .Select(x => JsonConvert.DeserializeObject<ShardComMessage>(x))
+                .OrderBy(x => x.ShardId)
+                .Select(x => x.Guilds)
+                .ToArray();
+
+        public event Func<GuildConfig, Task> JoinedGuild = delegate { return Task.CompletedTask; };
 
         public NadekoBot(int shardId, int parentProcessId)
         {
@@ -73,7 +82,11 @@ namespace NadekoBot
             _db = new DbService(Credentials);
             Client = new DiscordSocketClient(new DiscordSocketConfig
             {
-                MessageCacheSize = 10,
+#if GLOBAL_NADEKO
+                MessageCacheSize = 0,
+#else
+                MessageCacheSize = 50,
+#endif
                 LogLevel = LogSeverity.Info,
                 ConnectionTimeout = int.MaxValue,
                 TotalShards = Credentials.TotalShards,
@@ -91,6 +104,7 @@ namespace NadekoBot
                 _botConfig = uow.BotConfig.GetOrCreate();
                 OkColor = new Color(Convert.ToUInt32(_botConfig.OkColor, 16));
                 ErrorColor = new Color(Convert.ToUInt32(_botConfig.ErrorColor, 16));
+                uow.Complete();
             }
 
             SetupShard(parentProcessId);
@@ -256,6 +270,15 @@ namespace NadekoBot
         private Task Client_JoinedGuild(SocketGuild arg)
         {
             _log.Info("Joined server: {0} [{1}]", arg?.Name, arg?.Id);
+            var _ = Task.Run(async () =>
+            {
+                GuildConfig gc;
+                using (var uow = _db.UnitOfWork)
+                {
+                    gc = uow.GuildConfigs.For(arg.Id);
+                }
+                await JoinedGuild.Invoke(gc);
+            });
             return Task.CompletedTask;
         }
 
@@ -287,7 +310,7 @@ namespace NadekoBot
             // start handling messages received in commandhandler
             await commandHandler.StartHandling().ConfigureAwait(false);
 
-            var _ = await CommandService.AddModulesAsync(this.GetType().GetTypeInfo().Assembly);
+            var _ = await CommandService.AddModulesAsync(this.GetType().GetTypeInfo().Assembly, Services);
 
 
             bool isPublicNadeko = false;
@@ -303,9 +326,9 @@ namespace NadekoBot
                     .Where(x => x.Preconditions.Any(y => y.GetType() == typeof(NoPublicBot)))
                     .ForEach(x => CommandService.RemoveModuleAsync(x));
 
-            Ready.TrySetResult(true);
             HandleStatusChanges();
             StartSendingData();
+            Ready.TrySetResult(true);
             _log.Info($"Shard {Client.ShardId} ready.");
         }
 

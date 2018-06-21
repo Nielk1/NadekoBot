@@ -19,11 +19,13 @@ namespace NadekoBot.Modules.Administration.Services
 
         private readonly Logger _log;
         private readonly NadekoBot _bot;
+        private readonly DbService _db;
 
-        public AdministrationService(NadekoBot bot, CommandHandler cmdHandler)
+        public AdministrationService(NadekoBot bot, CommandHandler cmdHandler, DbService db)
         {
             _log = LogManager.GetCurrentClassLogger();
             _bot = bot;
+            _db = db;
 
             DeleteMessagesOnCommand = new ConcurrentHashSet<ulong>(bot.AllGuildConfigs
                 .Where(g => g.DeleteMessageOnCommand)
@@ -56,7 +58,9 @@ namespace NadekoBot.Modules.Administration.Services
                         //if state is false, that means do not do it
                     }
                     else if (DeleteMessagesOnCommand.Contains(channel.Guild.Id) && cmd.Name != "prune" && cmd.Name != "pick")
-                        await msg.DeleteAsync().ConfigureAwait(false);
+                    {
+                        try { await msg.DeleteAsync().ConfigureAwait(false); } catch { }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -65,6 +69,19 @@ namespace NadekoBot.Modules.Administration.Services
                 }
             });
             return Task.CompletedTask;
+        }
+
+        public bool ToggleDeleteMessageOnCommand(ulong guildId)
+        {
+            bool enabled;
+            using (var uow = _db.UnitOfWork)
+            {
+                var conf = uow.GuildConfigs.For(guildId, set => set);
+                enabled = conf.DeleteMessageOnCommand = !conf.DeleteMessageOnCommand;
+
+                uow.Complete();
+            }
+            return enabled;
         }
     }
 }

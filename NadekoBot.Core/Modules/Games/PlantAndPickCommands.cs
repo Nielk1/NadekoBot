@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using NadekoBot.Common.Attributes;
 using NadekoBot.Modules.Games.Services;
 using System;
+using Discord.WebSocket;
 
 namespace NadekoBot.Modules.Games
 {
@@ -26,14 +27,11 @@ namespace NadekoBot.Modules.Games
         public class PlantPickCommands : NadekoSubmodule<GamesService>
         {
             //todo rewrite
-            private readonly CurrencyService _cs;
-            private readonly IBotConfigProvider _bc;
+            private readonly ICurrencyService _cs;
             private readonly DbService _db;
 
-            public PlantPickCommands(IBotConfigProvider bc, CurrencyService cs,
-                DbService db)
+            public PlantPickCommands(ICurrencyService cs, DbService db)
             {
-                _bc = bc;
                 _cs = cs;
                 _db = db;
             }
@@ -42,10 +40,10 @@ namespace NadekoBot.Modules.Games
             [RequireContext(ContextType.Guild)]
             public async Task Pick()
             {
+                var guild = (SocketGuild)Context.Guild;
                 var channel = (ITextChannel)Context.Channel;
-
-                ///waaaaaat
-                if (!(await channel.Guild.GetCurrentUserAsync()).GetPermissions(channel).ManageMessages)
+                
+                if (!guild.CurrentUser.GetPermissions(channel).ManageMessages)
                     return;
 
                 try { await Context.Message.DeleteAsync().ConfigureAwait(false); } catch { }
@@ -77,7 +75,7 @@ namespace NadekoBot.Modules.Games
                 IUserMessage msg = null;
                 try
                 {
-                    var imgData = _service.GetRandomCurrencyImage();
+                    var imgUrl = _service.GetRandomCurrencyImage();
 
                     var msgToSend = GetText("planted",
                         Format.Bold(Context.User.ToString()),
@@ -89,13 +87,10 @@ namespace NadekoBot.Modules.Games
                     else
                         msgToSend += " " + GetText("pick_sn", Prefix);
 
-                    using (var toSend = imgData.ToStream())
-                    {
-                        msg = await Context.Channel.SendFileAsync(toSend, "plant.gif", msgToSend, options: new RequestOptions()
-                        {
-                            RetryMode = RetryMode.AlwaysRetry
-                        }).ConfigureAwait(false);
-                    }
+                    msg = await Context.Channel.EmbedAsync(new EmbedBuilder()
+                        .WithOkColor()
+                        .WithDescription(msgToSend)
+                        .WithImageUrl(imgUrl));
                 }
                 catch (Exception ex)
                 {

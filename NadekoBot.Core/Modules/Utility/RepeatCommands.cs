@@ -14,6 +14,7 @@ using NadekoBot.Common.Attributes;
 using NadekoBot.Common.TypeReaders;
 using NadekoBot.Modules.Utility.Common;
 using NadekoBot.Modules.Utility.Services;
+using NadekoBot.Core.Common;
 
 namespace NadekoBot.Modules.Utility
 {
@@ -52,11 +53,11 @@ namespace NadekoBot.Modules.Utility
                     await ReplyErrorLocalized("index_out_of_range").ConfigureAwait(false);
                     return;
                 }
-                var repeater = repList[index].Repeater;
-                repList[index].Reset();
-                await repList[index].Trigger();
+                var repeater = repList[index];
+                repeater.Reset();
+                await repeater.Trigger().ConfigureAwait(false);
 
-                await Context.Channel.SendMessageAsync("🔄").ConfigureAwait(false);
+                try { await Context.Message.AddReactionAsync(new Emoji("🔄")).ConfigureAwait(false); } catch { }
             }
 
             [NadekoCommand, Usage, Description, Aliases]
@@ -69,7 +70,7 @@ namespace NadekoBot.Modules.Utility
                 if (index < 1)
                     return;
                 index -= 1;
-                
+
                 if (!_service.Repeaters.TryGetValue(Context.Guild.Id, out var rep))
                     return;
 
@@ -101,71 +102,34 @@ namespace NadekoBot.Modules.Utility
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequireUserPermission(GuildPermission.ManageMessages)]
+            [NadekoOptions(typeof(Repeater.Options))]
             [Priority(0)]
-            public async Task Repeat(int minutes, [Remainder] string message)
-            {
-                if (!_service.RepeaterReady)
-                    return;
-                if (minutes < 1 || minutes > 10080)
-                    return;
-
-                if (string.IsNullOrWhiteSpace(message))
-                    return;
-
-                var toAdd = new GuildRepeater()
-                {
-                    ChannelId = Context.Channel.Id,
-                    GuildId = Context.Guild.Id,
-                    Interval = TimeSpan.FromMinutes(minutes),
-                    Message = message
-                };
-
-                using (var uow = _db.UnitOfWork)
-                {
-                    var gc = uow.GuildConfigs.For(Context.Guild.Id, set => set.Include(x => x.GuildRepeaters));
-
-                    if (gc.GuildRepeaters.Count >= 5)
-                        return;
-                    gc.GuildRepeaters.Add(toAdd);
-
-                    await uow.CompleteAsync().ConfigureAwait(false);
-                }
-
-                var rep = new RepeatRunner(_client, (SocketGuild)Context.Guild, toAdd);
-
-                _service.Repeaters.AddOrUpdate(Context.Guild.Id, new ConcurrentQueue<RepeatRunner>(new[] {rep}), (key, old) =>
-                {
-                    old.Enqueue(rep);
-                    return old;
-                });
-
-                await Context.Channel.SendConfirmAsync(
-                    "🔁 " + GetText("repeater",
-                        Format.Bold(((IGuildUser)Context.User).GuildPermissions.MentionEveryone ? rep.Repeater.Message : rep.Repeater.Message.SanitizeMentions()),
-                        Format.Bold(rep.Repeater.Interval.Days.ToString()),
-                        Format.Bold(rep.Repeater.Interval.Hours.ToString()),
-                        Format.Bold(rep.Repeater.Interval.Minutes.ToString()))).ConfigureAwait(false);
-            }
+            public Task Repeat(params string[] options)
+                => Repeat(null, options);
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequireUserPermission(GuildPermission.ManageMessages)]
+            [NadekoOptions(typeof(Repeater.Options))]
             [Priority(1)]
-            public async Task Repeat(GuildDateTime gt, [Remainder] string message)
+            public async Task Repeat(GuildDateTime dt, params string[] options)
             {
                 if (!_service.RepeaterReady)
                     return;
 
-                if (string.IsNullOrWhiteSpace(message))
+                var (opts, _) = OptionsParser.Default.ParseFrom(new Repeater.Options(), options);
+
+                if (string.IsNullOrWhiteSpace(opts.Message))
                     return;
 
                 var toAdd = new GuildRepeater()
                 {
                     ChannelId = Context.Channel.Id,
                     GuildId = Context.Guild.Id,
-                    Interval = TimeSpan.FromHours(24),
-                    StartTimeOfDay = gt.InputTimeUtc.TimeOfDay,
-                    Message = message
+                    Interval = TimeSpan.FromMinutes(opts.Interval),
+                    Message = opts.Message,
+                    NoRedundant = opts.NoRedundant,
+                    StartTimeOfDay = dt?.InputTimeUtc.TimeOfDay,
                 };
 
                 using (var uow = _db.UnitOfWork)
@@ -182,14 +146,18 @@ namespace NadekoBot.Modules.Utility
                 var rep = new RepeatRunner(_client, (SocketGuild)Context.Guild, toAdd);
 
                 _service.Repeaters.AddOrUpdate(Context.Guild.Id, new ConcurrentQueue<RepeatRunner>(new[] { rep }), (key, old) =>
-                {
-                    old.Enqueue(rep);
-                    return old;
-                });
+                  {
+                      old.Enqueue(rep);
+                      return old;
+                  });
 
-                var secondPart = GetText("repeater_initial",
-                    Format.Bold(rep.InitialInterval.Hours.ToString()),
-                    Format.Bold(rep.InitialInterval.Minutes.ToString()));
+                string secondPart = "";
+                if (dt != null)
+                {
+                    secondPart = GetText("repeater_initial",
+                        Format.Bold(rep.InitialInterval.Hours.ToString()),
+                        Format.Bold(rep.InitialInterval.Minutes.ToString()));
+                }
 
                 await Context.Channel.SendConfirmAsync(
                     "🔁 " + GetText("repeater",

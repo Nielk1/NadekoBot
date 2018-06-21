@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using NLog;
 using System.Linq;
 using NadekoBot.Extensions;
-using System.Diagnostics;
 using NadekoBot.Common.Collections;
 using NadekoBot.Modules.Music.Services;
 using NadekoBot.Core.Services;
@@ -35,8 +34,8 @@ namespace NadekoBot.Modules.Music.Common
         public bool Exited { get; set; } = false;
         public bool Stopped { get; private set; } = false;
         public float Volume { get; private set; } = 1.0f;
-        public bool Paused => pauseTaskSource != null;
-        private TaskCompletionSource<bool> pauseTaskSource { get; set; } = null;
+        public bool Paused => PauseTaskSource != null;
+        private TaskCompletionSource<bool> PauseTaskSource { get; set; } = null;
 
         public string PrettyVolume => $"🔉 {(int)(Volume * 100)}%";
         public string PrettyCurrentTime
@@ -82,9 +81,9 @@ namespace NadekoBot.Modules.Music.Common
             {
                 if (value)
                 {
-                    var cur = Queue.Current;
-                    if (cur.Song != null)
-                        RecentlyPlayedUsers.Add(cur.Song.QueuerName);
+                    var (Index, Song) = Queue.Current;
+                    if (Song != null)
+                        RecentlyPlayedUsers.Add(Song.QueuerName);
                 }
                 else
                 {
@@ -114,7 +113,6 @@ namespace NadekoBot.Modules.Music.Common
         public event Action<MusicPlayer, bool> OnPauseChanged;
         #endregion
 
-
         private bool manualSkip = false;
         private bool manualIndex = false;
         private bool newVoiceChannel = false;
@@ -134,7 +132,7 @@ namespace NadekoBot.Modules.Music.Common
             }
         }
 
-        public MusicPlayer(MusicService musicService, MusicSettings ms, IGoogleApiService google, 
+        public MusicPlayer(MusicService musicService, MusicSettings ms, IGoogleApiService google,
             IVoiceChannel vch, ITextChannel original, float volume)
         {
             _log = LogManager.GetCurrentClassLogger();
@@ -142,7 +140,7 @@ namespace NadekoBot.Modules.Music.Common
             this.VoiceChannel = vch;
             this.OriginalTextChannel = original;
             this.SongCancelSource = new CancellationTokenSource();
-            if(ms.MusicChannelId is ulong cid)
+            if (ms.MusicChannelId is ulong cid)
             {
                 this.OutputTextChannel = ((SocketGuild)original.Guild).GetTextChannel(cid) ?? original;
             }
@@ -154,7 +152,10 @@ namespace NadekoBot.Modules.Music.Common
             this.AutoDelete = ms.SongAutoDelete;
             this._google = google;
 
-            _player = new Thread(new ThreadStart(PlayerLoop));
+            _player = new Thread(new ThreadStart(PlayerLoop))
+            {
+                Priority = ThreadPriority.AboveNormal
+            };
             _player.Start();
         }
 
@@ -206,21 +207,22 @@ namespace NadekoBot.Modules.Music.Common
                             // i don't want to spam connection attempts
                             continue;
                         }
-                        pcm = ac.CreatePCMStream(AudioApplication.Music, bufferMillis: 500);
+                        b.StartBuffering();
+                        await Task.Delay(1000);
+                        pcm = ac.CreatePCMStream(AudioApplication.Music, bufferMillis: 1);
                         _log.Info("Created pcm stream");
                         OnStarted?.Invoke(this, data);
-
-                        byte[] buffer = new byte[3840];
-                        int bytesRead = 0;
-
-                        while ((bytesRead = b.Read(buffer, 0, buffer.Length)) > 0
-                        && (MaxPlaytimeSeconds <= 0 || MaxPlaytimeSeconds >= CurrentTime.TotalSeconds))
+                        
+                        while (MaxPlaytimeSeconds <= 0 || MaxPlaytimeSeconds >= CurrentTime.TotalSeconds)
                         {
+                            var buffer = b.Read(3840);
+                            if (buffer.Length == 0)
+                                break;
                             AdjustVolume(buffer, Volume);
-                            await pcm.WriteAsync(buffer, 0, bytesRead, cancelToken).ConfigureAwait(false);
-                            unchecked { _bytesSent += bytesRead; }
+                            await pcm.WriteAsync(buffer, 0, buffer.Length, cancelToken).ConfigureAwait(false);
+                            unchecked { _bytesSent += buffer.Length; }
 
-                            await (pauseTaskSource?.Task ?? Task.CompletedTask);
+                            await (PauseTaskSource?.Task ?? Task.CompletedTask);
                         }
                     }
                     catch (OperationCanceledException)
@@ -296,7 +298,7 @@ namespace NadekoBot.Modules.Music.Common
                                     {
                                         _log.Info("Loading related song");
                                         await _musicService.TryQueueRelatedSongAsync(data.Song, OutputTextChannel, VoiceChannel);
-                                        if(!AutoDelete)
+                                        if (!AutoDelete)
                                             Queue.Next();
                                     }
                                     catch
@@ -346,7 +348,7 @@ namespace NadekoBot.Modules.Music.Common
                                     lock (locker)
                                     {
                                         if (!Stopped)
-                                            if(!AutoDelete)
+                                            if (!AutoDelete)
                                                 Queue.Next();
                                     }
                                 }
@@ -412,24 +414,44 @@ namespace NadekoBot.Modules.Music.Common
             return _audioClient;
         }
 
-        public int Enqueue(SongInfo song)
+        public int Enqueue(SongInfo song, bool forcePlay = false)
         {
             lock (locker)
             {
                 if (Exited)
                     return -1;
                 Queue.Add(song);
-                return Queue.Count - 1;
+                var result = Queue.Count - 1;
+
+                if(forcePlay)
+                {
+                    if (Stopped)
+                    {
+                        Stopped = false;
+                        SetIndex(result);
+                    }
+                    Unpause();
+                }
+                return result;
             }
         }
 
-        public int EnqueueNext(SongInfo song)
+        public int EnqueueNext(SongInfo song, bool forcePlay = false)
         {
             lock (locker)
             {
                 if (Exited)
                     return -1;
-                return Queue.AddNext(song);
+                var toReturn = Queue.AddNext(song);
+                if(forcePlay)
+                {
+                    Unpause();
+                    if (Stopped)
+                    {
+                        SetIndex(toReturn);
+                    }
+                }
+                return toReturn;
             }
         }
 
@@ -493,10 +515,10 @@ namespace NadekoBot.Modules.Music.Common
         {
             lock (locker)
             {
-                if (pauseTaskSource != null)
+                if (PauseTaskSource != null)
                 {
-                    pauseTaskSource.TrySetResult(true);
-                    pauseTaskSource = null;
+                    PauseTaskSource.TrySetResult(true);
+                    PauseTaskSource = null;
                 }
             }
         }
@@ -505,14 +527,14 @@ namespace NadekoBot.Modules.Music.Common
         {
             lock (locker)
             {
-                if (pauseTaskSource == null)
-                    pauseTaskSource = new TaskCompletionSource<bool>();
+                if (PauseTaskSource == null)
+                    PauseTaskSource = new TaskCompletionSource<bool>();
                 else
                 {
                     Unpause();
                 }
             }
-            OnPauseChanged?.Invoke(this, pauseTaskSource != null);
+            OnPauseChanged?.Invoke(this, PauseTaskSource != null);
         }
 
         public void SetVolume(int volume)
@@ -529,9 +551,9 @@ namespace NadekoBot.Modules.Music.Common
         {
             lock (locker)
             {
-                var cur = Queue.Current;
+                var (Index, Song) = Queue.Current;
                 var toReturn = Queue.RemoveAt(index);
-                if (cur.Index == index)
+                if (Index == index)
                     Next();
                 return toReturn;
             }
@@ -645,16 +667,12 @@ namespace NadekoBot.Modules.Music.Common
 
         public async Task UpdateSongDurationsAsync()
         {
-            var sw = Stopwatch.StartNew();
             var (_, songs) = Queue.ToArray();
             var toUpdate = songs
                 .Where(x => x.ProviderType == MusicType.YouTube
                     && x.TotalTime == TimeSpan.Zero);
 
             var vIds = toUpdate.Select(x => x.VideoId);
-
-            sw.Stop();
-            _log.Info(sw.Elapsed.TotalSeconds);
             if (!vIds.Any())
                 return;
 
