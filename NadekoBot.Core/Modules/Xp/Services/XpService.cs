@@ -785,5 +785,51 @@ namespace NadekoBot.Modules.Xp.Services
             _clearRewardTimerTokenSource.Dispose();
             return Task.CompletedTask;
         }
+
+        //public async Task ChangeNotificationType(ulong userId, ulong guildId, XpNotificationType type)
+        //{
+        //    using (var uow = _db.UnitOfWork)
+        //    {
+        //        var user = uow.Xp.GetOrCreateUser(guildId, userId);
+        //        user.NotifyOnLevelUp = type;
+        //        await uow.CompleteAsync().ConfigureAwait(false);
+        //    }
+        //}
+        public IEnumerable<ulong> XpRoleRewardRetroactive(ulong guildId, ulong roleId)
+        {
+            List<ulong> UserIds = new List<ulong>();
+
+            using (var uow = _db.UnitOfWork)
+            {
+                var reward = GetRoleRewards(guildId)
+                    .Where(x => x.RoleId == roleId)
+                    .FirstOrDefault();
+
+                var settings = uow.GuildConfigs.XpSettingsFor(guildId);
+
+                int page = 0;
+                List<UserXpStats> stats = new List<UserXpStats>();
+                UserXpStats[] tmpStats;
+                do
+                {
+                    tmpStats = uow.Xp.GetUsersFor(guildId, page);
+                    stats.AddRange(tmpStats);
+                    page++;
+                } while (tmpStats.Length > 0);
+
+                foreach(var item in stats)
+                {
+                    var guildLevelData = new LevelStats(item.Xp);
+                    if(guildLevelData.Level >= reward.Level)
+                    {
+                        UserIds.Add(item.UserId);
+                    }
+                }
+
+                uow.Complete();
+            }
+
+            return UserIds;
+        }
     }
 }

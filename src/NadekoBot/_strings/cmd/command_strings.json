@@ -3410,9 +3410,23 @@
     ],
     "games": {
       "cmd": "games",
-      "desc": "List multiplayer game sessions..",
+      "desc": "List multiplayer game sessions.",
       "usage": [
-        "{0}games"
+        "{0}games gamename"
+      ]
+    },
+    "gameslist": {
+      "cmd": "gameslist",
+      "desc": "List games for use with the {0}games command.",
+      "usage": [
+        "{0}gameslist"
+      ]
+    },
+    "xprolerewardretroactive": {
+      "cmd": "xprolerewardretroactive",
+      "desc": "Retroactively reward role based on xp.",
+      "usage": [
+        "{0}xprolerewardretroactive role"
       ]
     }
   }

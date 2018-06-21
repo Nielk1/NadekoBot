@@ -276,5 +276,52 @@ namespace NadekoBot.Modules.Xp
         [RequireUserPermission(GuildPermission.Administrator)]
         public Task XpAdd(int amount, [Remainder] IGuildUser user) 
             => XpAdd(amount, user.Id);
+
+        [NadekoCommand, Usage, Description, Aliases]
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.ManageRoles)]
+        [Priority(0)]
+        public async Task XpRoleRewardRetroactive([Remainder] string name)
+        {
+            name = name.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+                return;
+
+            var reward = _service.GetRoleRewards(Context.Guild.Id)
+                .Where(x =>
+                {
+                    var str = Context.Guild.GetRole(x.RoleId)?.ToString();
+                    if (str != null)
+                        return str == name;
+                    return false;
+                }).FirstOrDefault();
+
+            if (reward == null) return;
+
+            var users = _service.XpRoleRewardRetroactive(Context.Guild.Id, reward.RoleId);
+
+            if ((users?.Count() ?? 0) == 0) return;
+
+            SocketGuild gContext = ((SocketGuild)Context.Guild);
+
+            foreach (var userId in users)
+            {
+                var usr = gContext.GetUser(userId);
+                if(usr != null)
+                {
+                    await usr.AddRoleAsync(gContext.GetRole(reward.RoleId));
+                }
+            }
+
+            var msg = await ReplyConfirmLocalized("retroactive_role_rewarded").ConfigureAwait(false);
+        }
+
+        [NadekoCommand, Usage, Description, Aliases]
+        [RequireUserPermission(GuildPermission.ManageRoles)]
+        [RequireContext(ContextType.Guild)]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [Priority(1)]
+        public Task XpRoleRewardRetroactive([Remainder] IRole role)
+            => XpRoleRewardRetroactive(role.Name);
     }
 }
