@@ -91,7 +91,7 @@ namespace NadekoBot.Modules.GamesList
                 if (page < 0) page = 0;
                 if (page >= (list.Games?.Length ?? 0)) page = list.Games?.Length ?? 0;
                 // this appears to pre-generate the pages because I don't have to cache this
-                await Context.Channel.SendPaginatedConfirmAsync(_client, page, /*async*/ (curPage) =>
+                await Context.SendPaginatedConfirmAsync(page, /*async*/ (curPage) =>
                 {
                     return GetGameEmbed(list.Games, curPage);
                 }, list.Games?.Length ?? 0, 1, addPaginatedFooter: false);
@@ -203,7 +203,7 @@ namespace NadekoBot.Modules.GamesList
             if (--page < 0 || page > 100)
                 return Task.CompletedTask;
 
-            return Context.Channel.SendPaginatedConfirmAsync(_client, page, /*async*/ (curPage) =>
+            return Context.SendPaginatedConfirmAsync(page, /*async*/ (curPage) =>
             {
                 var games = _service.GetGamesList(Context?.Guild?.Id, curPage);
 
