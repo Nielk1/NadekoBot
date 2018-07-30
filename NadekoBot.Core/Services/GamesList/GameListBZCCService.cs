@@ -47,6 +47,7 @@ namespace NadekoBot.Services.GamesList
             _client = client;
 
             _log = LogManager.GetCurrentClassLogger();
+            _log.Warn("GameListBZCCService");
             /*var sw = Stopwatch.StartNew();
             using (var uow = _db.UnitOfWork)
             {

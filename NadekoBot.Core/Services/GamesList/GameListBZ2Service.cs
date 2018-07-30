@@ -37,6 +37,7 @@ namespace NadekoBot.Services.GamesList
             _client = client;
 
             _log = LogManager.GetCurrentClassLogger();
+            _log.Warn("GameListBZ2Service");
             /*var sw = Stopwatch.StartNew();
             using (var uow = _db.UnitOfWork)
             {
@@ -55,7 +56,6 @@ namespace NadekoBot.Services.GamesList
             }
             sw.Stop();
             _log.Debug($"Loaded in {sw.Elapsed.TotalSeconds:F2}s");*/
-
             _gameList = gameList;
             _gameList.AddGameListBZ2Service(this);
             _gameList.RegisterGameList(this);
