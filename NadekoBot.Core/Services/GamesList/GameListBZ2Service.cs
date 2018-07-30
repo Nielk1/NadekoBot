@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GameListBZ2Service : INService, IGameList
+    public class GameListBZ2Service : IGameList
     {
         public string Emoji => @"<:game_icon_battlezone2:342134902587785219>";
         public string Title => "Battlezone 2: Combat Commander";

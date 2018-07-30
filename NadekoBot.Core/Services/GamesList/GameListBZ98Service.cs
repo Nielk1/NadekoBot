@@ -18,7 +18,7 @@ using NLog;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GameListBZ98Service : INService, IGameList
+    public class GameListBZ98Service : IGameList
     {
         public string Emoji => @"<:game_icon_battlezone98redux:342134901975547916>";
         public string Title => "Battlezone 98 Redux";
