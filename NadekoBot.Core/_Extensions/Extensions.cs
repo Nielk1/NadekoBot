@@ -394,7 +394,7 @@ namespace NadekoBot.Extensions
 
                 //also add the same type 
                 var interfaceType = interfaces.FirstOrDefault(x => serviceType.GetInterfaces().Contains(x));
-_log.Warn($"Loaded {interfaceType.ToString()}");
+Console.WriteLine($"Loaded {interfaceType.ToString()}");
                 if (interfaceType != null)
                 {
                     addedTypes.Add(interfaceType);
