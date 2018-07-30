@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Services.GamesList
 {
-    public class GameListBZCCService : IGameList
+    public class GameListBZCCService : INService, IGameList
     {
         public string Emoji => @"<:game_icon_battlezonecc:420076076169953282>";
         public string Title => "Battlezone Combat Commander";

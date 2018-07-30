@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Core.Services.GamesList
 {
-    public interface IGameList : INService
+    public interface IGameList
     {
         string Emoji { get; }
         string Title { get; }
