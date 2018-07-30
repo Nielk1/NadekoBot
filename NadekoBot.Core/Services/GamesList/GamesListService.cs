@@ -7,6 +7,7 @@ using NadekoBot.Core.Services;
 using NadekoBot.Core.Services.GamesList;
 using System.Collections.Generic;
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace NadekoBot.Services.GamesList
 {
@@ -22,6 +23,8 @@ namespace NadekoBot.Services.GamesList
 
         public int GamesListLength { get { return _gameLists?.Count ?? 0; } }
 
+        private Logger _log;
+
         //public GamesListService(DiscordSocketClient client, DbService db, ILocalization localization, NadekoStrings strings, GameListBZ98Service bz98, GameListBZ2Service bz2)
         public GamesListService(
             DiscordSocketClient client//, /*DbService db,*/
@@ -34,6 +37,9 @@ namespace NadekoBot.Services.GamesList
             //_db = db;
             //_localization = localization;
             //_strings = strings;
+
+            _log = LogManager.GetCurrentClassLogger();
+            _log.Warn("GamesListService");
 
             //_bz98 = bz98;
             //_bz2 = bz2;
