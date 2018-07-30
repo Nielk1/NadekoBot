@@ -294,16 +294,16 @@ namespace NadekoBot.Modules.Xp
         [Priority(0)]
         public async Task XpRoleRewardRetroactive()
         {
-            var embed = new EmbedBuilder().WithTitle(GetText("retroactive_role_reward"));
-            var msg = await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
+            var msg = await Context.Channel.EmbedAsync(new EmbedBuilder().WithTitle(GetText("retroactive_role_reward"))).ConfigureAwait(false);
 
             var rewards = _service.GetRoleRewards(Context.Guild.Id).ToList();
 
             if(rewards.Count == 0)
             {
-                await msg.ModifyAsync(x => x.Embed = embed.WithErrorColor()
-                                                          .AddField("⚠", GetText("retroactive_role_reward_norolerewards"))
-                                                          .Build()).ConfigureAwait(false);
+                await msg.ModifyAsync(x => x.Embed = new EmbedBuilder().WithTitle(GetText("retroactive_role_reward"))
+                                                                       .WithErrorColor()
+                                                                       .AddField("⚠", GetText("retroactive_role_reward_norolerewards"))
+                                                                       .Build()).ConfigureAwait(false);
                 return;
             }
 
@@ -314,12 +314,9 @@ namespace NadekoBot.Modules.Xp
                 .Where(x => x.Value != null)
                 .ToDictionary(x => x.Key, x => x.Value);
 
-            await msg.ModifyAsync(x =>
-            {
-                embed.Fields.Clear();
-                x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), string.Join("\n", rewardsOutput.Values))
-                               .Build();
-            }).ConfigureAwait(false);
+            await msg.ModifyAsync(x => x.Embed = x.Embed = new EmbedBuilder().WithTitle(GetText("retroactive_role_reward"))
+                                                                             .AddField(GetText("retroactive_role_reward_rolespending"), string.Join("\n", rewardsOutput.Values))
+                                                                             .Build()).ConfigureAwait(false);
 
             foreach (var reward in rewards)
             {
@@ -339,21 +336,15 @@ namespace NadekoBot.Modules.Xp
                 }
 
                 rewardsOutput.Remove(reward.RoleId);
-                await msg.ModifyAsync(x =>
-                {
-                    embed.Fields.Clear();
-                    x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), string.Join("\n", rewardsOutput.Values))
-                                   .Build();
-                }).ConfigureAwait(false);
+                await msg.ModifyAsync(x => x.Embed = new EmbedBuilder().WithTitle(GetText("retroactive_role_reward"))
+                                                                       .AddField(GetText("retroactive_role_reward_rolespending"), string.Join("\n", rewardsOutput.Values))
+                                                                       .Build()).ConfigureAwait(false);
             }
 
-            await msg.ModifyAsync(x =>
-            {
-                embed.Fields.Clear();
-                x.Embed = embed.WithOkColor()
-                               .AddField("✅", GetText("retroactive_role_reward_done"))
-                               .Build();
-            }).ConfigureAwait(false);
+            await msg.ModifyAsync(x => x.Embed = new EmbedBuilder().WithTitle(GetText("retroactive_role_reward"))
+                                                                   .WithOkColor()
+                                                                   .AddField("✅", GetText("retroactive_role_reward_done"))
+                                                                   .Build()).ConfigureAwait(false);
         }
     }
 }
