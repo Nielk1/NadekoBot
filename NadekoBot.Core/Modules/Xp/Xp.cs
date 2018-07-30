@@ -314,8 +314,12 @@ namespace NadekoBot.Modules.Xp
                 .Where(x => x.Value != null)
                 .ToDictionary(x => x.Key, x => x.Value);
 
-            await msg.ModifyAsync(x => x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), rewardsOutput.Select(r => string.Join("\n", rewardsOutput.Values)))
-                                                      .Build()).ConfigureAwait(false);
+            await msg.ModifyAsync(x =>
+            {
+                embed.Fields.Clear();
+                x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), rewardsOutput.Select(r => string.Join("\n", rewardsOutput.Select(rw => rw.Value))))
+                               .Build();
+            }).ConfigureAwait(false);
 
             foreach (var reward in rewards)
             {
@@ -335,13 +339,21 @@ namespace NadekoBot.Modules.Xp
                 }
 
                 rewardsOutput.Remove(reward.RoleId);
-                await msg.ModifyAsync(x => x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), rewardsOutput.Select(r => string.Join("\n", rewardsOutput.Values)))
-                                          .Build()).ConfigureAwait(false);
+                await msg.ModifyAsync(x =>
+                {
+                    embed.Fields.Clear();
+                    x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), rewardsOutput.Select(r => string.Join("\n", rewardsOutput.Select(rw => rw.Value))))
+                                   .Build();
+                }).ConfigureAwait(false);
             }
 
-            await msg.ModifyAsync(x => x.Embed = embed.WithOkColor()
-                                                      .AddField(GetText("retroactive_role_reward_rolespending"), "✅")
-                                                      .Build()).ConfigureAwait(false);
+            await msg.ModifyAsync(x =>
+            {
+                embed.Fields.Clear();
+                x.Embed = embed.WithOkColor()
+                               .AddField("✅", GetText("retroactive_role_reward_done"))
+                               .Build();
+            }).ConfigureAwait(false);
         }
     }
 }

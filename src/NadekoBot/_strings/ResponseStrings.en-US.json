@@ -979,5 +979,6 @@
   "gameslist_unknowngame": "Unknown game, check available games with `{0}gameslist`",
   "xp_retroactive_role_reward": "Applying retroactive role rewards.",
   "xp_retroactive_role_reward_norolerewards": "No role rewards found.",
-  "xp_retroactive_role_reward_rolespending":  "Pending"
+  "xp_retroactive_role_reward_rolespending": "Pending",
+  "xp_retroactive_role_reward_done": "Roles rewarded."
 }
