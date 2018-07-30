@@ -20,8 +20,8 @@ namespace NadekoBot.Services.GamesList
         //private readonly ILocalization _localization;
         //private readonly NadekoStrings _strings;
 
-        private readonly List<IGameList> _gameLists = new List<IGameList>();
-        private readonly Dictionary<string, IGameList> _gameListsKeyed = new Dictionary<string, IGameList>();
+        private readonly List<IGameList> _gameLists;
+        private readonly Dictionary<string, IGameList> _gameListsKeyed;
 
         public int GamesListLength { get { return _gameLists?.Count ?? 0; } }
 
@@ -41,14 +41,14 @@ namespace NadekoBot.Services.GamesList
             //_strings = strings;
 
             _log = LogManager.GetCurrentClassLogger();
-            _log.Warn("GamesListService");
+            _log.Info("GamesListService");
 
             //_bz98 = bz98;
             //_bz2 = bz2;
             //_bzcc = bzcc;
 
-            //_gameLists = new List<IGameList>();
-            //_gameListsKeyed = new Dictionary<string, IGameList>();
+            _gameLists = new List<IGameList>();
+            _gameListsKeyed = new Dictionary<string, IGameList>();
         }
 
         public void LoadDynamicServices(IServiceProvider services)
@@ -61,9 +61,12 @@ namespace NadekoBot.Services.GamesList
             types.ForEach(type =>
             {
                 IGameList gameList = (IGameList)services.GetService(type);
-
-                _gameLists.Add(gameList);
-                _gameListsKeyed.Add(gameList.Code, gameList);
+                _log.Info($"Registering {type.ToString()} {(gameList?.ToString() ?? "null")}");
+                if (gameList != null)
+                {
+                    _gameLists.Add(gameList);
+                    _gameListsKeyed.Add(gameList.Code, gameList);
+                }
             });
         }
 
