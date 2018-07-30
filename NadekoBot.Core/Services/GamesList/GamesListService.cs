@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System;
 using Microsoft.Extensions.Logging;
 using NLog;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NadekoBot.Services.GamesList
 {
@@ -50,14 +51,20 @@ namespace NadekoBot.Services.GamesList
             _gameListsKeyed = new Dictionary<string, IGameList>();
         }
 
-        public void AddGameListBZ98Service(GameListBZ98Service x) { }
-        public void AddGameListBZ2Service(GameListBZ2Service x) { }
-        public void AddGameListBZCCService(GameListBZCCService x) { }
-
-        public void RegisterGameList(IGameList gameList)
+        public void LoadDynamicServices(IServiceProvider services)
         {
-            _gameLists.Add(gameList);
-            _gameListsKeyed.Add(gameList.Code, gameList);
+            var itype = typeof(IGameList);
+            var types = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(assembly => assembly.GetTypes())
+                .Where(p => itype.IsAssignableFrom(p));
+
+            types.ForEach(type =>
+            {
+                IGameList gameList = (IGameList)services.GetService(type);
+
+                _gameLists.Add(gameList);
+                _gameListsKeyed.Add(gameList.Code, gameList);
+            });
         }
 
         public IGameList[] GetGamesList(ulong? guildId, int page)
