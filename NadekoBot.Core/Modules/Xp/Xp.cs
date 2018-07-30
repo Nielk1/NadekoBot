@@ -288,27 +288,34 @@ namespace NadekoBot.Modules.Xp
             await ReplyConfirmLocalized("template_reloaded").ConfigureAwait(false);
         }
 
-        private static readonly IEmote success = new Emoji("✅");
-        private static readonly IEmote failed = new Emoji("⚠");
-        private static readonly IEmote ok = new Emoji("👌");
-
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageRoles)]
         [Priority(0)]
         public async Task XpRoleRewardRetroactive()
         {
-            var msg = await ReplyConfirmLocalized("retroactive_role_reward").ConfigureAwait(false);
-            await msg.AddReactionAsync(ok);
+            var embed = new EmbedBuilder().WithTitle(GetText("retroactive_role_reward"));
+            var msg = await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
 
             var rewards = _service.GetRoleRewards(Context.Guild.Id).ToList();
 
             if(rewards.Count == 0)
             {
-                await msg.RemoveAllReactionsAsync();
-                await msg.AddReactionAsync(failed);
+                await msg.ModifyAsync(x => x.Embed = embed.WithErrorColor()
+                                                          .AddField("⚠", GetText("retroactive_role_reward_norolerewards"))
+                                                          .Build()).ConfigureAwait(false);
                 return;
             }
+
+            var rewardsOutput = _service.GetRoleRewards(Context.Guild.Id)
+                .Select(x => x.RoleId)
+                .Distinct()
+                .Select(x => new { Key = x, Value = Context.Guild.GetRole(x)?.ToString() })
+                .Where(x => x.Value != null)
+                .ToDictionary(x => x.Key, x => x.Value);
+
+            await msg.ModifyAsync(x => x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), rewardsOutput.Select(r => string.Join("\n", rewardsOutput.Values)))
+                                                      .Build()).ConfigureAwait(false);
 
             foreach (var reward in rewards)
             {
@@ -326,10 +333,15 @@ namespace NadekoBot.Modules.Xp
                         await usr.AddRoleAsync(gContext.GetRole(reward.RoleId));
                     }
                 }
+
+                rewardsOutput.Remove(reward.RoleId);
+                await msg.ModifyAsync(x => x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), rewardsOutput.Select(r => string.Join("\n", rewardsOutput.Values)))
+                                          .Build()).ConfigureAwait(false);
             }
 
-            await msg.RemoveAllReactionsAsync();
-            await msg.AddReactionAsync(ok);
+            await msg.ModifyAsync(x => x.Embed = embed.WithOkColor()
+                                                      .AddField(GetText("retroactive_role_reward_rolespending"), "✅")
+                                                      .Build()).ConfigureAwait(false);
         }
     }
 }
