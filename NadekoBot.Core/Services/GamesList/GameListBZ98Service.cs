@@ -33,12 +33,12 @@ namespace NadekoBot.Services.GamesList
 
         private const string filePath = "C:/Data/BZ98Gamelist.json";
 
-        private Logger _log;
+        private readonly Logger _log;
 
         public GameListBZ98Service(IBotCredentials creds, /*DbService db,*/ DiscordSocketClient client, SteamService steam, GamesListService gameList)
         {
             _log = LogManager.GetCurrentClassLogger();
-            _log.Warn("GameListBZ98Service");
+            _log.Info("GameListBZ98Service");
             _creds = creds;
             //_db = db;
             _client = client;

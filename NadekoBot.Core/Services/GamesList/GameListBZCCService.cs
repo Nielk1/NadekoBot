@@ -38,7 +38,7 @@ namespace NadekoBot.Services.GamesList
 
         private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZCC&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId,__addr&__pluginShowSource=true&__pluginQueryServers=true&__pluginShowStatus=true";
 
-        private Logger _log;
+        private readonly Logger _log;
 
         public GameListBZCCService(/*IBotCredentials creds, DbService db,*/ DiscordSocketClient client, SteamService steam, GamesListService gameList)
         {
@@ -47,7 +47,7 @@ namespace NadekoBot.Services.GamesList
             _client = client;
 
             _log = LogManager.GetCurrentClassLogger();
-            _log.Warn("GameListBZCCService");
+            _log.Info("GameListBZCCService");
             /*var sw = Stopwatch.StartNew();
             using (var uow = _db.UnitOfWork)
             {

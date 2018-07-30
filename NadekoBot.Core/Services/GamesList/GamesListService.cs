@@ -8,6 +8,7 @@ using NadekoBot.Core.Services.GamesList;
 using System.Collections.Generic;
 using System;
 using Microsoft.Extensions.Logging;
+using NLog;
 
 namespace NadekoBot.Services.GamesList
 {

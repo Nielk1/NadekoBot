@@ -27,8 +27,8 @@ namespace NadekoBot.Services.GamesList
         //public ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
 
         private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZ2&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId&__pluginShowSource=true&__pluginQueryServers=true&__pluginShowStatus=true";
-        
-        private Logger _log;
+
+        private readonly Logger _log;
 
         public GameListBZ2Service(/*IBotCredentials creds, DbService db,*/ DiscordSocketClient client, GamesListService gameList)
         {
@@ -37,7 +37,7 @@ namespace NadekoBot.Services.GamesList
             _client = client;
 
             _log = LogManager.GetCurrentClassLogger();
-            _log.Warn("GameListBZ2Service");
+            _log.Info("GameListBZ2Service");
             /*var sw = Stopwatch.StartNew();
             using (var uow = _db.UnitOfWork)
             {
