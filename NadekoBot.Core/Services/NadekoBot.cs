@@ -178,8 +178,10 @@ namespace NadekoBot
                 //initialize Services
                 Services = s.BuildServiceProvider();
                 var commandHandler = Services.GetService<CommandHandler>();
+                var gamesListService = Services.GetService<GamesListService>();
                 //what the fluff
                 commandHandler.AddServices(s);
+                gamesListService.LoadDynamicServices(Services);
                 LoadTypeReaders(typeof(NadekoBot).Assembly);
 
                 sw.Stop();

@@ -9,6 +9,7 @@ using NadekoBot.Core.Services;
 using NadekoBot.Core.Services.Database.Models;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace NadekoBot.Modules.Xp
 {
@@ -320,13 +321,13 @@ namespace NadekoBot.Modules.Xp
                                .Build();
             }).ConfigureAwait(false);
 
+            SocketGuild gContext = ((SocketGuild)Context.Guild);
+
             foreach (var reward in rewards)
             {
                 var users = _service.XpRoleRewardRetroactive(Context.Guild.Id, reward.RoleId);
 
                 if ((users?.Count() ?? 0) == 0) return;
-
-                SocketGuild gContext = ((SocketGuild)Context.Guild);
 
                 foreach (var userId in users)
                 {
@@ -344,6 +345,8 @@ namespace NadekoBot.Modules.Xp
                     x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), rewardsOutput.Count > 0 ? string.Join("\n", rewardsOutput.Values) : "✅")
                                    .Build();
                 }).ConfigureAwait(false);
+
+                Thread.Sleep(1000); // work around rate-limits, this is an ugly command
             }
 
             await msg.ModifyAsync(x =>

@@ -29,7 +29,6 @@ namespace NadekoBot.Services.GamesList
         //public ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>> BZ2GameProperties { get; } = new ConcurrentDictionary<string, ConcurrentDictionary<string, BZ2GameProperty>>();
 
         private readonly SteamService _steam;
-        private readonly GamesListService _gameList;
         
         /// <summary>
         /// Workshop name cache
@@ -38,15 +37,16 @@ namespace NadekoBot.Services.GamesList
 
         private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZCC&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId,__addr&__pluginShowSource=true&__pluginQueryServers=true&__pluginShowStatus=true";
 
-        private Logger _log;
+        private readonly Logger _log;
 
-        public GameListBZCCService(/*IBotCredentials creds, DbService db,*/ DiscordSocketClient client, SteamService steam, GamesListService gameList)
+        public GameListBZCCService(/*IBotCredentials creds, DbService db,*/ DiscordSocketClient client, SteamService steam)
         {
             //_creds = creds;
             //_db = db;
             _client = client;
 
             _log = LogManager.GetCurrentClassLogger();
+            _log.Info("GameListBZCCService");
             /*var sw = Stopwatch.StartNew();
             using (var uow = _db.UnitOfWork)
             {
@@ -67,10 +67,6 @@ namespace NadekoBot.Services.GamesList
             _log.Debug($"Loaded in {sw.Elapsed.TotalSeconds:F2}s");*/
 
             _steam = steam;
-
-            _gameList = gameList;
-            _gameList.AddGameListBZCCService(this);
-            _gameList.RegisterGameList(this);
         }
 
         public async Task<DataGameList> GetGamesNew()

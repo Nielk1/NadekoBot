@@ -13,6 +13,8 @@ using System.Net.Http;
 using Discord.WebSocket;
 using NadekoBot.Core.Services;
 using NadekoBot.Core.Services.GamesList;
+using Microsoft.Extensions.Logging;
+using NLog;
 
 namespace NadekoBot.Services.GamesList
 {
@@ -27,21 +29,20 @@ namespace NadekoBot.Services.GamesList
         private readonly DiscordSocketClient _client;
 
         private readonly SteamService _steam;
-        private readonly GamesListService _gameList;
 
         private const string filePath = "C:/Data/BZ98Gamelist.json";
 
-        public GameListBZ98Service(IBotCredentials creds, /*DbService db,*/ DiscordSocketClient client, SteamService steam, GamesListService gameList)
+        private readonly Logger _log;
+
+        public GameListBZ98Service(IBotCredentials creds, /*DbService db,*/ DiscordSocketClient client, SteamService steam)
         {
+            _log = LogManager.GetCurrentClassLogger();
+            _log.Info("GameListBZ98Service");
             _creds = creds;
             //_db = db;
             _client = client;
 
             _steam = steam;
-
-            _gameList = gameList;
-            _gameList.AddGameListBZ98Service(this);
-            _gameList.RegisterGameList(this);
         }
 
         public async Task<DataGameList> GetGamesNew()

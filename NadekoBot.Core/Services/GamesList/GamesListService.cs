@@ -7,6 +7,9 @@ using NadekoBot.Core.Services;
 using NadekoBot.Core.Services.GamesList;
 using System.Collections.Generic;
 using System;
+using Microsoft.Extensions.Logging;
+using NLog;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NadekoBot.Services.GamesList
 {
@@ -22,6 +25,8 @@ namespace NadekoBot.Services.GamesList
 
         public int GamesListLength { get { return _gameLists?.Count ?? 0; } }
 
+        private Logger _log;
+
         //public GamesListService(DiscordSocketClient client, DbService db, ILocalization localization, NadekoStrings strings, GameListBZ98Service bz98, GameListBZ2Service bz2)
         public GamesListService(
             DiscordSocketClient client//, /*DbService db,*/
@@ -35,6 +40,9 @@ namespace NadekoBot.Services.GamesList
             //_localization = localization;
             //_strings = strings;
 
+            _log = LogManager.GetCurrentClassLogger();
+            _log.Info("GamesListService");
+
             //_bz98 = bz98;
             //_bz2 = bz2;
             //_bzcc = bzcc;
@@ -43,14 +51,23 @@ namespace NadekoBot.Services.GamesList
             _gameListsKeyed = new Dictionary<string, IGameList>();
         }
 
-        public void AddGameListBZ98Service(GameListBZ98Service x) { }
-        public void AddGameListBZ2Service(GameListBZ2Service x) { }
-        public void AddGameListBZCCService(GameListBZCCService x) { }
-
-        public void RegisterGameList(IGameList gameList)
+        public void LoadDynamicServices(IServiceProvider services)
         {
-            _gameLists.Add(gameList);
-            _gameListsKeyed.Add(gameList.Code, gameList);
+            var itype = typeof(IGameList);
+            var types = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(assembly => assembly.GetTypes())
+                .Where(p => itype.IsAssignableFrom(p));
+
+            types.ForEach(type =>
+            {
+                IGameList gameList = (IGameList)services.GetService(type);
+                _log.Info($"Registering {type.ToString()} {(gameList?.ToString() ?? "null")}");
+                if (gameList != null)
+                {
+                    _gameLists.Add(gameList);
+                    _gameListsKeyed.Add(gameList.Code, gameList);
+                }
+            });
         }
 
         public IGameList[] GetGamesList(ulong? guildId, int page)
