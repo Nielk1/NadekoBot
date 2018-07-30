@@ -288,51 +288,48 @@ namespace NadekoBot.Modules.Xp
             await ReplyConfirmLocalized("template_reloaded").ConfigureAwait(false);
         }
 
+        private static readonly IEmote success = new Emoji("✅");
+        private static readonly IEmote failed = new Emoji("⚠");
+        private static readonly IEmote ok = new Emoji("👌");
+
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageRoles)]
         [Priority(0)]
-        public async Task XpRoleRewardRetroactive([Remainder] string name)
+        public async Task XpRoleRewardRetroactive()
         {
-            name = name.Trim();
-            if (string.IsNullOrWhiteSpace(name))
-                return;
+            var msg = await ReplyConfirmLocalized("retroactive_role_reward").ConfigureAwait(false);
+            await msg.AddReactionAsync(ok);
 
-            var reward = _service.GetRoleRewards(Context.Guild.Id)
-                .Where(x =>
-                {
-                    var str = Context.Guild.GetRole(x.RoleId)?.ToString();
-                    if (str != null)
-                        return str == name;
-                    return false;
-                }).FirstOrDefault();
+            var rewards = _service.GetRoleRewards(Context.Guild.Id).ToList();
 
-            if (reward == null) return;
-
-            var users = _service.XpRoleRewardRetroactive(Context.Guild.Id, reward.RoleId);
-
-            if ((users?.Count() ?? 0) == 0) return;
-
-            SocketGuild gContext = ((SocketGuild)Context.Guild);
-
-            foreach (var userId in users)
+            if(rewards.Count == 0)
             {
-                var usr = gContext.GetUser(userId);
-                if(usr != null)
+                await msg.RemoveAllReactionsAsync();
+                await msg.AddReactionAsync(failed);
+                return;
+            }
+
+            foreach (var reward in rewards)
+            {
+                var users = _service.XpRoleRewardRetroactive(Context.Guild.Id, reward.RoleId);
+
+                if ((users?.Count() ?? 0) == 0) return;
+
+                SocketGuild gContext = ((SocketGuild)Context.Guild);
+
+                foreach (var userId in users)
                 {
-                    await usr.AddRoleAsync(gContext.GetRole(reward.RoleId));
+                    var usr = gContext.GetUser(userId);
+                    if (usr != null)
+                    {
+                        await usr.AddRoleAsync(gContext.GetRole(reward.RoleId));
+                    }
                 }
             }
 
-            var msg = await ReplyConfirmLocalized("retroactive_role_rewarded").ConfigureAwait(false);
+            await msg.RemoveAllReactionsAsync();
+            await msg.AddReactionAsync(ok);
         }
-
-        [NadekoCommand, Usage, Description, Aliases]
-        [RequireUserPermission(GuildPermission.ManageRoles)]
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
-        [Priority(1)]
-        public Task XpRoleRewardRetroactive([Remainder] IRole role)
-            => XpRoleRewardRetroactive(role.Name);
     }
 }
