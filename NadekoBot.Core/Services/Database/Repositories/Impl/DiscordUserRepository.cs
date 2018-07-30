@@ -35,13 +35,13 @@ VALUES ({userId}, {username}, {discrim}, {avatarId});
         public DiscordUser GetOrCreate(IUser original)
             => GetOrCreate(original.Id, original.Username, original.Discriminator, original.AvatarId);
 
-        public async Task<int> GetUserGlobalRankingAsync(ulong id)
+        public int GetUserGlobalRank(ulong id)
         {
             if (!_set.Where(y => y.UserId == id).Any())
             {
-                return await _set.CountAsync() + 1;
+                return _set.Count() + 1;
             }
-            return await _set.CountAsync(x => x.TotalXp >=
+            return _set.Count(x => x.TotalXp >=
                 _set.Where(y => y.UserId == id)
                     .DefaultIfEmpty()
                     .Sum(y => y.TotalXp));
@@ -72,9 +72,9 @@ VALUES ({userId}, {username}, {discrim}, {avatarId});
         public long GetUserCurrency(IUser user) =>
             GetOrCreate(user).CurrencyAmount;
 
-        public void RemoveFromMany(List<long> ids)
+        public void RemoveFromMany(List<ulong> ids)
         {
-            var items = _set.Where(x => ids.Contains((long)x.UserId));
+            var items = _set.Where(x => ids.Contains(x.UserId));
             foreach (var item in items)
             {
                 item.CurrencyAmount = 0;
