@@ -20,8 +20,8 @@ namespace NadekoBot.Services.GamesList
         //private readonly ILocalization _localization;
         //private readonly NadekoStrings _strings;
 
-        private readonly List<IGameList> _gameLists;
-        private readonly Dictionary<string, IGameList> _gameListsKeyed;
+        private readonly List<IGameList> _gameLists = new List<IGameList>();
+        private readonly Dictionary<string, IGameList> _gameListsKeyed = new Dictionary<string, IGameList>();
 
         public int GamesListLength { get { return _gameLists?.Count ?? 0; } }
 
@@ -47,8 +47,8 @@ namespace NadekoBot.Services.GamesList
             //_bz2 = bz2;
             //_bzcc = bzcc;
 
-            _gameLists = new List<IGameList>();
-            _gameListsKeyed = new Dictionary<string, IGameList>();
+            //_gameLists = new List<IGameList>();
+            //_gameListsKeyed = new Dictionary<string, IGameList>();
         }
 
         public void LoadDynamicServices(IServiceProvider services)
