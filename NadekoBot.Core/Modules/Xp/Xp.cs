@@ -340,6 +340,7 @@ namespace NadekoBot.Modules.Xp
                 rewardsOutput.Remove(reward.RoleId);
                 await msg.ModifyAsync(x =>
                 {
+                    embed.Fields.Clear();
                     x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), rewardsOutput.Count > 0 ? string.Join("\n", rewardsOutput.Values) : "✅")
                                    .Build();
                 }).ConfigureAwait(false);
@@ -347,6 +348,7 @@ namespace NadekoBot.Modules.Xp
 
             await msg.ModifyAsync(x =>
             {
+                embed.Fields.Clear();
                 x.Embed = embed.WithOkColor()
                                .AddField("✅", GetText("retroactive_role_reward_done"))
                                .Build();
