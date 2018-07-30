@@ -317,7 +317,7 @@ namespace NadekoBot.Modules.Xp
             await msg.ModifyAsync(x =>
             {
                 embed.Fields.Clear();
-                x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), rewardsOutput.Select(r => string.Join("\n", rewardsOutput.Select(rw => rw.Value).ToArray())))
+                x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), string.Join("\n", rewardsOutput.Values))
                                .Build();
             }).ConfigureAwait(false);
 
@@ -342,7 +342,7 @@ namespace NadekoBot.Modules.Xp
                 await msg.ModifyAsync(x =>
                 {
                     embed.Fields.Clear();
-                    x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), rewardsOutput.Select(r => string.Join("\n", rewardsOutput.Select(rw => rw.Value).ToArray())))
+                    x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), string.Join("\n", rewardsOutput.Values))
                                    .Build();
                 }).ConfigureAwait(false);
             }
