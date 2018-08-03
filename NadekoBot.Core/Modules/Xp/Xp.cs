@@ -329,18 +329,14 @@ namespace NadekoBot.Modules.Xp
 
                 if ((users?.Count() ?? 0) == 0) return;
 
-                try
+                foreach (var userId in users)
                 {
-                    foreach (var userId in users)
+                    var usr = gContext.GetUser(userId);
+                    if (usr != null)
                     {
-                        var usr = gContext.GetUser(userId);
-                        if (usr != null)
-                        {
-                            await usr.AddRoleAsync(gContext.GetRole(reward.RoleId));
-                        }
+                        await usr.AddRoleAsync(gContext.GetRole(reward.RoleId));
                     }
                 }
-                catch { }
 
                 rewardsOutput.Remove(reward.RoleId);
                 await msg.ModifyAsync(x =>
@@ -353,6 +349,7 @@ namespace NadekoBot.Modules.Xp
                 Thread.Sleep(1000); // work around rate-limits, this is an ugly command
             }
 
+            /*
             await msg.ModifyAsync(x =>
             {
                 embed.Fields.Clear();
@@ -360,6 +357,15 @@ namespace NadekoBot.Modules.Xp
                                .AddField("✅", GetText("retroactive_role_reward_done"))
                                .Build();
             }).ConfigureAwait(false);
+            */
+
+            {
+                await msg.DeleteAsync();
+                embed.Fields.Clear();
+                embed = embed.WithOkColor()
+                             .AddField("✅", GetText("retroactive_role_reward_done"));
+                await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
+            }
         }
     }
 }
