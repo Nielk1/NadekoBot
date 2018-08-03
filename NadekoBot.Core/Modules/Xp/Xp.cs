@@ -329,14 +329,18 @@ namespace NadekoBot.Modules.Xp
 
                 if ((users?.Count() ?? 0) == 0) return;
 
-                foreach (var userId in users)
+                try
                 {
-                    var usr = gContext.GetUser(userId);
-                    if (usr != null)
+                    foreach (var userId in users)
                     {
-                        await usr.AddRoleAsync(gContext.GetRole(reward.RoleId));
+                        var usr = gContext.GetUser(userId);
+                        if (usr != null)
+                        {
+                            await usr.AddRoleAsync(gContext.GetRole(reward.RoleId));
+                        }
                     }
                 }
+                catch { }
 
                 rewardsOutput.Remove(reward.RoleId);
                 await msg.ModifyAsync(x =>
