@@ -1,35 +1,39 @@
 #define sysfolder "system"
 #define version GetEnv("NADEKOBOT_INSTALL_VERSION")
 #define target "win7-x64"
+#define platform "netcoreapp2.1"
 
 [Setup]
 AppName=NadekoBot
 AppVersion={#version}
 AppPublisher=Kwoth
-DefaultDirName={pf}\NadekoBot
+DefaultDirName={commonpf}\NadekoBot
 DefaultGroupName=NadekoBot
 UninstallDisplayIcon={app}\{#sysfolder}\nadeko_icon.ico
 Compression=lzma2
 SolidCompression=yes
-OutputDir=userdocs:projekti/NadekoInstallerOutput
+OutputDir=userdocs:_projekti/NadekoInstallerOutput
 OutputBaseFilename=NadekoBot-setup-{#version}
 AppReadmeFile=http://nadekobot.readthedocs.io/en/latest/Commands%20List/
 ArchitecturesInstallIn64BitMode=x64
 UsePreviousSetupType=no
 DisableWelcomePage=no
+WizardStyle=modern
 
 [Files]
 ;install 
-Source: "src\NadekoBot\bin\Release\netcoreapp2.0\{#target}\publish\*"; DestDir: "{app}\{#sysfolder}"; Permissions: users-full; Flags: recursesubdirs onlyifdoesntexist ignoreversion createallsubdirs; Excludes: "*.pdb, *.db"
-Source: "src\NadekoBot\bin\Release\netcoreapp2.0\{#target}\publish\data\command_strings.json"; DestDir: "{app}\{#sysfolder}\data"; DestName: "command_strings.json"; Permissions: users-full; Flags: skipifsourcedoesntexist ignoreversion createallsubdirs recursesubdirs;
+Source: "src\NadekoBot\bin\Release\{#platform}\{#target}\publish\*"; DestDir: "{app}\{#sysfolder}"; Permissions: users-full; Flags: recursesubdirs onlyifdoesntexist ignoreversion createallsubdirs; Excludes: "*.pdb, *.db"
+Source: "src\NadekoBot\bin\Release\{#platform}\{#target}\publish\data\command_strings.json"; DestDir: "{app}\{#sysfolder}\data"; DestName: "command_strings.json"; Permissions: users-full; Flags: skipifsourcedoesntexist ignoreversion createallsubdirs recursesubdirs;
+Source: "src\NadekoBot\bin\Release\{#platform}\{#target}\publish\data\hangman.json"; DestDir: "{app}\{#sysfolder}\data"; DestName: "hangman.json"; Permissions: users-full; Flags: skipifsourcedoesntexist ignoreversion createallsubdirs recursesubdirs;
 ;rename credentials example to credentials, but don't overwrite if it exists
-;Source: "src\NadekoBot\bin\Release\netcoreapp2.0\{#target}\publish\credentials_example.json"; DestName: "credentials.json"; DestDir: "{app}\{#sysfolder}"; Permissions: users-full; Flags: skipifsourcedoesntexist onlyifdoesntexist;
+;Source: "src\NadekoBot\bin\Release\{#platform}\{#target}\publish\credentials_example.json"; DestName: "credentials.json"; DestDir: "{app}\{#sysfolder}"; Permissions: users-full; Flags: skipifsourcedoesntexist onlyifdoesntexist;
 
 ;reinstall - i want to copy all files, but i don't want to overwrite any data files because users will lose their customization if they don't have a backup, 
 ;            and i don't want them to have to backup and then copy-merge into data folder themselves, or lose their currency images due to overwrite.
-Source: "src\NadekoBot\bin\Release\netcoreapp2.0\{#target}\publish\*"; DestDir: "{app}\{#sysfolder}"; Permissions: users-full; Flags: recursesubdirs ignoreversion onlyifdestfileexists createallsubdirs; Excludes: "*.pdb, *.db, data\*, credentials.json";
-Source: "src\NadekoBot\bin\Release\netcoreapp2.0\{#target}\publish\data\*"; DestDir: "{app}\{#sysfolder}\data"; Permissions: users-full; Flags: recursesubdirs onlyifdoesntexist createallsubdirs;
-
+Source: "src\NadekoBot\bin\Release\{#platform}\{#target}\publish\*"; DestDir: "{app}\{#sysfolder}"; Permissions: users-full; Flags: recursesubdirs ignoreversion onlyifdestfileexists createallsubdirs; Excludes: "*.pdb, *.db, data\*, credentials.json";
+Source: "src\NadekoBot\bin\Release\{#platform}\{#target}\publish\data\*"; DestDir: "{app}\{#sysfolder}\data"; Permissions: users-full; Flags: recursesubdirs onlyifdoesntexist createallsubdirs;
+;overwrite pokemon folder always
+Source: "src\NadekoBot\bin\Release\{#platform}\{#target}\publish\data\pokemon"; DestDir: "{app}\{#sysfolder}\data\pokemon"; Permissions: users-full; Flags: skipifsourcedoesntexist ignoreversion createallsubdirs recursesubdirs;
 ;readme   
 ;Source: "readme"; DestDir: "{app}"; Flags: isreadme
 
@@ -69,7 +73,7 @@ Root: "HKLM"; Subkey: "SOFTWARE\NadekoBot"; \
     Flags: deletevalue uninsdeletekeyifempty uninsdeletevalue;
 
 [Messages]
-WelcomeLabel2=IMPORTANT! READ BELOW!%n%nIt is recommended that you CLOSE any ANTI VIRUS before continuing.%n%nYou can only update v1.4 or newer.%n%nDo not select your old NadekoBot folder as an install path if it's not 1.4 or newer.
+WelcomeLabel2=Hello, if you have any issues, join https://discord.nadeko.bot and ask for help in #help channel.%n%nIt is recommended that you CLOSE any ANTI VIRUS before continuing.
 
 ;ask the user if they want to delete all settings
 [Code]

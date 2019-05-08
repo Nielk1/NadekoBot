@@ -63,8 +63,11 @@ namespace NadekoBot.Modules.Administration.Services
             _cache = cache;
             _imgs = cache.LocalImages;
             _httpFactory = factory;
+            var sub = _redis.GetSubscriber();
             if (_client.ShardId == 0)
             {
+                sub.Subscribe(_creds.RedisKey() + "_reload_images",
+                    delegate { _imgs.Reload(); }, CommandFlags.FireAndForget);
                 _updateTimer = new Timer(async _ =>
                 {
                     try
@@ -91,10 +94,6 @@ namespace NadekoBot.Modules.Administration.Services
                     }
                 }, null, TimeSpan.FromHours(8), TimeSpan.FromHours(8));
             }
-
-            var sub = _redis.GetSubscriber();
-            sub.Subscribe(_creds.RedisKey() + "_reload_images",
-                delegate { _imgs.Reload(); }, CommandFlags.FireAndForget);
             sub.Subscribe(_creds.RedisKey() + "_reload_bot_config",
                 delegate { _bc.Reload(); }, CommandFlags.FireAndForget);
             sub.Subscribe(_creds.RedisKey() + "_leave_guild", async (ch, v) =>
@@ -185,14 +184,14 @@ namespace NadekoBot.Modules.Administration.Services
 
         private void SetNewLastUpdate(DateTime dt)
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var bc = uow.BotConfig.GetOrCreate(set => set);
                 bc.LastUpdate = dt;
-                uow.Complete();
+                uow.SaveChanges();
             }
 
-            _bc.Reload();
+            _bc.BotConfig.LastUpdate = dt;
         }
 
         private async Task<string> GetNewRelease()
@@ -211,19 +210,17 @@ namespace NadekoBot.Modules.Administration.Services
 
         public void SetUpdateCheck(UpdateCheckType type)
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var bc = uow.BotConfig.GetOrCreate(set => set);
-                bc.CheckForUpdates = type;
-                uow.Complete();
+                _bc.BotConfig.CheckForUpdates = bc.CheckForUpdates = type;
+                uow.SaveChanges();
             }
 
             if (type == UpdateCheckType.None)
             {
                 _updateTimer.Change(Timeout.Infinite, Timeout.Infinite);
             }
-
-            _bc.Reload();
         }
 
         private Timer TimerFromStartupCommand(StartupCommand x)
@@ -253,13 +250,13 @@ namespace NadekoBot.Modules.Administration.Services
 
         public void AddNewAutoCommand(StartupCommand cmd)
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 uow.BotConfig
                    .GetOrCreate(set => set.Include(x => x.StartupCommands))
                    .StartupCommands
                    .Add(cmd);
-                uow.Complete();
+                uow.SaveChanges();
             }
 
             var autos = _autoCommands.GetOrAdd(cmd.GuildId, new ConcurrentDictionary<int, Timer>());
@@ -272,7 +269,7 @@ namespace NadekoBot.Modules.Administration.Services
 
         public IEnumerable<StartupCommand> GetStartupCommands()
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 return uow.BotConfig
                    .GetOrCreate(set => set.Include(x => x.StartupCommands))
@@ -298,7 +295,7 @@ namespace NadekoBot.Modules.Administration.Services
                 .ToImmutableDictionary();
 
             if (!ownerChannels.Any())
-                _log.Warn("No owner channels created! Make sure you've specified correct OwnerId in the credentials.json file.");
+                _log.Warn("No owner channels created! Make sure you've specified the correct OwnerId in the credentials.json file and invited the bot to a Discord server.");
             else
                 _log.Info($"Created {ownerChannels.Count} out of {_creds.OwnerIds.Length} owner message channels.");
         }
@@ -379,7 +376,7 @@ namespace NadekoBot.Modules.Administration.Services
 
         public bool RemoveStartupCommand(int index, out StartupCommand cmd)
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var cmds = uow.BotConfig
                    .GetOrCreate(set => set.Include(x => x.StartupCommands))
@@ -389,12 +386,12 @@ namespace NadekoBot.Modules.Administration.Services
 
                 if (cmd != null)
                 {
-                    cmds.Remove(cmd);
+                    uow._context.Remove(cmd);
                     if (_autoCommands.TryGetValue(cmd.GuildId, out var autos))
                         if (autos.TryRemove(cmd.Id, out var timer))
                             timer.Change(Timeout.Infinite, Timeout.Infinite);
 
-                    uow.Complete();
+                    uow.SaveChanges();
                     return true;
                 }
             }
@@ -429,13 +426,13 @@ namespace NadekoBot.Modules.Administration.Services
 
         public void ClearStartupCommands()
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 uow.BotConfig
                    .GetOrCreate(set => set.Include(x => x.StartupCommands))
                    .StartupCommands
                    .Clear();
-                uow.Complete();
+                uow.SaveChanges();
             }
         }
 
@@ -461,13 +458,12 @@ namespace NadekoBot.Modules.Administration.Services
 
         public void ForwardMessages()
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var config = uow.BotConfig.GetOrCreate(set => set);
-                config.ForwardMessages = !config.ForwardMessages;
-                uow.Complete();
+                _bc.BotConfig.ForwardMessages = config.ForwardMessages = !config.ForwardMessages;
+                uow.SaveChanges();
             }
-            _bc.Reload();
         }
 
         public void Restart()
@@ -492,13 +488,12 @@ namespace NadekoBot.Modules.Administration.Services
 
         public void ForwardToAll()
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var config = uow.BotConfig.GetOrCreate(set => set);
-                config.ForwardToAllOwners = !config.ForwardToAllOwners;
-                uow.Complete();
+                _bc.BotConfig.ForwardToAllOwners = config.ForwardToAllOwners = !config.ForwardToAllOwners;
+                uow.SaveChanges();
             }
-            _bc.Reload();
         }
 
         public IEnumerable<ShardComMessage> GetAllShardStatuses()

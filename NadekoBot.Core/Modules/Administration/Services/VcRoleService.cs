@@ -107,11 +107,11 @@ namespace NadekoBot.Modules.Administration.Services
 
             if (missingRoles.Any())
             {
-                using (var uow = _db.UnitOfWork)
+                using (var uow = _db.GetDbContext())
                 {
                     _log.Warn($"Removing {missingRoles.Count} missing roles from {nameof(VcRoleService)}");
                     uow._context.RemoveRange(missingRoles);
-                    await uow.CompleteAsync();
+                    await uow.SaveChangesAsync();
                 }
             }
         }
@@ -124,16 +124,20 @@ namespace NadekoBot.Modules.Administration.Services
             var guildVcRoles = VcRoles.GetOrAdd(guildId, new ConcurrentDictionary<ulong, IRole>());
 
             guildVcRoles.AddOrUpdate(vcId, role, (key, old) => role);
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var conf = uow.GuildConfigs.ForId(guildId, set => set.Include(x => x.VcRoleInfos));
-                conf.VcRoleInfos.RemoveWhere(x => x.VoiceChannelId == vcId); // remove old one
+                var toDelete = conf.VcRoleInfos.FirstOrDefault(x => x.VoiceChannelId == vcId); // remove old one
+                if(toDelete != null)
+                {
+                    uow._context.Remove(toDelete);
+                }
                 conf.VcRoleInfos.Add(new VcRoleInfo()
                 {
                     VoiceChannelId = vcId,
                     RoleId = role.Id,
                 }); // add new one
-                uow.Complete();
+                uow.SaveChanges();
             }
         }
 
@@ -145,11 +149,11 @@ namespace NadekoBot.Modules.Administration.Services
             if (!guildVcRoles.TryGetValue(vcId, out _))
                 return false;
 
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var conf = uow.GuildConfigs.ForId(guildId, set => set.Include(x => x.VcRoleInfos));
                 conf.VcRoleInfos.RemoveWhere(x => x.VoiceChannelId == vcId);
-                uow.Complete();
+                uow.SaveChanges();
             }
 
             return true;

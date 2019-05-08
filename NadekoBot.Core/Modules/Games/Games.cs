@@ -1,14 +1,14 @@
-﻿using Discord.Commands;
-using Discord;
-using NadekoBot.Core.Services;
-using System.Threading.Tasks;
-using System;
+﻿using Discord;
+using Discord.Commands;
 using NadekoBot.Common;
 using NadekoBot.Common.Attributes;
+using NadekoBot.Core.Services;
 using NadekoBot.Extensions;
 using NadekoBot.Modules.Games.Common;
 using NadekoBot.Modules.Games.Services;
+using System;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace NadekoBot.Modules.Games
 {
@@ -29,7 +29,7 @@ namespace NadekoBot.Modules.Games
         }
 
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task Choose([Remainder] string list = null)
+        public async Task Choose([Leftover] string list = null)
         {
             if (string.IsNullOrWhiteSpace(list))
                 return;
@@ -37,17 +37,17 @@ namespace NadekoBot.Modules.Games
             if (listArr.Length < 2)
                 return;
             var rng = new NadekoRandom();
-            await Context.Channel.SendConfirmAsync("🤔", listArr[rng.Next(0, listArr.Length)]).ConfigureAwait(false);
+            await ctx.Channel.SendConfirmAsync("🤔", listArr[rng.Next(0, listArr.Length)]).ConfigureAwait(false);
         }
 
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task EightBall([Remainder] string question = null)
+        public async Task EightBall([Leftover] string question = null)
         {
             if (string.IsNullOrWhiteSpace(question))
                 return;
 
-            await Context.Channel.EmbedAsync(new EmbedBuilder().WithColor(NadekoBot.OkColor)
-                .WithDescription(Context.User.ToString())
+            await ctx.Channel.EmbedAsync(new EmbedBuilder().WithColor(NadekoBot.OkColor)
+                .WithDescription(ctx.User.ToString())
                 .AddField(efb => efb.WithName("❓ " + GetText("question")).WithValue(question).WithIsInline(false))
                 .AddField(efb => efb.WithName("🎱 " + GetText("8ball")).WithValue(_service.EightBallResponses[new NadekoRandom().Next(0, _service.EightBallResponses.Length)]).WithIsInline(false))).ConfigureAwait(false);
         }
@@ -58,7 +58,12 @@ namespace NadekoBot.Modules.Games
         {
             var gr = _service.GirlRatings.GetOrAdd(usr.Id, GetGirl);
             var img = await gr.Url;
-            await Context.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
+            if (img == null)
+            {
+                await ReplyErrorLocalizedAsync("something_went_wrong").ConfigureAwait(false);
+                return;
+            }
+            await ctx.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
                 .WithTitle("Girl Rating For " + usr)
                 .AddField(efb => efb.WithName("Hot").WithValue(gr.Hot.ToString("F2")).WithIsInline(true))
                 .AddField(efb => efb.WithName("Crazy").WithValue(gr.Crazy.ToString("F2")).WithIsInline(true))
@@ -77,6 +82,8 @@ namespace NadekoBot.Modules.Games
 
             var roll = rng.Next(1, 1001);
 
+            var ratings = _service.Ratings.GetAwaiter().GetResult();
+
             double hot;
             double crazy;
             string advice;
@@ -84,56 +91,43 @@ namespace NadekoBot.Modules.Games
             {
                 hot = NextDouble(0, 5);
                 crazy = NextDouble(4, 10);
-                advice =
-                    "This is your NO-GO ZONE. We do not hang around, and date, and marry women who are at least, in our mind, a 5. " +
-                    "So, this is your no-go zone. You don't go here. You just rule this out. Life is better this way, that's the way it is.";
+                advice = ratings.Nog;
             }
             else if (roll < 750)
             {
                 hot = NextDouble(5, 8);
                 crazy = NextDouble(4, .6 * hot + 4);
-                advice = "Above a 5, and to about an 8, and below the crazy line - this is your FUN ZONE. You can " +
-                       "hang around here, and meet these girls and spend time with them. Keep in mind, while you're " +
-                       "in the fun zone, you want to move OUT of the fun zone to a more permanent location. " +
-                       "These girls are most of the time not crazy.";
+                advice = ratings.Fun;
             }
             else if (roll < 900)
             {
                 hot = NextDouble(5, 10);
                 crazy = NextDouble(.61 * hot + 4, 10);
-                advice = "Above the crazy line - it's the DANGER ZONE. This is redheads, strippers, anyone named Tiffany, " +
-                       "hairdressers... This is where your car gets keyed, you get bunny in the pot, your tires get slashed, " +
-                       "and you wind up in jail.";
+                advice = ratings.Dan;
             }
             else if (roll < 951)
             {
                 hot = NextDouble(8, 10);
                 crazy = NextDouble(7, .6 * hot + 4);
-                advice = "Below the crazy line, above an 8 hot, but still about 7 crazy. This is your DATE ZONE. " +
-                       "You can stay in the date zone indefinitely. These are the girls you introduce to your friends and your family. " +
-                       "They're good looking, and they're reasonably not crazy most of the time. You can stay here indefinitely.";
+                advice = ratings.Dat;
             }
             else if (roll < 990)
             {
                 hot = NextDouble(8, 10);
                 crazy = NextDouble(5, 7);
-                advice = "Above an 8 hot, and between about 7 and a 5 crazy - this is WIFE ZONE. If you meet this girl, you should consider long-term " +
-                       "relationship. Rare.";
+                advice = ratings.Wif;
             }
             else if (roll < 999)
             {
                 hot = NextDouble(8, 10);
                 crazy = NextDouble(2, 3.99d);
-                advice = "You've met a girl she's above 8 hot, and not crazy at all (below 4)... totally cool?" +
-                         " You should be careful. That's a dude. You're talking to a tranny!";
+                advice = ratings.Tra;
             }
             else
             {
                 hot = NextDouble(8, 10);
                 crazy = NextDouble(4, 5);
-                advice = "Below 5 crazy, and above 8 hot, this is the UNICORN ZONE, these things don't exist." +
-                         "If you find a unicorn, please capture it safely, keep it alive, we'd like to study it, " +
-                         "and maybe look at how to replicate that.";
+                advice = ratings.Uni;
             }
 
             return new GirlRating(_images, _httpFactory, crazy, hot, roll, advice);
@@ -142,7 +136,7 @@ namespace NadekoBot.Modules.Games
         [NadekoCommand, Usage, Description, Aliases]
         public async Task Linux(string guhnoo, string loonix)
         {
-            await Context.Channel.SendConfirmAsync(
+            await ctx.Channel.SendConfirmAsync(
 $@"I'd just like to interject for moment. What you're refering to as {loonix}, is in fact, {guhnoo}/{loonix}, or as I've recently taken to calling it, {guhnoo} plus {loonix}. {loonix} is not an operating system unto itself, but rather another free component of a fully functioning {guhnoo} system made useful by the {guhnoo} corelibs, shell utilities and vital system components comprising a full OS as defined by POSIX.
 
 Many computer users run a modified version of the {guhnoo} system every day, without realizing it. Through a peculiar turn of events, the version of {guhnoo} which is widely used today is often called {loonix}, and many of its users are not aware that it is basically the {guhnoo} system, developed by the {guhnoo} Project.

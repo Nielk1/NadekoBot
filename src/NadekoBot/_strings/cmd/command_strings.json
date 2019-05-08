@@ -75,7 +75,7 @@
   },
   "greetmsg": {
     "Cmd": "greetmsg",
-    "Desc": "Sets a new join announcement message which will be shown in the server's channel. Type `%user%` if you want to mention the new member. Using it with no message will show the current greet message. You can use embed json from <https://embedbuilder.nadekobot.me/> instead of a regular text, if you want the message to be embedded.",
+    "Desc": "Sets a new join announcement message which will be shown in the server's channel. Type `%user%` if you want to mention the new member. Using it with no message will show the current greet message. You can use embed json from <https://eb.nadeko.bot/> instead of a regular text, if you want the message to be embedded.",
     "Usage": [
       "{0}greetmsg Welcome, %user%."
     ]
@@ -89,7 +89,7 @@
   },
   "byemsg": {
     "Cmd": "byemsg",
-    "Desc": "Sets a new leave announcement message. Type `%user%` if you want to show the name the user who left. Type `%id%` to show id. Using this command with no message will show the current bye message. You can use embed json from <https://embedbuilder.nadekobot.me/> instead of a regular text, if you want the message to be embedded.",
+    "Desc": "Sets a new leave announcement message. Type `%user%` if you want to show the name the user who left. Type `%id%` to show id. Using this command with no message will show the current bye message. You can use embed json from <https://eb.nadeko.bot/> instead of a regular text, if you want the message to be embedded.",
     "Usage": [
       "{0}byemsg %user% has left."
     ]
@@ -119,7 +119,7 @@
   },
   "logignore": {
     "Cmd": "logignore",
-    "Desc": "Toggles whether the `.logserver` command ignores this channel. Useful if you have hidden admin channel and public log channel.",
+    "Desc": "Toggles whether the `{0}logserver` command ignores this channel. Useful if you have hidden admin channel and public log channel.",
     "Usage": [
       "{0}logignore"
     ]
@@ -180,14 +180,6 @@
     "Desc": "Removes a playing string on a given number.",
     "Usage": [
       "{0}rmpl"
-    ]
-  },
-  "slowmode": {
-    "Cmd": "slowmode",
-    "Desc": "Toggles slowmode. Slowmode deletes any excess messages users type over the specified limit of messages per X seconds. To enable, specify a number of messages (-m) each user can send, and an interval in seconds (-s).  Disable by specifying no parameters.",
-    "Usage": [
-      "{0}slowmode -m 1 -s 5",
-      "{0}slowmode"
     ]
   },
   "vcrolelist": {
@@ -522,12 +514,16 @@
   },
   "prune": {
     "Cmd": "prune clear",
-    "Desc": "`{0}prune` removes all Nadeko's messages in the last 100 messages. `{0}prune X` removes last `X` number of messages from the channel (up to 100). `{0}prune @Someone` removes all Someone's messages in the last 100 messages. `{0}prune @Someone X` removes last `X` number of 'Someone's' messages in the channel.",
+    "Desc": "`{0}prune` removes all Nadeko's messages in the last 100 messages. `{0}prune X` removes last `X` number of messages from the channel (up to 100). `{0}prune @Someone` removes all Someone's messages in the last 100 messages. `{0}prune @Someone X` removes last `X` number of 'Someone's' messages in the channel. You can use the `-s` / `--safe` parameter at the end to only prune messages that are not pinned.",
     "Usage": [
       "{0}prune",
+      "{0}prune -s",
       "{0}prune 5",
+      "{0}prune 5 --safe",
       "{0}prune @Someone",
-      "{0}prune @Someone X"
+      "{0}prune @Someone --safe",
+      "{0}prune @Someone X",
+      "{0}prune @Someone X -s"
     ]
   },
   "die": {
@@ -921,7 +917,7 @@
   },
   "quoteid": {
     "Cmd": "quoteid qid",
-    "Desc": "Displays the quote with the specified ID number. Quote ID numbers can be found by typing `.liqu [num]` where `[num]` is a number of a page which contains 15 quotes.",
+    "Desc": "Displays the quote with the specified ID number. Quote ID numbers can be found by typing `{0}liqu [num]` where `[num]` is a number of a page which contains 15 quotes.",
     "Usage": [
       "{0}qid 123456"
     ]
@@ -1611,8 +1607,8 @@
       "{0}ani aquarion evol"
     ]
   },
-  "imdb": {
-    "Cmd": "imdb omdb",
+  "movie": {
+    "Cmd": "movie omdb imdb",
     "Desc": "Queries omdb for movies or series, show first result.",
     "Usage": [
       "{0}imdb Batman vs Superman"
@@ -1654,14 +1650,7 @@
     ]
   },
   "image": {
-    "Cmd": "image img",
-    "Desc": "Pulls the first image found using a search parameter. Use `{0}rimg` for different results.",
-    "Usage": [
-      "{0}img cute kitten"
-    ]
-  },
-  "randomimage": {
-    "Cmd": "randomimage rimg",
+    "Cmd": "image img rimg",
     "Desc": "Pulls a random image using a search parameter.",
     "Usage": [
       "{0}rimg cute kitten"
@@ -1789,7 +1778,7 @@
   },
   "hentai": {
     "Cmd": "hentai",
-    "Desc": "Shows a hentai image from a random website (gelbooru or danbooru or konachan or atfbooru or yandere) with a given tag. Tag is optional but preferred. Only 1 tag allowed.",
+    "Desc": "Shows a hentai image from a random website (gelbooru, danbooru, konachan or yandere) with a given tag. Tag is optional but preferred. Only 1 tag allowed.",
     "Usage": [
       "{0}hentai yuri"
     ]
@@ -1882,7 +1871,7 @@
   },
   "greetdmmsg": {
     "Cmd": "greetdmmsg",
-    "Desc": "Sets a new join announcement message which will be sent to the user who joined. Type `%user%` if you want to mention the new member. Using it with no message will show the current DM greet message. You can use embed json from <https://embedbuilder.nadekobot.me> instead of a regular text, if you want the message to be embedded.",
+    "Desc": "Sets a new join announcement message which will be sent to the user who joined. Type `%user%` if you want to mention the new member. Using it with no message will show the current DM greet message. You can use embed json from <https://eb.nadeko.bot> instead of a regular text, if you want the message to be embedded.",
     "Usage": [
       "{0}greetdmmsg Welcome to the server, %user%"
     ]
@@ -2253,14 +2242,6 @@
       "{0}hangmanstop"
     ]
   },
-  "overwatch": {
-    "Cmd": "overwatch ow",
-    "Desc": "Show's basic stats on a player (competitive rank, playtime, level etc) Region codes are: `eu` `us` `cn` `kr`",
-    "Usage": [
-      "{0}ow us Battletag#1337",
-      "{0}overwatch eu Battletag#2016"
-    ]
-  },
   "acro": {
     "Cmd": "acrophobia acro",
     "Desc": "Starts an Acrophobia game.",
@@ -2347,7 +2328,7 @@
     "Cmd": "invitecreate invcr",
     "Desc": "Creates a new invite which has infinite max uses and never expires.",
     "Usage": [
-      "{0}crinv"
+      "{0}invcr"
     ]
   },
   "invitelist": {
@@ -2651,6 +2632,13 @@
       "{0}crca 44"
     ]
   },
+  "crsreload": {
+    "Cmd": "crsreload",
+    "Desc": "Reloads all custom reactions on all shards. Use this if you've made changes to the database while the bot is running, or used `{0}deleteunusedcrnq`",
+    "Usage": [
+      "{0}crsreload"
+    ]
+  },
   "aliaslist": {
     "Cmd": "aliaslist cmdmaplist aliases",
     "Desc": "Shows the list of currently set aliases. Paginated.",
@@ -2663,7 +2651,7 @@
     "Cmd": "alias cmdmap",
     "Desc": "Create a custom alias for a certain Nadeko command. Provide no alias to remove the existing one.",
     "Usage": [
-      "{0}alias allin .bf all h",
+      "{0}alias allin {0}bf all h",
       "{0}alias \"linux thingy\" >loonix Spyware Windows"
     ]
   },
@@ -2784,14 +2772,6 @@
       "{0}ping"
     ]
   },
-  "slowmodewhitelist": {
-    "Cmd": "slowmodewl",
-    "Desc": "Ignores a role or a user from the slowmode feature.",
-    "Usage": [
-      "{0}slowmodewl SomeRole",
-      "{0}slowmodewl AdminDude"
-    ]
-  },
   "time": {
     "Cmd": "time",
     "Desc": "Shows the current time and timezone in the specified location.",
@@ -2808,7 +2788,7 @@
   },
   "shopadd": {
     "Cmd": "shopadd",
-    "Desc": "Adds an item to the shop by specifying type price and name. Available types are role and list.",
+    "Desc": "Adds an item to the shop by specifying type price and name. Available types are role and list. 90% of currency from each purchase will be received by the user who added the item to the shop.",
     "Usage": [
       "{0}shopadd role 1000 Rich"
     ]
@@ -2861,7 +2841,7 @@
     "Cmd": "globalcommand gcmd",
     "Desc": "Toggles whether a command can be used on any server.",
     "Usage": [
-      "{0}gcmd .stats"
+      "{0}gcmd {0}stats"
     ]
   },
   "gmod": {
@@ -3204,9 +3184,10 @@
   },
   "say": {
     "cmd": "say",
-    "desc": "Bot will send the message you typed in this channel. Supports embeds.",
+    "desc": "Bot will send the message you typed in the specified channel. If you ommit the channel name, it will send the mesasge in the current channel. Supports embeds.",
     "usage": [
-      "{0}say hi"
+      "{0}say hi",
+      "{0}say #chat hi"
     ]
   },
   "sqlexec": {
@@ -3338,13 +3319,6 @@
       "{0}poel"
     ]
   },
-  "pathofexileitem": {
-    "cmd": "pathofexileitem poei",
-    "desc": "Searches for a Path of Exile item from the Path of Exile GamePedia.",
-    "usage": [
-      "{0}poei \"Quill Rain\""
-    ]
-  },
   "pathofexilecurrency": {
     "cmd": "pathofexilecurrency poec",
     "desc": "Returns the chaos equivalent of a given currency or exchange rate between two currencies.",
@@ -3384,7 +3358,7 @@
   },
   "blackjack": {
     "cmd": "blackjack bj",
-    "desc": "Start or join a blackjack game. You must specify the amount you're betting. Use `.hit`, `.stand` and `.double` commands to play. Game is played with 4 decks. Dealer hits on soft 17 and wins draws.",
+    "desc": "Start or join a blackjack game. You must specify the amount you're betting. Use `{0}hit`, `{0}stand` and `{0}double` commands to play. Game is played with 4 decks. Dealer hits on soft 17 and wins draws.",
     "usage": [
       "{0}bj 50"
     ]

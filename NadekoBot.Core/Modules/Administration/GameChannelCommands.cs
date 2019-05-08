@@ -14,27 +14,27 @@ namespace NadekoBot.Modules.Administration
         {
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
-            [RequireBotPermission(GuildPermission.MoveMembers)]
+            [UserPerm(GuildPerm.Administrator)]
+            [BotPerm(GuildPerm.MoveMembers)]
             public async Task GameVoiceChannel()
             {
-                var vch = ((IGuildUser)Context.User).VoiceChannel;
+                var vch = ((IGuildUser)ctx.User).VoiceChannel;
 
                 if (vch == null)
                 {
-                    await ReplyErrorLocalized("not_in_voice").ConfigureAwait(false);
+                    await ReplyErrorLocalizedAsync("not_in_voice").ConfigureAwait(false);
                     return;
                 }
-                var id = _service.ToggleGameVoiceChannel(Context.Guild.Id, vch.Id);
+                var id = _service.ToggleGameVoiceChannel(ctx.Guild.Id, vch.Id);
 
                 if (id == null)
                 {
-                    await ReplyConfirmLocalized("gvc_disabled").ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("gvc_disabled").ConfigureAwait(false);
                 }
                 else
                 {
                     _service.GameVoiceChannels.Add(vch.Id);
-                    await ReplyConfirmLocalized("gvc_enabled", Format.Bold(vch.Name)).ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("gvc_enabled", Format.Bold(vch.Name)).ConfigureAwait(false);
                 }
             }
         }

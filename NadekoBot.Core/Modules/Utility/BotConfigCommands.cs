@@ -21,7 +21,7 @@ namespace NadekoBot.Modules.Utility
 
             [NadekoCommand, Usage, Description, Aliases]
             [OwnerOnly]
-            public async Task BotConfigEdit(BotConfigEditType type, [Remainder]string newValue = null)
+            public async Task BotConfigEdit(BotConfigEditType type, [Leftover]string newValue = null)
             {
                 if (string.IsNullOrWhiteSpace(newValue))
                     newValue = null;
@@ -29,9 +29,9 @@ namespace NadekoBot.Modules.Utility
                 var success = Bc.Edit(type, newValue);
 
                 if (!success)
-                    await ReplyErrorLocalized("bot_config_edit_fail", Format.Bold(type.ToString()), Format.Bold(newValue ?? "NULL")).ConfigureAwait(false);
+                    await ReplyErrorLocalizedAsync("bot_config_edit_fail", Format.Bold(type.ToString()), Format.Bold(newValue ?? "NULL")).ConfigureAwait(false);
                 else
-                    await ReplyConfirmLocalized("bot_config_edit_success", Format.Bold(type.ToString()), Format.Bold(newValue ?? "NULL")).ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("bot_config_edit_success", Format.Bold(type.ToString()), Format.Bold(newValue ?? "NULL")).ConfigureAwait(false);
             }
         }
     }

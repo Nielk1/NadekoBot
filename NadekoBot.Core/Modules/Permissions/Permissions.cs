@@ -28,75 +28,75 @@ namespace NadekoBot.Modules.Permissions
         [RequireContext(ContextType.Guild)]
         public async Task Verbose(PermissionAction action)
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
-                var config = uow.GuildConfigs.GcWithPermissionsv2For(Context.Guild.Id);
+                var config = uow.GuildConfigs.GcWithPermissionsv2For(ctx.Guild.Id);
                 config.VerbosePermissions = action.Value;
-                await uow.CompleteAsync();
+                await uow.SaveChangesAsync();
                 _service.UpdateCache(config);
             }
             if (action.Value)
             {
-                await ReplyConfirmLocalized("verbose_true").ConfigureAwait(false);
+                await ReplyConfirmLocalizedAsync("verbose_true").ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("verbose_false").ConfigureAwait(false);
+                await ReplyConfirmLocalizedAsync("verbose_false").ConfigureAwait(false);
             }
         }
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [UserPerm(GuildPerm.Administrator)]
         [Priority(0)]
-        public async Task PermRole([Remainder] IRole role = null)
+        public async Task PermRole([Leftover] IRole role = null)
         {
             if (role != null && role == role.Guild.EveryoneRole)
                 return;
             
             if (role == null)
             {
-                var cache = _service.GetCacheFor(Context.Guild.Id);
+                var cache = _service.GetCacheFor(ctx.Guild.Id);
                 if (!ulong.TryParse(cache.PermRole, out var roleId) ||
-                    (role = ((SocketGuild)Context.Guild).GetRole(roleId)) == null)
+                    (role = ((SocketGuild)ctx.Guild).GetRole(roleId)) == null)
                 {
-                    await ReplyConfirmLocalized("permrole_not_set", Format.Bold(cache.PermRole)).ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("permrole_not_set", Format.Bold(cache.PermRole)).ConfigureAwait(false);
                 }
                 else
                 {
-                    await ReplyConfirmLocalized("permrole", Format.Bold(role.ToString())).ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("permrole", Format.Bold(role.ToString())).ConfigureAwait(false);
                 }
                 return;
             }
 
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
-                var config = uow.GuildConfigs.GcWithPermissionsv2For(Context.Guild.Id);
+                var config = uow.GuildConfigs.GcWithPermissionsv2For(ctx.Guild.Id);
                 config.PermissionRole = role.Id.ToString();
-                uow.Complete();
+                uow.SaveChanges();
                 _service.UpdateCache(config);
             }
 
-            await ReplyConfirmLocalized("permrole_changed", Format.Bold(role.Name)).ConfigureAwait(false);
+            await ReplyConfirmLocalizedAsync("permrole_changed", Format.Bold(role.Name)).ConfigureAwait(false);
         }
 
         public enum Reset { Reset };
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [UserPerm(GuildPerm.Administrator)]
         [Priority(1)]
         public async Task PermRole(Reset _)
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
-                var config = uow.GuildConfigs.GcWithPermissionsv2For(Context.Guild.Id);
+                var config = uow.GuildConfigs.GcWithPermissionsv2For(ctx.Guild.Id);
                 config.PermissionRole = null;
-                await uow.CompleteAsync();
+                await uow.SaveChangesAsync();
                 _service.UpdateCache(config);
             }
 
-            await ReplyConfirmLocalized("permrole_reset").ConfigureAwait(false);
+            await ReplyConfirmLocalizedAsync("permrole_reset").ConfigureAwait(false);
         }
 
         [NadekoCommand, Usage, Description, Aliases]
@@ -108,7 +108,7 @@ namespace NadekoBot.Modules.Permissions
 
             IList<Permissionv2> perms;
 
-            if (_service.Cache.TryGetValue(Context.Guild.Id, out var permCache))
+            if (_service.Cache.TryGetValue(ctx.Guild.Id, out var permCache))
             {
                 perms = permCache.Permissions.Source.ToList();
             }
@@ -125,13 +125,13 @@ namespace NadekoBot.Modules.Permissions
                                  .Select(p =>
                                  {
                                      var str =
-                                         $"`{p.Index + 1}.` {Format.Bold(p.GetCommand(Prefix, (SocketGuild)Context.Guild))}";
+                                         $"`{p.Index + 1}.` {Format.Bold(p.GetCommand(Prefix, (SocketGuild)ctx.Guild))}";
                                      if (p.Index == 0)
                                          str += $" [{GetText("uneditable")}]";
                                      return str;
                                  }));
 
-            await Context.Channel.SendMessageAsync(toSend).ConfigureAwait(false);
+            await ctx.Channel.SendMessageAsync(toSend).ConfigureAwait(false);
         }
 
         [NadekoCommand, Usage, Description, Aliases]
@@ -144,23 +144,23 @@ namespace NadekoBot.Modules.Permissions
             try
             {
                 Permissionv2 p;
-                using (var uow = _db.UnitOfWork)
+                using (var uow = _db.GetDbContext())
                 {
-                    var config = uow.GuildConfigs.GcWithPermissionsv2For(Context.Guild.Id);
+                    var config = uow.GuildConfigs.GcWithPermissionsv2For(ctx.Guild.Id);
                     var permsCol = new PermissionsCollection<Permissionv2>(config.Permissions);
                     p = permsCol[index];
                     permsCol.RemoveAt(index);
                     uow._context.Remove(p);
-                    await uow.CompleteAsync();
+                    await uow.SaveChangesAsync();
                     _service.UpdateCache(config);
                 }
-                await ReplyConfirmLocalized("removed",
+                await ReplyConfirmLocalizedAsync("removed",
                     index + 1,
-                    Format.Code(p.GetCommand(Prefix, (SocketGuild)Context.Guild))).ConfigureAwait(false);
+                    Format.Code(p.GetCommand(Prefix, (SocketGuild)ctx.Guild))).ConfigureAwait(false);
             }
             catch (IndexOutOfRangeException)
             {
-                await ReplyErrorLocalized("perm_out_of_range").ConfigureAwait(false);
+                await ReplyErrorLocalizedAsync("perm_out_of_range").ConfigureAwait(false);
             }
         }
 
@@ -175,9 +175,9 @@ namespace NadekoBot.Modules.Permissions
                 try
                 {
                     Permissionv2 fromPerm;
-                    using (var uow = _db.UnitOfWork)
+                    using (var uow = _db.GetDbContext())
                     {
-                        var config = uow.GuildConfigs.GcWithPermissionsv2For(Context.Guild.Id);
+                        var config = uow.GuildConfigs.GcWithPermissionsv2For(ctx.Guild.Id);
                         var permsCol = new PermissionsCollection<Permissionv2>(config.Permissions);
 
                         var fromFound = from < permsCol.Count;
@@ -185,24 +185,24 @@ namespace NadekoBot.Modules.Permissions
 
                         if (!fromFound)
                         {
-                            await ReplyErrorLocalized("not_found", ++from);
+                            await ReplyErrorLocalizedAsync("not_found", ++from);
                             return;
                         }
 
                         if (!toFound)
                         {
-                            await ReplyErrorLocalized("not_found", ++to);
+                            await ReplyErrorLocalizedAsync("not_found", ++to);
                             return;
                         }
                         fromPerm = permsCol[from];
 
                         permsCol.RemoveAt(from);
                         permsCol.Insert(to, fromPerm);
-                        await uow.CompleteAsync();
+                        await uow.SaveChangesAsync();
                         _service.UpdateCache(config);
                     }
-                    await ReplyConfirmLocalized("moved_permission",
-                            Format.Code(fromPerm.GetCommand(Prefix, (SocketGuild)Context.Guild)),
+                    await ReplyConfirmLocalizedAsync("moved_permission",
+                            Format.Code(fromPerm.GetCommand(Prefix, (SocketGuild)ctx.Guild)),
                             ++from,
                             ++to)
                         .ConfigureAwait(false);
@@ -212,14 +212,14 @@ namespace NadekoBot.Modules.Permissions
                 {
                 }
             }
-            await ReplyErrorLocalized("perm_out_of_range").ConfigureAwait(false);
+            await ReplyErrorLocalizedAsync("perm_out_of_range").ConfigureAwait(false);
         }
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         public async Task SrvrCmd(CommandOrCrInfo command, PermissionAction action)
         {
-            await _service.AddPermissions(Context.Guild.Id, new Permissionv2
+            await _service.AddPermissions(ctx.Guild.Id, new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.Server,
                 PrimaryTargetId = 0,
@@ -231,13 +231,13 @@ namespace NadekoBot.Modules.Permissions
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("sx_enable",
+                await ReplyConfirmLocalizedAsync("sx_enable",
                     Format.Code(command.Name),
                     GetText("of_command")).ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("sx_disable",
+                await ReplyConfirmLocalizedAsync("sx_disable",
                     Format.Code(command.Name),
                     GetText("of_command")).ConfigureAwait(false);
             }
@@ -247,7 +247,7 @@ namespace NadekoBot.Modules.Permissions
         [RequireContext(ContextType.Guild)]
         public async Task SrvrMdl(ModuleOrCrInfo module, PermissionAction action)
         {
-            await _service.AddPermissions(Context.Guild.Id, new Permissionv2
+            await _service.AddPermissions(ctx.Guild.Id, new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.Server,
                 PrimaryTargetId = 0,
@@ -258,13 +258,13 @@ namespace NadekoBot.Modules.Permissions
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("sx_enable",
+                await ReplyConfirmLocalizedAsync("sx_enable",
                     Format.Code(module.Name),
                     GetText("of_module")).ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("sx_disable",
+                await ReplyConfirmLocalizedAsync("sx_disable",
                     Format.Code(module.Name),
                     GetText("of_module")).ConfigureAwait(false);
             }
@@ -272,9 +272,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task UsrCmd(CommandOrCrInfo command, PermissionAction action, [Remainder] IGuildUser user)
+        public async Task UsrCmd(CommandOrCrInfo command, PermissionAction action, [Leftover] IGuildUser user)
         {
-            await _service.AddPermissions(Context.Guild.Id, new Permissionv2
+            await _service.AddPermissions(ctx.Guild.Id, new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.User,
                 PrimaryTargetId = user.Id,
@@ -286,14 +286,14 @@ namespace NadekoBot.Modules.Permissions
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("ux_enable",
+                await ReplyConfirmLocalizedAsync("ux_enable",
                     Format.Code(command.Name),
                     GetText("of_command"),
                     Format.Code(user.ToString())).ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("ux_disable",
+                await ReplyConfirmLocalizedAsync("ux_disable",
                     Format.Code(command.Name),
                     GetText("of_command"),
                     Format.Code(user.ToString())).ConfigureAwait(false);
@@ -302,9 +302,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task UsrMdl(ModuleOrCrInfo module, PermissionAction action, [Remainder] IGuildUser user)
+        public async Task UsrMdl(ModuleOrCrInfo module, PermissionAction action, [Leftover] IGuildUser user)
         {
-            await _service.AddPermissions(Context.Guild.Id, new Permissionv2
+            await _service.AddPermissions(ctx.Guild.Id, new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.User,
                 PrimaryTargetId = user.Id,
@@ -315,14 +315,14 @@ namespace NadekoBot.Modules.Permissions
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("ux_enable",
+                await ReplyConfirmLocalizedAsync("ux_enable",
                     Format.Code(module.Name),
                     GetText("of_module"),
                     Format.Code(user.ToString())).ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("ux_disable",
+                await ReplyConfirmLocalizedAsync("ux_disable",
                     Format.Code(module.Name),
                     GetText("of_module"),
                     Format.Code(user.ToString())).ConfigureAwait(false);
@@ -331,12 +331,12 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task RoleCmd(CommandOrCrInfo command, PermissionAction action, [Remainder] IRole role)
+        public async Task RoleCmd(CommandOrCrInfo command, PermissionAction action, [Leftover] IRole role)
         {
             if (role == role.Guild.EveryoneRole)
                 return;
 
-            await _service.AddPermissions(Context.Guild.Id, new Permissionv2
+            await _service.AddPermissions(ctx.Guild.Id, new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.Role,
                 PrimaryTargetId = role.Id,
@@ -348,14 +348,14 @@ namespace NadekoBot.Modules.Permissions
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("rx_enable",
+                await ReplyConfirmLocalizedAsync("rx_enable",
                     Format.Code(command.Name),
                     GetText("of_command"),
                     Format.Code(role.Name)).ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("rx_disable",
+                await ReplyConfirmLocalizedAsync("rx_disable",
                     Format.Code(command.Name),
                     GetText("of_command"),
                     Format.Code(role.Name)).ConfigureAwait(false);
@@ -364,12 +364,12 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task RoleMdl(ModuleOrCrInfo module, PermissionAction action, [Remainder] IRole role)
+        public async Task RoleMdl(ModuleOrCrInfo module, PermissionAction action, [Leftover] IRole role)
         {
             if (role == role.Guild.EveryoneRole)
                 return;
 
-            await _service.AddPermissions(Context.Guild.Id, new Permissionv2
+            await _service.AddPermissions(ctx.Guild.Id, new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.Role,
                 PrimaryTargetId = role.Id,
@@ -381,14 +381,14 @@ namespace NadekoBot.Modules.Permissions
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("rx_enable",
+                await ReplyConfirmLocalizedAsync("rx_enable",
                     Format.Code(module.Name),
                     GetText("of_module"),
                     Format.Code(role.Name)).ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("rx_disable",
+                await ReplyConfirmLocalizedAsync("rx_disable",
                     Format.Code(module.Name),
                     GetText("of_module"),
                     Format.Code(role.Name)).ConfigureAwait(false);
@@ -397,9 +397,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task ChnlCmd(CommandOrCrInfo command, PermissionAction action, [Remainder] ITextChannel chnl)
+        public async Task ChnlCmd(CommandOrCrInfo command, PermissionAction action, [Leftover] ITextChannel chnl)
         {
-            await _service.AddPermissions(Context.Guild.Id, new Permissionv2
+            await _service.AddPermissions(ctx.Guild.Id, new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.Channel,
                 PrimaryTargetId = chnl.Id,
@@ -411,14 +411,14 @@ namespace NadekoBot.Modules.Permissions
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("cx_enable",
+                await ReplyConfirmLocalizedAsync("cx_enable",
                     Format.Code(command.Name),
                     GetText("of_command"),
                     Format.Code(chnl.Name)).ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("cx_disable",
+                await ReplyConfirmLocalizedAsync("cx_disable",
                     Format.Code(command.Name),
                     GetText("of_command"),
                     Format.Code(chnl.Name)).ConfigureAwait(false);
@@ -427,9 +427,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task ChnlMdl(ModuleOrCrInfo module, PermissionAction action, [Remainder] ITextChannel chnl)
+        public async Task ChnlMdl(ModuleOrCrInfo module, PermissionAction action, [Leftover] ITextChannel chnl)
         {
-            await _service.AddPermissions(Context.Guild.Id, new Permissionv2
+            await _service.AddPermissions(ctx.Guild.Id, new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.Channel,
                 PrimaryTargetId = chnl.Id,
@@ -440,14 +440,14 @@ namespace NadekoBot.Modules.Permissions
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("cx_enable",
+                await ReplyConfirmLocalizedAsync("cx_enable",
                     Format.Code(module.Name),
                     GetText("of_module"),
                     Format.Code(chnl.Name)).ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("cx_disable",
+                await ReplyConfirmLocalizedAsync("cx_disable",
                     Format.Code(module.Name),
                     GetText("of_module"),
                     Format.Code(chnl.Name)).ConfigureAwait(false);
@@ -456,9 +456,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task AllChnlMdls(PermissionAction action, [Remainder] ITextChannel chnl)
+        public async Task AllChnlMdls(PermissionAction action, [Leftover] ITextChannel chnl)
         {
-            await _service.AddPermissions(Context.Guild.Id, new Permissionv2
+            await _service.AddPermissions(ctx.Guild.Id, new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.Channel,
                 PrimaryTargetId = chnl.Id,
@@ -469,24 +469,24 @@ namespace NadekoBot.Modules.Permissions
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("acm_enable",
+                await ReplyConfirmLocalizedAsync("acm_enable",
                     Format.Code(chnl.Name)).ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("acm_disable",
+                await ReplyConfirmLocalizedAsync("acm_disable",
                     Format.Code(chnl.Name)).ConfigureAwait(false);
             }
         }
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task AllRoleMdls(PermissionAction action, [Remainder] IRole role)
+        public async Task AllRoleMdls(PermissionAction action, [Leftover] IRole role)
         {
             if (role == role.Guild.EveryoneRole)
                 return;
 
-            await _service.AddPermissions(Context.Guild.Id, new Permissionv2
+            await _service.AddPermissions(ctx.Guild.Id, new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.Role,
                 PrimaryTargetId = role.Id,
@@ -497,21 +497,21 @@ namespace NadekoBot.Modules.Permissions
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("arm_enable",
+                await ReplyConfirmLocalizedAsync("arm_enable",
                     Format.Code(role.Name)).ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("arm_disable",
+                await ReplyConfirmLocalizedAsync("arm_disable",
                     Format.Code(role.Name)).ConfigureAwait(false);
             }
         }
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task AllUsrMdls(PermissionAction action, [Remainder] IUser user)
+        public async Task AllUsrMdls(PermissionAction action, [Leftover] IUser user)
         {
-            await _service.AddPermissions(Context.Guild.Id, new Permissionv2
+            await _service.AddPermissions(ctx.Guild.Id, new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.User,
                 PrimaryTargetId = user.Id,
@@ -522,12 +522,12 @@ namespace NadekoBot.Modules.Permissions
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("aum_enable",
+                await ReplyConfirmLocalizedAsync("aum_enable",
                     Format.Code(user.ToString())).ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("aum_disable",
+                await ReplyConfirmLocalizedAsync("aum_disable",
                     Format.Code(user.ToString())).ConfigureAwait(false);
             }
         }
@@ -548,23 +548,23 @@ namespace NadekoBot.Modules.Permissions
             var allowUser = new Permissionv2
             {
                 PrimaryTarget = PrimaryPermissionType.User,
-                PrimaryTargetId = Context.User.Id,
+                PrimaryTargetId = ctx.User.Id,
                 SecondaryTarget = SecondaryPermissionType.AllModules,
                 SecondaryTargetName = "*",
                 State = true,
             };
 
-            await _service.AddPermissions(Context.Guild.Id,
+            await _service.AddPermissions(ctx.Guild.Id,
                 newPerm,
                 allowUser).ConfigureAwait(false);
 
             if (action.Value)
             {
-                await ReplyConfirmLocalized("asm_enable").ConfigureAwait(false);
+                await ReplyConfirmLocalizedAsync("asm_enable").ConfigureAwait(false);
             }
             else
             {
-                await ReplyConfirmLocalized("asm_disable").ConfigureAwait(false);
+                await ReplyConfirmLocalizedAsync("asm_disable").ConfigureAwait(false);
             }
         }
     }

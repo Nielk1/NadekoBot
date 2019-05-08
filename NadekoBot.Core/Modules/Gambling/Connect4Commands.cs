@@ -38,25 +38,25 @@ namespace NadekoBot.Modules.Gambling
                 if (!await CheckBetOptional(options.Bet).ConfigureAwait(false))
                     return;
 
-                var newGame = new Connect4Game(Context.User.Id, Context.User.ToString(), options, _cs);
+                var newGame = new Connect4Game(ctx.User.Id, ctx.User.ToString(), options, _cs);
                 Connect4Game game;
-                if ((game = _service.Connect4Games.GetOrAdd(Context.Channel.Id, newGame)) != newGame)
+                if ((game = _service.Connect4Games.GetOrAdd(ctx.Channel.Id, newGame)) != newGame)
                 {
                     if (game.CurrentPhase != Connect4Game.Phase.Joining)
                         return;
 
                     newGame.Dispose();
                     //means game already exists, try to join
-                    var joined = await game.Join(Context.User.Id, Context.User.ToString(), options.Bet).ConfigureAwait(false);
+                    var joined = await game.Join(ctx.User.Id, ctx.User.ToString(), options.Bet).ConfigureAwait(false);
                     return;
                 }
 
                 if (options.Bet > 0)
                 {
-                    if (!await _cs.RemoveAsync(Context.User.Id, "Connect4-bet", options.Bet, true).ConfigureAwait(false))
+                    if (!await _cs.RemoveAsync(ctx.User.Id, "Connect4-bet", options.Bet, true).ConfigureAwait(false))
                     {
-                        await ReplyErrorLocalized("not_enough", Bc.BotConfig.CurrencySign).ConfigureAwait(false);
-                        _service.Connect4Games.TryRemove(Context.Channel.Id, out _);
+                        await ReplyErrorLocalizedAsync("not_enough", Bc.BotConfig.CurrencySign).ConfigureAwait(false);
+                        _service.Connect4Games.TryRemove(ctx.Channel.Id, out _);
                         game.Dispose();
                         return;
                     }
@@ -70,16 +70,16 @@ namespace NadekoBot.Modules.Gambling
                 game.Initialize();
                 if (options.Bet == 0)
                 {
-                    await ReplyConfirmLocalized("connect4_created").ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("connect4_created").ConfigureAwait(false);
                 }
                 else
                 {
-                    await ReplyConfirmLocalized("connect4_created_bet", options.Bet + Bc.BotConfig.CurrencySign).ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("connect4_created_bet", options.Bet + Bc.BotConfig.CurrencySign).ConfigureAwait(false);
                 }
 
                 Task _client_MessageReceived(SocketMessage arg)
                 {
-                    if (Context.Channel.Id != arg.Channel.Id)
+                    if (ctx.Channel.Id != arg.Channel.Id)
                         return Task.CompletedTask;
 
                     var _ = Task.Run(async () =>
@@ -101,7 +101,7 @@ namespace NadekoBot.Modules.Gambling
                             }
                             RepostCounter++;
                             if (RepostCounter == 0)
-                                try { msg = await Context.Channel.SendMessageAsync("", embed: (Embed)msg.Embeds.First()).ConfigureAwait(false); } catch { }
+                                try { msg = await ctx.Channel.SendMessageAsync("", embed: (Embed)msg.Embeds.First()).ConfigureAwait(false); } catch { }
                         }
                     });
                     return Task.CompletedTask;
@@ -109,17 +109,17 @@ namespace NadekoBot.Modules.Gambling
 
                 Task Game_OnGameFailedToStart(Connect4Game arg)
                 {
-                    if (_service.Connect4Games.TryRemove(Context.Channel.Id, out var toDispose))
+                    if (_service.Connect4Games.TryRemove(ctx.Channel.Id, out var toDispose))
                     {
                         _client.MessageReceived -= _client_MessageReceived;
                         toDispose.Dispose();
                     }
-                    return ErrorLocalized("connect4_failed_to_start");
+                    return ErrorLocalizedAsync("connect4_failed_to_start");
                 }
 
                 Task Game_OnGameEnded(Connect4Game arg, Connect4Game.Result result)
                 {
-                    if (_service.Connect4Games.TryRemove(Context.Channel.Id, out var toDispose))
+                    if (_service.Connect4Games.TryRemove(ctx.Channel.Id, out var toDispose))
                     {
                         _client.MessageReceived -= _client_MessageReceived;
                         toDispose.Dispose();
@@ -168,7 +168,7 @@ namespace NadekoBot.Modules.Gambling
 
 
                 if (msg == null)
-                    msg = await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
+                    msg = await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
                 else
                     await msg.ModifyAsync(x => x.Embed = embed.Build()).ConfigureAwait(false);
             }
@@ -185,7 +185,6 @@ namespace NadekoBot.Modules.Gambling
                 {
                     for (int j = 0; j < Connect4Game.NumberOfColumns; j++)
                     {
-                        //Console.WriteLine(i + (j * Connect4Game.NumberOfRows) - 1);
                         var cur = game.GameState[i + (j * Connect4Game.NumberOfRows) - 1];
 
                         if (cur == Connect4Game.Field.Empty)

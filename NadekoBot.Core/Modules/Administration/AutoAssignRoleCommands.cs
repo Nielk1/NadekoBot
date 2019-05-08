@@ -17,23 +17,26 @@ namespace NadekoBot.Modules.Administration
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.ManageRoles)]
-            public async Task AutoAssignRole([Remainder] IRole role = null)
+            [UserPerm(GuildPerm.ManageRoles)]
+            public async Task AutoAssignRole([Leftover] IRole role = null)
             {
-                var guser = (IGuildUser)Context.User;
+                var guser = (IGuildUser)ctx.User;
                 if (role != null)
                 {
-                    // the user can't aar the role which is higher or equal to his highest role
-                    if (Context.User.Id != guser.Guild.OwnerId && guser.GetRoles().Max(x => x.Position) <= role.Position)
+                    if (role.Id == ctx.Guild.EveryoneRole.Id)
                         return;
 
-                    _service.EnableAar(Context.Guild.Id, role.Id);
-                    await ReplyConfirmLocalized("aar_enabled").ConfigureAwait(false);
+                    // the user can't aar the role which is higher or equal to his highest role
+                    if (ctx.User.Id != guser.Guild.OwnerId && guser.GetRoles().Max(x => x.Position) <= role.Position)
+                        return;
+
+                    _service.EnableAar(ctx.Guild.Id, role.Id);
+                    await ReplyConfirmLocalizedAsync("aar_enabled").ConfigureAwait(false);
                 }
                 else
                 {
-                    _service.DisableAar(Context.Guild.Id);
-                    await ReplyConfirmLocalized("aar_disabled").ConfigureAwait(false);
+                    _service.DisableAar(ctx.Guild.Id);
+                    await ReplyConfirmLocalizedAsync("aar_disabled").ConfigureAwait(false);
                     return;
                 }
             }

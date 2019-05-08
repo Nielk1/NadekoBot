@@ -26,7 +26,7 @@ namespace NadekoBot.Core.Services.Impl
 
             using (var http = _httpFactory.CreateClient())
             {
-                response = await http.GetStringAsync($"https://scapi.nadekobot.me/resolve?url={url}").ConfigureAwait(false);
+                response = await http.GetStringAsync($"https://scapi.nadeko.bot/resolve?url={url}").ConfigureAwait(false);
             }
 
 
@@ -48,10 +48,10 @@ namespace NadekoBot.Core.Services.Impl
             var response = "";
             using (var http = _httpFactory.CreateClient())
             {
-                response = await http.GetStringAsync(new Uri($"https://scapi.nadekobot.me/tracks?q={Uri.EscapeDataString(query)}")).ConfigureAwait(false);
+                response = await http.GetStringAsync(new Uri($"https://scapi.nadeko.bot/tracks?q={Uri.EscapeDataString(query)}")).ConfigureAwait(false);
             }
 
-            var responseObj = JsonConvert.DeserializeObject<SoundCloudVideo[]>(response).Where(s => s.Streamable).FirstOrDefault();
+            var responseObj = JsonConvert.DeserializeObject<SoundCloudVideo[]>(response).Where(s => s.Streamable is true).FirstOrDefault();
             if (responseObj?.Kind != "track")
                 throw new InvalidOperationException("Query yielded no results.");
 
@@ -67,7 +67,7 @@ namespace NadekoBot.Core.Services.Impl
         public string Title { get; set; } = "";
         [JsonIgnore]
         public string FullName => User.Name + " - " + Title;
-        public bool Streamable { get; set; } = false;
+        public bool? Streamable { get; set; } = false;
         public int Duration { get; set; }
         [JsonProperty("permalink_url")]
         public string TrackLink { get; set; } = "";
@@ -77,7 +77,7 @@ namespace NadekoBot.Core.Services.Impl
         {
             using (var http = new HttpClient())
             {
-                var url = await http.GetStringAsync(new Uri($"http://scapi.nadekobot.me/stream/{Id}"));
+                var url = await http.GetStringAsync(new Uri($"http://scapi.nadeko.bot/stream/{Id}"));
                 return url;
             }
         }

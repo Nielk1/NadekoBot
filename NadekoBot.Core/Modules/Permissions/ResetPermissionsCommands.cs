@@ -20,11 +20,11 @@ namespace NadekoBot.Modules.Permissions
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
+            [UserPerm(GuildPerm.Administrator)]
             public async Task ResetPermissions()
             {
-                await _service.ResetPermissions(Context.Guild.Id).ConfigureAwait(false);
-                await ReplyConfirmLocalized("perms_reset").ConfigureAwait(false);
+                await _service.ResetPermissions(ctx.Guild.Id).ConfigureAwait(false);
+                await ReplyConfirmLocalizedAsync("perms_reset").ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
@@ -32,7 +32,7 @@ namespace NadekoBot.Modules.Permissions
             public async Task ResetGlobalPermissions()
             {
                 await _service.ResetGlobalPermissions().ConfigureAwait(false);
-                await ReplyConfirmLocalized("global_perms_reset").ConfigureAwait(false);
+                await ReplyConfirmLocalizedAsync("global_perms_reset").ConfigureAwait(false);
             }
         }
     }

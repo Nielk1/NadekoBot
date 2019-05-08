@@ -21,6 +21,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Image = SixLabors.ImageSharp.Image;
 
@@ -41,6 +42,7 @@ namespace NadekoBot.Modules.Gambling.Services
         public readonly ConcurrentHashSet<ulong> _generationChannels = new ConcurrentHashSet<ulong>();
         //channelId/last generation
         public ConcurrentDictionary<ulong, DateTime> LastGenerations { get; } = new ConcurrentDictionary<ulong, DateTime>();
+        private readonly SemaphoreSlim pickLock = new SemaphoreSlim(1, 1);
 
         public PlantPickService(DbService db, CommandHandler cmd, NadekoBot bot, NadekoStrings strings,
             IDataCache cache, FontProvider fonts, IBotConfigProvider bc, ICurrencyService cs,
@@ -70,7 +72,7 @@ namespace NadekoBot.Modules.Gambling.Services
         public bool ToggleCurrencyGeneration(ulong gid, ulong cid)
         {
             bool enabled;
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var guildConfig = uow.GuildConfigs.ForId(gid, set => set.Include(gc => gc.GenerateCurrencyChannelIds));
 
@@ -83,18 +85,22 @@ namespace NadekoBot.Modules.Gambling.Services
                 }
                 else
                 {
-                    guildConfig.GenerateCurrencyChannelIds.Remove(toAdd);
+                    var toDelete = guildConfig.GenerateCurrencyChannelIds.FirstOrDefault(x => x.Equals(toAdd));
+                    if (toDelete != null)
+                    {
+                        uow._context.Remove(toDelete);
+                    }
                     _generationChannels.TryRemove(cid);
                     enabled = false;
                 }
-                uow.Complete();
+                uow.SaveChanges();
             }
             return enabled;
         }
 
         public IEnumerable<GeneratingChannel> GetAllGeneratingChannels()
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var chs = uow.GuildConfigs.GetGeneratingChannels();
                 return chs;
@@ -246,30 +252,41 @@ namespace NadekoBot.Modules.Gambling.Services
 
         public async Task<long> PickAsync(ulong gid, ITextChannel ch, ulong uid, string pass)
         {
-            long amount;
-            ulong[] ids;
-            using (var uow = _db.UnitOfWork)
-            {
-                // this method will sum all plants with that password, 
-                // remove them, and get messageids of the removed plants
-                (amount, ids) = uow.PlantedCurrency.RemoveSumAndGetMessageIdsFor(ch.Id, pass);
-                if (amount > 0)
-                {
-                    // give the picked currency to the user
-                    await _cs.AddAsync(uid, "Picked currency", amount, gamble: false);
-                }
-                uow.Complete();
-            }
-
+            await pickLock.WaitAsync();
             try
             {
-                // delete all of the plant messages which have just been picked
-                var _ = ch.DeleteMessagesAsync(ids);
-            }
-            catch { }
+                long amount;
+                ulong[] ids;
+                using (var uow = _db.GetDbContext())
+                {
+                    // this method will sum all plants with that password, 
+                    // remove them, and get messageids of the removed plants
 
-            // return the amount of currency the user picked
-            return amount;
+                    (amount, ids) = uow.PlantedCurrency.RemoveSumAndGetMessageIdsFor(ch.Id, pass);
+
+
+                    if (amount > 0)
+                    {
+                        // give the picked currency to the user
+                        await _cs.AddAsync(uid, "Picked currency", amount, gamble: false);
+                    }
+                    uow.SaveChanges();
+                }
+
+                try
+                {
+                    // delete all of the plant messages which have just been picked
+                    var _ = ch.DeleteMessagesAsync(ids);
+                }
+                catch { }
+
+                // return the amount of currency the user picked
+                return amount;
+            }
+            finally
+            {
+                pickLock.Release();
+            }
         }
 
         public async Task<ulong?> SendPlantMessageAsync(ulong gid, IMessageChannel ch, string user, long amount, string pass)
@@ -334,7 +351,7 @@ namespace NadekoBot.Modules.Gambling.Services
 
         private async Task AddPlantToDatabase(ulong gid, ulong cid, ulong uid, ulong mid, long amount, string pass)
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 uow.PlantedCurrency.Add(new PlantedCurrency
                 {
@@ -345,7 +362,7 @@ namespace NadekoBot.Modules.Gambling.Services
                     UserId = uid,
                     MessageId = mid,
                 });
-                await uow.CompleteAsync();
+                await uow.SaveChangesAsync();
             }
         }
     }

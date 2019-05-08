@@ -1,20 +1,20 @@
-﻿using Discord.WebSocket;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Discord;
-using NLog;
+﻿using Discord;
 using Discord.Commands;
-using NadekoBot.Extensions;
-using System.Collections.Concurrent;
-using System.Threading;
-using System.Collections.Immutable;
-using System.IO;
 using Discord.Net;
+using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 using NadekoBot.Common.Collections;
 using NadekoBot.Common.ModuleBehaviors;
-using Microsoft.Extensions.DependencyInjection;
+using NadekoBot.Extensions;
+using NLog;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NadekoBot.Core.Services
 {
@@ -94,10 +94,10 @@ namespace NadekoBot.Core.Services
             if (string.IsNullOrWhiteSpace(prefix))
                 throw new ArgumentNullException(nameof(prefix));
 
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 uow.BotConfig.GetOrCreate(set => set).DefaultPrefix = prefix;
-                uow.Complete();
+                uow.SaveChanges();
             }
 
             return DefaultPrefix = prefix;
@@ -109,11 +109,11 @@ namespace NadekoBot.Core.Services
             if (guild == null)
                 throw new ArgumentNullException(nameof(guild));
 
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var gc = uow.GuildConfigs.ForId(guild.Id, set => set);
                 gc.Prefix = prefix;
-                uow.Complete();
+                uow.SaveChanges();
             }
             _prefixes.AddOrUpdate(guild.Id, prefix, (key, old) => prefix);
 
@@ -176,7 +176,7 @@ namespace NadekoBot.Core.Services
         {
             if (_bcp.BotConfig.ConsoleOutputType == Database.Models.ConsoleOutputType.Normal)
             {
-                _log.Info($"Command Executed after " + string.Join("/", execPoints.Select(x => x * _oneThousandth)) + "s\n\t" +
+                _log.Info($"Command Executed after " + string.Join("/", execPoints.Select(x => (x * _oneThousandth).ToString("F3"))) + "s\n\t" +
                         "User: {0}\n\t" +
                         "Server: {1}\n\t" +
                         "Channel: {2}\n\t" +
@@ -202,7 +202,7 @@ namespace NadekoBot.Core.Services
         {
             if (_bcp.BotConfig.ConsoleOutputType == Database.Models.ConsoleOutputType.Normal)
             {
-                _log.Warn($"Command Errored after " + string.Join("/", execPoints.Select(x => x * _oneThousandth)) + "s\n\t" +
+                _log.Warn($"Command Errored after " + string.Join("/", execPoints.Select(x => (x * _oneThousandth).ToString("F3"))) + "s\n\t" +
                             "User: {0}\n\t" +
                             "Server: {1}\n\t" +
                             "Channel: {2}\n\t" +

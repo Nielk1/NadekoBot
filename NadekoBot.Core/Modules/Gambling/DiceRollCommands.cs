@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using NadekoBot.Common;
@@ -12,6 +6,11 @@ using NadekoBot.Core.Services;
 using NadekoBot.Extensions;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Image = SixLabors.ImageSharp.Image;
 
 namespace NadekoBot.Modules.Gambling
@@ -46,16 +45,10 @@ namespace NadekoBot.Modules.Gambling
                 using (var img = new[] { img1, img2 }.Merge(out var format))
                 using (var ms = img.ToStream(format))
                 {
-                    await Context.Channel.SendFileAsync(ms,
+                    await ctx.Channel.SendFileAsync(ms,
                         $"dice.{format.FileExtensions.First()}",
-                        Format.Bold(Context.User.ToString()) + " " + GetText("dice_rolled", Format.Code(gen.ToString()))).ConfigureAwait(false);
+                        Format.Bold(ctx.User.ToString()) + " " + GetText("dice_rolled", Format.Code(gen.ToString()))).ConfigureAwait(false);
                 }
-            }
-
-            public enum RollOrderType
-            {
-                Ordered,
-                Unordered
             }
 
             [NadekoCommand, Usage, Description, Aliases]
@@ -91,7 +84,7 @@ namespace NadekoBot.Modules.Gambling
             {
                 if (num < 1 || num > 30)
                 {
-                    await ReplyErrorLocalized("dice_invalid_number", 1, 30).ConfigureAwait(false);
+                    await ReplyErrorLocalizedAsync("dice_invalid_number", 1, 30).ConfigureAwait(false);
                     return;
                 }
 
@@ -133,8 +126,8 @@ namespace NadekoBot.Modules.Gambling
                         d.Dispose();
                     }
 
-                    await Context.Channel.SendFileAsync(ms, $"dice.{format.FileExtensions.First()}",
-                        Format.Bold(Context.User.ToString()) + " " +
+                    await ctx.Channel.SendFileAsync(ms, $"dice.{format.FileExtensions.First()}",
+                        Format.Bold(ctx.User.ToString()) + " " +
                         GetText("dice_rolled_num", Format.Bold(values.Count.ToString())) +
                         " " + GetText("total_average",
                             Format.Bold(values.Sum().ToString()),
@@ -157,10 +150,10 @@ namespace NadekoBot.Modules.Gambling
                     {
                         rolls.Add(_fateRolls[rng.Next(0, _fateRolls.Length)]);
                     }
-                    var embed = new EmbedBuilder().WithOkColor().WithDescription(Context.User.Mention + " " + GetText("dice_rolled_num", Format.Bold(n1.ToString())))
+                    var embed = new EmbedBuilder().WithOkColor().WithDescription(ctx.User.Mention + " " + GetText("dice_rolled_num", Format.Bold(n1.ToString())))
                         .AddField(efb => efb.WithName(Format.Bold("Result"))
                             .WithValue(string.Join(" ", rolls.Select(c => Format.Code($"[{c}]")))));
-                    await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
+                    await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
                 }
                 else if ((match = dndRegex.Match(arg)).Length != 0)
                 {
@@ -181,18 +174,18 @@ namespace NadekoBot.Modules.Gambling
                         }
 
                         var sum = arr.Sum();
-                        var embed = new EmbedBuilder().WithOkColor().WithDescription(Context.User.Mention + " " + GetText("dice_rolled_num", n1) + $"`1 - {n2}`")
+                        var embed = new EmbedBuilder().WithOkColor().WithDescription(ctx.User.Mention + " " + GetText("dice_rolled_num", n1) + $"`1 - {n2}`")
                         .AddField(efb => efb.WithName(Format.Bold("Rolls"))
                             .WithValue(string.Join(" ", (ordered ? arr.OrderBy(x => x).AsEnumerable() : arr).Select(x => Format.Code(x.ToString())))))
                         .AddField(efb => efb.WithName(Format.Bold("Sum"))
                             .WithValue(sum + " + " + add + " - " + sub + " = " + (sum + add - sub)));
-                        await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
+                        await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
                     }
                 }
             }
 
             [NadekoCommand, Usage, Description, Aliases]
-            public async Task NRoll([Remainder] string range)
+            public async Task NRoll([Leftover] string range)
             {
                 int rolled;
                 if (range.Contains("-"))
@@ -203,7 +196,7 @@ namespace NadekoBot.Modules.Gambling
                         .ToArray();
                     if (arr[0] > arr[1])
                     {
-                        await ReplyErrorLocalized("second_larger_than_first").ConfigureAwait(false);
+                        await ReplyErrorLocalizedAsync("second_larger_than_first").ConfigureAwait(false);
                         return;
                     }
                     rolled = new NadekoRandom().Next(arr[0], arr[1] + 1);
@@ -213,7 +206,7 @@ namespace NadekoBot.Modules.Gambling
                     rolled = new NadekoRandom().Next(0, int.Parse(range) + 1);
                 }
 
-                await ReplyConfirmLocalized("dice_rolled", Format.Bold(rolled.ToString())).ConfigureAwait(false);
+                await ReplyConfirmLocalizedAsync("dice_rolled", Format.Bold(rolled.ToString())).ConfigureAwait(false);
             }
 
             private Image<Rgba32> GetDice(int num)

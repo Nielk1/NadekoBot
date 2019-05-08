@@ -1,4 +1,3 @@
-![img](https://ci.appveyor.com/api/projects/status/gmu6b3ltc80hr3k9?svg=true)
 [![Discord](https://discordapp.com/api/guilds/117523346618318850/widget.png)](https://discord.gg/nadekobot)
 [![Documentation Status](https://readthedocs.org/projects/nadekobot/badge/?version=latest)](http://nadekobot.readthedocs.io/en/latest/?badge=latest)
 [![Discord Bots](https://discordbots.org/api/widget/status/116275390695079945.svg)](https://discordbots.org/bot/116275390695079945)
@@ -8,6 +7,6 @@
 
 ## For Updates, Help and Guidelines
 
-| [![twitter](https://cdn.discordapp.com/attachments/155726317222887425/252192520094613504/twiter_banner.JPG)](https://twitter.com/TheNadekoBot) | [![discord](https://cdn.discordapp.com/attachments/266240393639755778/281920766490968064/discord.png)](https://discord.gg/nadekobot) | [![Wiki](https://cdn.discordapp.com/attachments/266240393639755778/281920793330581506/datcord.png)](http://nadekobot.readthedocs.io/en/latest/)
-| --- | --- | --- |
-| **Follow me on Twitter.** | **Join my Discord server for help.** | **Read the Docs for self-hosting.** |
+| [![discord](https://cdn.discordapp.com/attachments/266240393639755778/281920766490968064/discord.png)](https://discord.gg/nadekobot) | [![Wiki](https://cdn.discordapp.com/attachments/266240393639755778/281920793330581506/datcord.png)](http://nadekobot.readthedocs.io/en/latest/)
+| --- | --- |
+| **Join my Discord server for help.** | **Read the Docs for self-hosting.** |

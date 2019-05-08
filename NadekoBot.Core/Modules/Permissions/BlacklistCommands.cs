@@ -1,12 +1,13 @@
 ﻿using Discord;
 using Discord.Commands;
+using Microsoft.EntityFrameworkCore;
+using NadekoBot.Common.Attributes;
+using NadekoBot.Common.TypeReaders;
 using NadekoBot.Core.Services;
 using NadekoBot.Core.Services.Database.Models;
-using System.Threading.Tasks;
-using NadekoBot.Common.Attributes;
-using NadekoBot.Common.Collections;
 using NadekoBot.Modules.Permissions.Services;
-using NadekoBot.Common.TypeReaders;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace NadekoBot.Modules.Permissions
 {
@@ -17,10 +18,6 @@ namespace NadekoBot.Modules.Permissions
         {
             private readonly DbService _db;
             private readonly IBotCredentials _creds;
-
-            private ConcurrentHashSet<ulong> BlacklistedUsers => _service.BlacklistedUsers;
-            private ConcurrentHashSet<ulong> BlacklistedGuilds => _service.BlacklistedGuilds;
-            private ConcurrentHashSet<ulong> BlacklistedChannels => _service.BlacklistedChannels;
 
             public BlacklistCommands(DbService db, IBotCredentials creds)
             {
@@ -55,51 +52,33 @@ namespace NadekoBot.Modules.Permissions
 
             private async Task Blacklist(AddRemove action, ulong id, BlacklistType type)
             {
-                if(action == AddRemove.Add && _creds.OwnerIds.Contains(id))
+                if (action == AddRemove.Add && _creds.OwnerIds.Contains(id))
                     return;
 
-                using (var uow = _db.UnitOfWork)
+                using (var uow = _db.GetDbContext())
                 {
                     if (action == AddRemove.Add)
                     {
                         var item = new BlacklistItem { ItemId = id, Type = type };
                         uow.BotConfig.GetOrCreate().Blacklist.Add(item);
-                        if (type == BlacklistType.Server)
-                        {
-                            BlacklistedGuilds.Add(id);
-                        }
-                        else if (type == BlacklistType.Channel)
-                        {
-                            BlacklistedChannels.Add(id);
-                        }
-                        else if (type == BlacklistType.User)
-                        {
-                            BlacklistedUsers.Add(id);
-                        }                        
                     }
                     else
                     {
-                        uow.BotConfig.GetOrCreate().Blacklist.RemoveWhere(bi => bi.ItemId == id && bi.Type == type);
-                        if (type == BlacklistType.Server)
-                        {
-                            BlacklistedGuilds.TryRemove(id);
-                        }
-                        else if (type == BlacklistType.Channel)
-                        {
-                            BlacklistedChannels.TryRemove(id);
-                        }
-                        else if (type == BlacklistType.User)
-                        {
-                            BlacklistedUsers.TryRemove(id);
-                        }
+                        var objs = uow.BotConfig
+                            .GetOrCreate(set => set.Include(x => x.Blacklist))
+                            .Blacklist
+                            .Where(bi => bi.ItemId == id && bi.Type == type);
+
+                        if (objs.Any())
+                            uow._context.Set<BlacklistItem>().RemoveRange(objs);
                     }
-                    await uow.CompleteAsync();
+                    await uow.SaveChangesAsync();
                 }
 
-                if(action == AddRemove.Add)
-                    await ReplyConfirmLocalized("blacklisted", Format.Code(type.ToString()), Format.Code(id.ToString())).ConfigureAwait(false);
+                if (action == AddRemove.Add)
+                    await ReplyConfirmLocalizedAsync("blacklisted", Format.Code(type.ToString()), Format.Code(id.ToString())).ConfigureAwait(false);
                 else
-                    await ReplyConfirmLocalized("unblacklisted", Format.Code(type.ToString()), Format.Code(id.ToString())).ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("unblacklisted", Format.Code(type.ToString()), Format.Code(id.ToString())).ConfigureAwait(false);
             }
         }
     }

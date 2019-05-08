@@ -1,12 +1,12 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Discord.Commands;
 using NadekoBot.Common.Attributes;
 using NadekoBot.Core.Services.Database.Models;
 using NadekoBot.Extensions;
 using NadekoBot.Modules.Administration.Common;
 using NadekoBot.Modules.Administration.Services;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace NadekoBot.Modules.Administration
 {
@@ -17,95 +17,101 @@ namespace NadekoBot.Modules.Administration
         {
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
+            [UserPerm(GuildPerm.Administrator)]
             public Task AntiRaid()
             {
-                if(_service.TryStopAntiRaid(Context.Guild.Id))
+                if (_service.TryStopAntiRaid(ctx.Guild.Id))
                 {
-                    return ReplyConfirmLocalized("prot_disable", "Anti-Raid");
+                    return ReplyConfirmLocalizedAsync("prot_disable", "Anti-Raid");
                 }
                 else
                 {
-                    return ReplyErrorLocalized("anti_raid_not_running");
+                    return ReplyErrorLocalizedAsync("anti_raid_not_running");
                 }
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
+            [UserPerm(GuildPerm.Administrator)]
             public async Task AntiRaid(int userThreshold, int seconds = 10, PunishmentAction action = PunishmentAction.Mute)
             {
                 if (userThreshold < 2 || userThreshold > 30)
                 {
-                    await ReplyErrorLocalized("raid_cnt", 2, 30).ConfigureAwait(false);
+                    await ReplyErrorLocalizedAsync("raid_cnt", 2, 30).ConfigureAwait(false);
                     return;
                 }
 
                 if (seconds < 2 || seconds > 300)
                 {
-                    await ReplyErrorLocalized("raid_time", 2, 300).ConfigureAwait(false);
+                    await ReplyErrorLocalizedAsync("raid_time", 2, 300).ConfigureAwait(false);
                     return;
                 }
 
-                var stats = await _service.StartAntiRaidAsync(Context.Guild.Id, userThreshold, seconds, action).ConfigureAwait(false);
+                var stats = await _service.StartAntiRaidAsync(ctx.Guild.Id, userThreshold, seconds, action).ConfigureAwait(false);
 
-                await Context.Channel.SendConfirmAsync(GetText("prot_enable", "Anti-Raid"), $"{Context.User.Mention} {GetAntiRaidString(stats)}")
+                await ctx.Channel.SendConfirmAsync(GetText("prot_enable", "Anti-Raid"), $"{ctx.User.Mention} {GetAntiRaidString(stats)}")
                         .ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
+            [UserPerm(GuildPerm.Administrator)]
             [Priority(1)]
             public Task AntiSpam()
             {
-                if(_service.TryStopAntiSpam(Context.Guild.Id))
+                if (_service.TryStopAntiSpam(ctx.Guild.Id))
                 {
-                    return ReplyConfirmLocalized("prot_disable", "Anti-Spam");
+                    return ReplyConfirmLocalizedAsync("prot_disable", "Anti-Spam");
                 }
                 else
                 {
-                    return ReplyErrorLocalized("anti_spam_not_running");
+                    return ReplyErrorLocalizedAsync("anti_spam_not_running");
                 }
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
+            [UserPerm(GuildPerm.Administrator)]
             [Priority(0)]
             public async Task AntiSpam(int messageCount, PunishmentAction action = PunishmentAction.Mute, int time = 0)
             {
                 if (messageCount < 2 || messageCount > 10)
                     return;
 
-                if (time < 0 || time > 60 * 12)
+                if (time < 0 || time > 60 * 60 * 12)
                     return;
 
-                var stats = await _service.StartAntiSpamAsync(Context.Guild.Id, messageCount, time, action).ConfigureAwait(false);
+                var stats = await _service.StartAntiSpamAsync(ctx.Guild.Id, messageCount, time, action).ConfigureAwait(false);
 
-                await Context.Channel.SendConfirmAsync(GetText("prot_enable", "Anti-Spam"), 
-                    $"{Context.User.Mention} {GetAntiSpamString(stats)}").ConfigureAwait(false);
+                await ctx.Channel.SendConfirmAsync(GetText("prot_enable", "Anti-Spam"),
+                    $"{ctx.User.Mention} {GetAntiSpamString(stats)}").ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
+            [UserPerm(GuildPerm.Administrator)]
             public async Task AntispamIgnore()
             {
-                var added = await _service.AntiSpamIgnoreAsync(Context.Guild.Id, Context.Channel.Id).ConfigureAwait(false);
+                var added = await _service.AntiSpamIgnoreAsync(ctx.Guild.Id, ctx.Channel.Id).ConfigureAwait(false);
 
-                await ReplyConfirmLocalized(added ? "spam_ignore" : "spam_not_ignore", "Anti-Spam").ConfigureAwait(false);
+                if(added is null)
+                {
+                    await ReplyErrorLocalizedAsync("anti_spam_not_running").ConfigureAwait(false);
+                    return;
+                }
+
+                await ReplyConfirmLocalizedAsync(added.Value ? "spam_ignore" : "spam_not_ignore", "Anti-Spam").ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             public async Task AntiList()
             {
-                var (spam, raid) = _service.GetAntiStats(Context.Guild.Id);
+                var (spam, raid) = _service.GetAntiStats(ctx.Guild.Id);
 
                 if (spam == null && raid == null)
                 {
-                    await ReplyConfirmLocalized("prot_none").ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("prot_none").ConfigureAwait(false);
                     return;
                 }
 
@@ -114,15 +120,15 @@ namespace NadekoBot.Modules.Administration
 
                 if (spam != null)
                     embed.AddField(efb => efb.WithName("Anti-Spam")
-                        .WithValue(GetAntiSpamString(spam))
+                        .WithValue(GetAntiSpamString(spam).TrimTo(1024))
                         .WithIsInline(true));
 
                 if (raid != null)
                     embed.AddField(efb => efb.WithName("Anti-Raid")
-                        .WithValue(GetAntiRaidString(raid))
+                        .WithValue(GetAntiRaidString(raid).TrimTo(1024))
                         .WithIsInline(true));
 
-                await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
+                await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
             }
 
 
