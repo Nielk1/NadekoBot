@@ -53,7 +53,7 @@ For a specific command help, use `{1}h CommandName` (for example {1}h {1}q)
 
 
 **LIST OF COMMANDS CAN BE FOUND ON THIS LINK**
-<https://nadekobot.me/commands>
+<https://nadeko.bot/commands>
 
 
 Nadeko Support Server: https://discord.gg/nadekobot";
@@ -71,7 +71,6 @@ Nadeko Support Server: https://discord.gg/nadekobot";
         public bool CustomReactionsStartWith { get; set; } = false;
         public int XpPerMessage { get; set; } = 3;
         public int XpMinutesTimeout { get; set; } = 5;
-        public HashSet<LoadedPackage> LoadedPackages { get; set; } = new HashSet<LoadedPackage>();
         public int DivorcePriceMultiplier { get; set; } = 150;
         public float PatreonCurrencyPerCent { get; set; } = 1.0f;
         public int WaifuGiftMultiplier { get; set; } = 1;
@@ -99,7 +98,7 @@ Nadeko Support Server: https://discord.gg/nadekobot";
             (obj as BlockedCmdOrMdl)?.Name?.ToUpperInvariant() == Name.ToUpperInvariant();
 
         public override int GetHashCode() =>
-            Name.GetHashCode(System.StringComparison.InvariantCulture);
+            Name.GetHashCode(StringComparison.InvariantCulture);
     }
 
     public enum ConsoleOutputType

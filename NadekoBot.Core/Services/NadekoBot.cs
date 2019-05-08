@@ -1,26 +1,26 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using NadekoBot.Core.Services;
-using NadekoBot.Core.Services.Impl;
-using NLog;
-using System;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using NadekoBot.Core.Services.Database.Models;
-using System.Threading;
-using System.IO;
-using NadekoBot.Extensions;
-using System.Collections.Generic;
+using Microsoft.Extensions.DependencyInjection;
 using NadekoBot.Common;
 using NadekoBot.Common.ShardCom;
-using StackExchange.Redis;
+using NadekoBot.Core.Services;
+using NadekoBot.Core.Services.Database.Models;
+using NadekoBot.Core.Services.Impl;
+using NadekoBot.Extensions;
 using Newtonsoft.Json;
-using Microsoft.Extensions.DependencyInjection;
+using NLog;
+using StackExchange.Redis;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 using NadekoBot.Services.GamesList;
 
@@ -74,7 +74,7 @@ namespace NadekoBot
             Cache = new RedisCache(Credentials, shardId);
             _db = new DbService(Credentials);
 
-            if(shardId == 0)
+            if (shardId == 0)
             {
                 _db.Setup();
             }
@@ -86,24 +86,25 @@ namespace NadekoBot
 #else
                 MessageCacheSize = 50,
 #endif
-                LogLevel = LogSeverity.Info,
+                LogLevel = LogSeverity.Warning,
                 ConnectionTimeout = int.MaxValue,
                 TotalShards = Credentials.TotalShards,
                 ShardId = shardId,
                 AlwaysDownloadUsers = false,
             });
+
             CommandService = new CommandService(new CommandServiceConfig()
             {
                 CaseSensitiveCommands = false,
                 DefaultRunMode = RunMode.Sync,
             });
 
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 _botConfig = uow.BotConfig.GetOrCreate();
                 OkColor = new Color(Convert.ToUInt32(_botConfig.OkColor, 16));
                 ErrorColor = new Color(Convert.ToUInt32(_botConfig.ErrorColor, 16));
-                uow.Complete();
+                uow.SaveChanges();
             }
 
             SetupShard(parentProcessId);
@@ -136,14 +137,31 @@ namespace NadekoBot
             });
         }
 
+        private List<ulong> GetCurrentGuildIds()
+        {
+            return Client.Guilds.Select(x => x.Id).ToList();
+        }
+
+        public IEnumerable<GuildConfig> GetCurrentGuildConfigs()
+        {
+            using (var uow = _db.GetDbContext())
+            {
+                return uow.GuildConfigs.GetAllGuildConfigs(GetCurrentGuildIds()).ToImmutableArray();
+            }
+        }
+
         private void AddServices()
         {
-            var startingGuildIdList = Client.Guilds.Select(x => x.Id).ToList();
+            var startingGuildIdList = GetCurrentGuildIds();
 
             //this unit of work will be used for initialization of all modules too, to prevent multiple queries from running
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var sw = Stopwatch.StartNew();
+
+                var _bot = Client.CurrentUser;
+
+                uow.DiscordUsers.EnsureCreated(_bot.Id, _bot.Username, _bot.Discriminator, _bot.AvatarId);
 
                 AllGuildConfigs = uow.GuildConfigs.GetAllGuildConfigs(startingGuildIdList).ToImmutableArray();
 
@@ -204,7 +222,7 @@ namespace NadekoBot
             }
             catch (ReflectionTypeLoadException ex)
             {
-                Console.WriteLine(ex.LoaderExceptions[0]);
+                _log.Warn(ex.LoaderExceptions[0]);
                 return Enumerable.Empty<object>();
             }
             var filteredTypes = allTypes
@@ -285,7 +303,7 @@ namespace NadekoBot
             var _ = Task.Run(async () =>
             {
                 GuildConfig gc;
-                using (var uow = _db.UnitOfWork)
+                using (var uow = _db.GetDbContext())
                 {
                     gc = uow.GuildConfigs.ForId(arg.Id);
                 }
@@ -363,13 +381,16 @@ namespace NadekoBot
         {
             try
             {
-                File.WriteAllText("test", "test");
-                File.Delete("test");
+                var rng = new NadekoRandom().Next(100000, 1000000);
+                var str = rng.ToString();
+                File.WriteAllText(str, str);
+                File.Delete(str);
             }
             catch
             {
                 _log.Error("You must run the application as an ADMINISTRATOR.");
-                Console.ReadKey();
+                if (!Console.IsInputRedirected)
+                    Console.ReadKey();
                 Environment.Exit(2);
             }
         }

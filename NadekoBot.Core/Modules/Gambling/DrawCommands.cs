@@ -34,7 +34,7 @@ namespace NadekoBot.Modules.Gambling
                 if (num < 1 || num > 10)
                     throw new ArgumentOutOfRangeException(nameof(num));
 
-                Deck cards = guildId == null ? new Deck() : _allDecks.GetOrAdd(Context.Guild, (s) => new Deck());
+                Deck cards = guildId == null ? new Deck() : _allDecks.GetOrAdd(ctx.Guild, (s) => new Deck());
                 var images = new List<Image<Rgba32>>();
                 var cardObjects = new List<Deck.Card>();
                 for (var i = 0; i < num; i++)
@@ -43,7 +43,7 @@ namespace NadekoBot.Modules.Gambling
                     {
                         try
                         {
-                            await ReplyErrorLocalized("no_more_cards").ConfigureAwait(false);
+                            await ReplyErrorLocalizedAsync("no_more_cards").ConfigureAwait(false);
                         }
                         catch
                         {
@@ -62,7 +62,7 @@ namespace NadekoBot.Modules.Gambling
                         i.Dispose();
                     }
 
-                    var toSend = $"{Format.Bold(Context.User.ToString())}";
+                    var toSend = $"{Format.Bold(ctx.User.ToString())}";
                     if (cardObjects.Count == 5)
                         toSend += $" drew `{Deck.GetHandValue(cardObjects)}`";
 
@@ -82,10 +82,10 @@ namespace NadekoBot.Modules.Gambling
                 if (num > 10)
                     num = 10;
 
-                var (ImageStream, ToSend) = await InternalDraw(num, Context.Guild.Id).ConfigureAwait(false);
+                var (ImageStream, ToSend) = await InternalDraw(num, ctx.Guild.Id).ConfigureAwait(false);
                 using (ImageStream)
                 {
-                    await Context.Channel.SendFileAsync(ImageStream, num + " cards.jpg", ToSend).ConfigureAwait(false);
+                    await ctx.Channel.SendFileAsync(ImageStream, num + " cards.jpg", ToSend).ConfigureAwait(false);
                 }
             }
 
@@ -100,7 +100,7 @@ namespace NadekoBot.Modules.Gambling
                 var (ImageStream, ToSend) = await InternalDraw(num).ConfigureAwait(false);
                 using (ImageStream)
                 {
-                    await Context.Channel.SendFileAsync(ImageStream, num + " cards.jpg", ToSend).ConfigureAwait(false);
+                    await ctx.Channel.SendFileAsync(ImageStream, num + " cards.jpg", ToSend).ConfigureAwait(false);
                 }
             }
 
@@ -108,9 +108,9 @@ namespace NadekoBot.Modules.Gambling
             [RequireContext(ContextType.Guild)]
             public async Task DeckShuffle()
             {
-                //var channel = (ITextChannel)Context.Channel;
+                //var channel = (ITextChannel)ctx.Channel;
 
-                _allDecks.AddOrUpdate(Context.Guild,
+                _allDecks.AddOrUpdate(ctx.Guild,
                         (g) => new Deck(),
                         (g, c) =>
                         {
@@ -118,7 +118,7 @@ namespace NadekoBot.Modules.Gambling
                             return c;
                         });
 
-                await ReplyConfirmLocalized("deck_reshuffled").ConfigureAwait(false);
+                await ReplyConfirmLocalizedAsync("deck_reshuffled").ConfigureAwait(false);
             }
         }
     }

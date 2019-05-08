@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Linq;
-using System.Text.RegularExpressions;
-using Discord;
+﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using NadekoBot.Extensions;
 using NadekoBot.Modules.Administration.Services;
 using NadekoBot.Modules.Music.Services;
+using System;
+using System.Collections.Concurrent;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace NadekoBot.Common.Replacements
 {
@@ -33,10 +33,20 @@ namespace NadekoBot.Common.Replacements
         public ReplacementBuilder WithDefault(ICommandContext ctx) =>
             WithDefault(ctx.User, ctx.Channel, ctx.Guild as SocketGuild, (DiscordSocketClient)ctx.Client);
 
-        public ReplacementBuilder WithClient(DiscordSocketClient client)
+        public ReplacementBuilder WithMention(DiscordSocketClient client)
         {
             /*OBSOLETE*/
             _reps.TryAdd("%mention%", () => $"<@{client.CurrentUser.Id}>");
+            /*NEW*/
+            _reps.TryAdd("%bot.mention%", () => client.CurrentUser.Mention);
+            return this;
+        }
+
+        public ReplacementBuilder WithClient(DiscordSocketClient client)
+        {
+            WithMention(client);
+
+            /*OBSOLETE*/
             _reps.TryAdd("%shardid%", () => client.ShardId.ToString());
             _reps.TryAdd("%time%", () => DateTime.Now.ToString("HH:mm " + TimeZoneInfo.Local.StandardName.GetInitials()));
 
@@ -44,7 +54,6 @@ namespace NadekoBot.Common.Replacements
             _reps.TryAdd("%bot.status%", () => client.Status.ToString());
             _reps.TryAdd("%bot.latency%", () => client.Latency.ToString());
             _reps.TryAdd("%bot.name%", () => client.CurrentUser.Username);
-            _reps.TryAdd("%bot.mention%", () => client.CurrentUser.Mention);
             _reps.TryAdd("%bot.fullname%", () => client.CurrentUser.ToString());
             _reps.TryAdd("%bot.time%", () => DateTime.Now.ToString("HH:mm " + TimeZoneInfo.Local.StandardName.GetInitials()));
             _reps.TryAdd("%bot.discrim%", () => client.CurrentUser.Discriminator);
@@ -104,7 +113,7 @@ namespace NadekoBot.Common.Replacements
             _reps.TryAdd("%channel.mention%", () => (ch as ITextChannel)?.Mention ?? "#" + ch.Name);
             _reps.TryAdd("%channel.name%", () => ch.Name);
             _reps.TryAdd("%channel.id%", () => ch.Id.ToString());
-            _reps.TryAdd("%channel.created%", () => ch.CreatedAt.ToString("HH:mm dd.MM.YYYY"));
+            _reps.TryAdd("%channel.created%", () => ch.CreatedAt.ToString("HH:mm dd.MM.yyyy"));
             _reps.TryAdd("%channel.nsfw%", () => (ch as ITextChannel)?.IsNsfw.ToString() ?? "-");
             _reps.TryAdd("%channel.topic%", () => (ch as ITextChannel)?.Topic ?? "-");
             return this;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Net;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using NadekoBot.Core.Common.TypeReaders.Models;
@@ -43,7 +44,7 @@ namespace NadekoBot.Modules.Administration.Services
 
             int warnings = 1;
             List<WarningPunishment> ps;
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 ps = uow.GuildConfigs.ForId(guildId, set => set.Include(x => x.WarnPunishments))
                     .WarnPunishments;
@@ -55,7 +56,7 @@ namespace NadekoBot.Modules.Administration.Services
 
                 uow.Warnings.Add(warn);
 
-                uow.Complete();
+                uow.SaveChanges();
             }
 
             var p = ps.FirstOrDefault(x => x.Count == warnings);
@@ -107,7 +108,7 @@ namespace NadekoBot.Modules.Administration.Services
 
         public IGrouping<ulong, Warning>[] WarnlogAll(ulong gid)
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 return uow.Warnings.GetForGuild(gid).GroupBy(x => x.UserId).ToArray();
             }
@@ -115,7 +116,7 @@ namespace NadekoBot.Modules.Administration.Services
 
         public Warning[] UserWarnings(ulong gid, ulong userId)
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 return uow.Warnings.ForId(gid, userId);
             }
@@ -124,7 +125,7 @@ namespace NadekoBot.Modules.Administration.Services
         public async Task<bool> WarnClearAsync(ulong guildId, ulong userId, int index, string moderator)
         {
             bool toReturn = true;
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 if (index == 0)
                 {
@@ -134,7 +135,7 @@ namespace NadekoBot.Modules.Administration.Services
                 {
                     toReturn = uow.Warnings.Forgive(guildId, userId, moderator, index - 1);
                 }
-                uow.Complete();
+                uow.SaveChanges();
             }
             return toReturn;
         }
@@ -146,10 +147,12 @@ namespace NadekoBot.Modules.Administration.Services
             if (number <= 0 || (time != null && time.Time > TimeSpan.FromDays(49)))
                 return false;
 
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var ps = uow.GuildConfigs.ForId(guildId, set => set.Include(x => x.WarnPunishments)).WarnPunishments;
-                ps.RemoveAll(x => x.Count == number);
+                var toDelete = ps.Where(x => x.Count == number);
+
+                uow._context.RemoveRange(toDelete);
 
                 ps.Add(new WarningPunishment()
                 {
@@ -157,7 +160,7 @@ namespace NadekoBot.Modules.Administration.Services
                     Punishment = punish,
                     Time = (int?)(time?.Time.TotalMinutes) ?? 0,
                 });
-                uow.Complete();
+                uow.SaveChanges();
             }
             return true;
         }
@@ -167,7 +170,7 @@ namespace NadekoBot.Modules.Administration.Services
             if (number <= 0)
                 return false;
 
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var ps = uow.GuildConfigs.ForId(guildId, set => set.Include(x => x.WarnPunishments)).WarnPunishments;
                 var p = ps.FirstOrDefault(x => x.Count == number);
@@ -175,7 +178,7 @@ namespace NadekoBot.Modules.Administration.Services
                 if (p != null)
                 {
                     uow._context.Remove(p);
-                    uow.Complete();
+                    uow.SaveChanges();
                 }
             }
             return true;
@@ -183,7 +186,7 @@ namespace NadekoBot.Modules.Administration.Services
 
         public WarningPunishment[] WarnPunishList(ulong guildId)
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 return uow.GuildConfigs.ForId(guildId, gc => gc.Include(x => x.WarnPunishments))
                     .WarnPunishments
@@ -225,7 +228,7 @@ namespace NadekoBot.Modules.Administration.Services
                 .Select(x => x.Id.Value)
                 .ToArray();
 
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var bc = uow.BotConfig.GetOrCreate(set => set.Include(x => x.Blacklist));
                 //blacklist the users
@@ -237,7 +240,7 @@ namespace NadekoBot.Modules.Administration.Services
                     }));
                 //clear their currencies
                 uow.DiscordUsers.RemoveFromMany(found.Select(x => x).ToList());
-                uow.Complete();
+                uow.SaveChanges();
             }
 
             return (bans, missing);

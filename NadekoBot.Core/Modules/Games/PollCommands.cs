@@ -24,52 +24,61 @@ namespace NadekoBot.Modules.Games
             }
 
             [NadekoCommand, Usage, Description, Aliases]
-            [RequireUserPermission(GuildPermission.ManageMessages)]
+            [UserPerm(GuildPerm.ManageMessages)]
             [RequireContext(ContextType.Guild)]
-            public async Task Poll([Remainder] string arg)
+            public async Task Poll([Leftover] string arg)
             {
                 if (string.IsNullOrWhiteSpace(arg))
                     return;
 
-                var poll = _service.CreatePoll(Context.Guild.Id,
-                    Context.Channel.Id, arg);
+                var poll = _service.CreatePoll(ctx.Guild.Id,
+                    ctx.Channel.Id, arg);
+                if(poll == null)
+                {
+                    await ReplyErrorLocalizedAsync("poll_invalid_input").ConfigureAwait(false);
+                    return;
+                }
                 if (_service.StartPoll(poll))
-                    await Context.Channel
+                {
+                    await ctx.Channel
                         .EmbedAsync(new EmbedBuilder()
-                            .WithTitle(GetText("poll_created", Context.User.ToString()))
+                            .WithTitle(GetText("poll_created", ctx.User.ToString()))
                             .WithDescription(
                                 Format.Bold(poll.Question) + "\n\n" +
                             string.Join("\n", poll.Answers
                                 .Select(x => $"`{x.Index + 1}.` {Format.Bold(x.Text)}"))))
                         .ConfigureAwait(false);
+                }
                 else
-                    await ReplyErrorLocalized("poll_already_running").ConfigureAwait(false);
+                {
+                    await ReplyErrorLocalizedAsync("poll_already_running").ConfigureAwait(false);
+                }
             }
 
             [NadekoCommand, Usage, Description, Aliases]
-            [RequireUserPermission(GuildPermission.ManageMessages)]
+            [UserPerm(GuildPerm.ManageMessages)]
             [RequireContext(ContextType.Guild)]
             public async Task PollStats()
             {
-                if (!_service.ActivePolls.TryGetValue(Context.Guild.Id, out var pr))
+                if (!_service.ActivePolls.TryGetValue(ctx.Guild.Id, out var pr))
                     return;
 
-                await Context.Channel.EmbedAsync(GetStats(pr.Poll, GetText("current_poll_results"))).ConfigureAwait(false);
+                await ctx.Channel.EmbedAsync(GetStats(pr.Poll, GetText("current_poll_results"))).ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
-            [RequireUserPermission(GuildPermission.ManageMessages)]
+            [UserPerm(GuildPerm.ManageMessages)]
             [RequireContext(ContextType.Guild)]
             public async Task Pollend()
             {
-                var channel = (ITextChannel)Context.Channel;
+                var channel = (ITextChannel)ctx.Channel;
 
                 Poll p;
-                if ((p = _service.StopPoll(Context.Guild.Id)) == null)
+                if ((p = _service.StopPoll(ctx.Guild.Id)) == null)
                     return;
 
                 var embed = GetStats(p, GetText("poll_closed"));
-                await Context.Channel.EmbedAsync(embed)
+                await ctx.Channel.EmbedAsync(embed)
                     .ConfigureAwait(false);
             }
 

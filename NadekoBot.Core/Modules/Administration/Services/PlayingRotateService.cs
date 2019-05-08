@@ -51,7 +51,7 @@ namespace NadekoBot.Modules.Administration.Services
                 {
                     try
                     {
-                        bcp.Reload();
+                        // bcp.Reload();
 
                         var state = (TimerState)objState;
                         if (!BotConfig.RotatingStatuses)
@@ -91,44 +91,43 @@ namespace NadekoBot.Modules.Administration.Services
                 throw new ArgumentOutOfRangeException(nameof(index));
 
             string msg;
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var config = uow.BotConfig.GetOrCreate(set => set.Include(x => x.RotatingStatusMessages));
 
                 if (index >= config.RotatingStatusMessages.Count)
                     return null;
                 msg = config.RotatingStatusMessages[index].Status;
-                config.RotatingStatusMessages.RemoveAt(index);
-                await uow.CompleteAsync();
+                var remove = config.RotatingStatusMessages[index];
+                uow._context.Remove(remove);
+                _bcp.BotConfig.RotatingStatusMessages = config.RotatingStatusMessages;
+                await uow.SaveChangesAsync();
             }
-
-            _bcp.Reload();
 
             return msg;
         }
 
         public async Task AddPlaying(ActivityType t, string status)
         {
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var config = uow.BotConfig.GetOrCreate(set => set.Include(x => x.RotatingStatusMessages));
                 var toAdd = new PlayingStatus { Status = status, Type = t };
                 config.RotatingStatusMessages.Add(toAdd);
-                await uow.CompleteAsync();
+                _bcp.BotConfig.RotatingStatusMessages = config.RotatingStatusMessages;
+                await uow.SaveChangesAsync();
             }
-
-            _bcp.Reload();
         }
 
         public bool ToggleRotatePlaying()
         {
             bool enabled;
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var config = uow.BotConfig.GetOrCreate(set => set);
 
                 enabled = config.RotatingStatuses = !config.RotatingStatuses;
-                uow.Complete();
+                uow.SaveChanges();
             }
             return enabled;
         }

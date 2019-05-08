@@ -679,49 +679,21 @@
         ".prune",
         ".clear"
       ],
-      "Description": "`.prune` removes all Nadeko's messages in the last 100 messages. `.prune X` removes last `X` number of messages from the channel (up to 100). `.prune @Someone` removes all Someone's messages in the last 100 messages. `.prune @Someone X` removes last `X` number of 'Someone's' messages in the channel.",
+      "Description": "`.prune` removes all Nadeko's messages in the last 100 messages. `.prune X` removes last `X` number of messages from the channel (up to 100). `.prune @Someone` removes all Someone's messages in the last 100 messages. `.prune @Someone X` removes last `X` number of 'Someone's' messages in the channel. You can use the `-s` / `--safe` parameter at the end to only prune messages that are not pinned.",
       "Usage": [
         ".prune",
+        ".prune -s",
         ".prune 5",
+        ".prune 5 --safe",
         ".prune @Someone",
-        ".prune @Someone X"
+        ".prune @Someone --safe",
+        ".prune @Someone X",
+        ".prune @Someone X -s"
       ],
       "Submodule": "PruneCommands",
       "Module": "Administration",
       "Options": null,
       "Requirements": []
-    },
-    {
-      "Aliases": [
-        ".slowmode"
-      ],
-      "Description": "Toggles slowmode. Slowmode deletes any excess messages users type over the specified limit of messages per X seconds. To enable, specify a number of messages (-m) each user can send, and an interval in seconds (-s).  Disable by specifying no parameters.",
-      "Usage": [
-        ".slowmode -m 1 -s 5",
-        ".slowmode"
-      ],
-      "Submodule": "SlowModeCommands",
-      "Module": "Administration",
-      "Options": "`--message-count` (`-m`)   Number of messages user can send.  \n`--seconds` (`-s`)   Interval in which the user can send the specified number of messages.  ",
-      "Requirements": [
-        "ManageMessages Server Permission"
-      ]
-    },
-    {
-      "Aliases": [
-        ".slowmodewl"
-      ],
-      "Description": "Ignores a role or a user from the slowmode feature.",
-      "Usage": [
-        ".slowmodewl SomeRole",
-        ".slowmodewl AdminDude"
-      ],
-      "Submodule": "SlowModeCommands",
-      "Module": "Administration",
-      "Options": null,
-      "Requirements": [
-        "ManageMessages Server Permission"
-      ]
     },
     {
       "Aliases": [
@@ -1080,6 +1052,7 @@
       "Module": "Administration",
       "Options": null,
       "Requirements": [
+        "Administrator Server Permission",
         "Bot Owner Only"
       ]
     },
@@ -1095,6 +1068,7 @@
       "Module": "Administration",
       "Options": null,
       "Requirements": [
+        "Administrator Server Permission",
         "Bot Owner Only"
       ]
     },
@@ -1159,6 +1133,7 @@
       "Module": "Administration",
       "Options": null,
       "Requirements": [
+        "Administrator Server Permission",
         "Bot Owner Only"
       ]
     },
@@ -1174,6 +1149,7 @@
       "Module": "Administration",
       "Options": null,
       "Requirements": [
+        "Administrator Server Permission",
         "Bot Owner Only"
       ]
     },
@@ -1458,7 +1434,7 @@
       "Aliases": [
         ".greetmsg"
       ],
-      "Description": "Sets a new join announcement message which will be shown in the server's channel. Type `%user%` if you want to mention the new member. Using it with no message will show the current greet message. You can use embed json from <https://embedbuilder.nadekobot.me/> instead of a regular text, if you want the message to be embedded.",
+      "Description": "Sets a new join announcement message which will be shown in the server's channel. Type `%user%` if you want to mention the new member. Using it with no message will show the current greet message. You can use embed json from <https://eb.nadeko.bot/> instead of a regular text, if you want the message to be embedded.",
       "Usage": [
         ".greetmsg Welcome, %user%."
       ],
@@ -1488,7 +1464,7 @@
       "Aliases": [
         ".greetdmmsg"
       ],
-      "Description": "Sets a new join announcement message which will be sent to the user who joined. Type `%user%` if you want to mention the new member. Using it with no message will show the current DM greet message. You can use embed json from <https://embedbuilder.nadekobot.me> instead of a regular text, if you want the message to be embedded.",
+      "Description": "Sets a new join announcement message which will be sent to the user who joined. Type `%user%` if you want to mention the new member. Using it with no message will show the current DM greet message. You can use embed json from <https://eb.nadeko.bot> instead of a regular text, if you want the message to be embedded.",
       "Usage": [
         ".greetdmmsg Welcome to the server, %user%"
       ],
@@ -1518,7 +1494,7 @@
       "Aliases": [
         ".byemsg"
       ],
-      "Description": "Sets a new leave announcement message. Type `%user%` if you want to show the name the user who left. Type `%id%` to show id. Using this command with no message will show the current bye message. You can use embed json from <https://embedbuilder.nadekobot.me/> instead of a regular text, if you want the message to be embedded.",
+      "Description": "Sets a new leave announcement message. Type `%user%` if you want to show the name the user who left. Type `%id%` to show id. Using this command with no message will show the current bye message. You can use embed json from <https://eb.nadeko.bot/> instead of a regular text, if you want the message to be embedded.",
       "Usage": [
         ".byemsg %user% has left."
       ],
@@ -1779,23 +1755,6 @@
       "Requirements": []
     }
   ],
-  "CryptoCommands": [
-    {
-      "Aliases": [
-        ".crypto",
-        ".c"
-      ],
-      "Description": "Shows basic stats about a cryptocurrency from coinmarketcap.com. You can use either a name or an abbreviation of the currency.",
-      "Usage": [
-        ".c btc",
-        ".c bitcoin"
-      ],
-      "Submodule": "CryptoCommands",
-      "Module": "CryptoCommands",
-      "Options": null,
-      "Requirements": []
-    }
-  ],
   "CustomReactions": [
     {
       "Aliases": [
@@ -1920,6 +1879,21 @@
       "Module": "CustomReactions",
       "Options": null,
       "Requirements": []
+    },
+    {
+      "Aliases": [
+        ".crsreload"
+      ],
+      "Description": "Reloads all custom reactions on all shards. Use this if you've made changes to the database while the bot is running, or used `.deleteunusedcrnq`",
+      "Usage": [
+        ".crsreload"
+      ],
+      "Submodule": "CustomReactions",
+      "Module": "CustomReactions",
+      "Options": null,
+      "Requirements": [
+        "Bot Owner Only"
+      ]
     },
     {
       "Aliases": [
@@ -2429,7 +2403,7 @@
       "Aliases": [
         ".shopadd"
       ],
-      "Description": "Adds an item to the shop by specifying type price and name. Available types are role and list.",
+      "Description": "Adds an item to the shop by specifying type price and name. Available types are role and list. 90% of currency from each purchase will be received by the user who added the item to the shop.",
       "Usage": [
         ".shopadd role 1000 Rich"
       ],
@@ -2761,19 +2735,6 @@
         ".hangmanstop"
       ],
       "Submodule": "HangmanCommands",
-      "Module": "Games",
-      "Options": null,
-      "Requirements": []
-    },
-    {
-      "Aliases": [
-        ".leet"
-      ],
-      "Description": "Converts a text to leetspeak with 6 (1-6) severity levels",
-      "Usage": [
-        ".leet 3 Hello"
-      ],
-      "Submodule": "LeetCommands",
       "Module": "Games",
       "Options": null,
       "Requirements": []
@@ -3701,7 +3662,7 @@
       "Aliases": [
         ".hentai"
       ],
-      "Description": "Shows a hentai image from a random website (gelbooru or danbooru or konachan or atfbooru or yandere) with a given tag. Tag is optional but preferred. Only 1 tag allowed.",
+      "Description": "Shows a hentai image from a random website (gelbooru, danbooru, konachan or yandere) with a given tag. Tag is optional but preferred. Only 1 tag allowed.",
       "Usage": [
         ".hentai yuri"
       ],
@@ -3856,7 +3817,9 @@
       "Submodule": "NSFW",
       "Module": "NSFW",
       "Options": null,
-      "Requirements": []
+      "Requirements": [
+        "ManageMessages Server Permission"
+      ]
     },
     {
       "Aliases": [
@@ -4400,9 +4363,10 @@
       "Aliases": [
         ".say"
       ],
-      "Description": "Bot will send the message you typed in this channel. Supports embeds.",
+      "Description": "Bot will send the message you typed in the specified channel. If you ommit the channel name, it will send the mesasge in the current channel. Supports embeds.",
       "Usage": [
-        ".say hi"
+        ".say hi",
+        ".say #chat hi"
       ],
       "Submodule": "Searches",
       "Module": "Searches",
@@ -4454,8 +4418,9 @@
     },
     {
       "Aliases": [
-        ".imdb",
-        ".omdb"
+        ".movie",
+        ".omdb",
+        ".imdb"
       ],
       "Description": "Queries omdb for movies or series, show first result.",
       "Usage": [
@@ -4526,20 +4491,7 @@
     {
       "Aliases": [
         ".image",
-        ".img"
-      ],
-      "Description": "Pulls the first image found using a search parameter. Use `.rimg` for different results.",
-      "Usage": [
-        ".img cute kitten"
-      ],
-      "Submodule": "Searches",
-      "Module": "Searches",
-      "Options": null,
-      "Requirements": []
-    },
-    {
-      "Aliases": [
-        ".randomimage",
+        ".img",
         ".rimg"
       ],
       "Description": "Pulls a random image using a search parameter.",
@@ -4744,19 +4696,6 @@
     },
     {
       "Aliases": [
-        ".videocall"
-      ],
-      "Description": "Creates a private <http://www.appear.in> video call link for you and other mentioned people. The link is sent to mentioned people via a private message.",
-      "Usage": [
-        ".videocall \"@the First\" \"@Xyz\""
-      ],
-      "Submodule": "Searches",
-      "Module": "Searches",
-      "Options": null,
-      "Requirements": []
-    },
-    {
-      "Aliases": [
         ".avatar",
         ".av"
       ],
@@ -4848,6 +4787,21 @@
         ".mq Shingeki no kyojin"
       ],
       "Submodule": "AnimeSearchCommands",
+      "Module": "Searches",
+      "Options": null,
+      "Requirements": []
+    },
+    {
+      "Aliases": [
+        ".crypto",
+        ".c"
+      ],
+      "Description": "Shows basic stats about a cryptocurrency from coinmarketcap.com. You can use either a name or an abbreviation of the currency.",
+      "Usage": [
+        ".c btc",
+        ".c bitcoin"
+      ],
+      "Submodule": "CryptoCommands",
       "Module": "Searches",
       "Options": null,
       "Requirements": []
@@ -5038,21 +4992,6 @@
     },
     {
       "Aliases": [
-        ".overwatch",
-        ".ow"
-      ],
-      "Description": "Show's basic stats on a player (competitive rank, playtime, level etc) Region codes are: `eu` `us` `cn` `kr`",
-      "Usage": [
-        ".ow us Battletag#1337",
-        ".overwatch eu Battletag#2016"
-      ],
-      "Submodule": "OverwatchCommands",
-      "Module": "Searches",
-      "Options": null,
-      "Requirements": []
-    },
-    {
-      "Aliases": [
         ".pathofexile",
         ".poe"
       ],
@@ -5087,20 +5026,6 @@
       "Description": "Returns the chaos equivalent of a given currency or exchange rate between two currencies.",
       "Usage": [
         ".poec Standard \"Mirror of Kalandra\""
-      ],
-      "Submodule": "PathOfExileCommands",
-      "Module": "Searches",
-      "Options": null,
-      "Requirements": []
-    },
-    {
-      "Aliases": [
-        ".pathofexileitem",
-        ".poei"
-      ],
-      "Description": "Searches for a Path of Exile item from the Path of Exile GamePedia.",
-      "Usage": [
-        ".poei \"Quill Rain\""
       ],
       "Submodule": "PathOfExileCommands",
       "Module": "Searches",
@@ -5776,11 +5701,11 @@
       ],
       "Description": "Creates a new invite which has infinite max uses and never expires.",
       "Usage": [
-        ".crinv"
+        ".invcr"
       ],
       "Submodule": "InviteCommands",
       "Module": "Utility",
-      "Options": "`--max-uses` (`-m`)   Maximum number of times the invite can be used. Default 0 (never).  \n`--unique` (`-u`)   Not setting this flag will result in bot getting the existing invite with the same settings if it exists, instead of creating a new one.  \n`--temporary` (`-t`)   Setting this flag will make the link expire after 24h.  ",
+      "Options": "`--max-uses` (`-m`)   Maximum number of times the invite can be used. Default 0 (never).  \n`--unique` (`-u`)   Not setting this flag will result in bot getting the existing invite with the same settings if it exists, instead of creating a new one.  \n`--temporary` (`-t`)   If this flag is set, the user will be kicked from the guild once they close their client.  \n`--expire` (`-e`)   Time in seconds to expire the invite. Default 0 (no expiry).  ",
       "Requirements": [
         "CreateInstantInvite Channel Permission"
       ]

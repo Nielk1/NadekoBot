@@ -1,12 +1,12 @@
 ﻿using Discord;
 using Discord.Commands;
-using NadekoBot.Extensions;
+using Discord.WebSocket;
 using NadekoBot.Core.Services;
+using NadekoBot.Core.Services.Impl;
+using NadekoBot.Extensions;
 using NLog;
 using System.Globalization;
 using System.Threading.Tasks;
-using Discord.WebSocket;
-using NadekoBot.Core.Services.Impl;
 
 namespace NadekoBot.Modules
 {
@@ -23,7 +23,9 @@ namespace NadekoBot.Modules
         public CommandHandler CmdHandler { get; set; }
         public ILocalization Localization { get; set; }
 
-        public string Prefix => CmdHandler.GetPrefix(Context.Guild);
+        public string Prefix => CmdHandler.GetPrefix(ctx.Guild);
+
+        protected ICommandContext ctx => Context;
 
         protected NadekoTopLevelModule(bool isTopLevelModule = true)
         {
@@ -35,27 +37,27 @@ namespace NadekoBot.Modules
 
         protected override void BeforeExecute(CommandInfo cmd)
         {
-            _cultureInfo = Localization.GetCultureInfo(Context.Guild?.Id);
+            _cultureInfo = Localization.GetCultureInfo(ctx.Guild?.Id);
         }
 
         //public Task<IUserMessage> ReplyConfirmLocalized(string titleKey, string textKey, string url = null, string footer = null)
         //{
         //    var title = NadekoBot.ResponsesResourceManager.GetString(titleKey, cultureInfo);
         //    var text = NadekoBot.ResponsesResourceManager.GetString(textKey, cultureInfo);
-        //    return Context.Channel.SendConfirmAsync(title, text, url, footer);
+        //    return ctx.Channel.SendConfirmAsync(title, text, url, footer);
         //}
 
         //public Task<IUserMessage> ReplyConfirmLocalized(string textKey)
         //{
         //    var text = NadekoBot.ResponsesResourceManager.GetString(textKey, cultureInfo);
-        //    return Context.Channel.SendConfirmAsync(Context.User.Mention + " " + textKey);
+        //    return ctx.Channel.SendConfirmAsync(ctx.User.Mention + " " + textKey);
         //}
 
         //public Task<IUserMessage> ReplyErrorLocalized(string titleKey, string textKey, string url = null, string footer = null)
         //{
         //    var title = NadekoBot.ResponsesResourceManager.GetString(titleKey, cultureInfo);
         //    var text = NadekoBot.ResponsesResourceManager.GetString(textKey, cultureInfo);
-        //    return Context.Channel.SendErrorAsync(title, text, url, footer);
+        //    return ctx.Channel.SendErrorAsync(title, text, url, footer);
         //}
 
         protected string GetText(string key) =>
@@ -64,28 +66,28 @@ namespace NadekoBot.Modules
         protected string GetText(string key, params object[] replacements) =>
             Strings.GetText(key, _cultureInfo, LowerModuleTypeName, replacements);
 
-        public Task<IUserMessage> ErrorLocalized(string textKey, params object[] replacements)
+        public Task<IUserMessage> ErrorLocalizedAsync(string textKey, params object[] replacements)
         {
             var text = GetText(textKey, replacements);
-            return Context.Channel.SendErrorAsync(text);
+            return ctx.Channel.SendErrorAsync(text);
         }
 
-        public Task<IUserMessage> ReplyErrorLocalized(string textKey, params object[] replacements)
+        public Task<IUserMessage> ReplyErrorLocalizedAsync(string textKey, params object[] replacements)
         {
             var text = GetText(textKey, replacements);
-            return Context.Channel.SendErrorAsync(Format.Bold(Context.User.ToString()) + " " + text);
+            return ctx.Channel.SendErrorAsync(Format.Bold(ctx.User.ToString()) + " " + text);
         }
 
-        public Task<IUserMessage> ConfirmLocalized(string textKey, params object[] replacements)
+        public Task<IUserMessage> ConfirmLocalizedAsync(string textKey, params object[] replacements)
         {
             var text = GetText(textKey, replacements);
-            return Context.Channel.SendConfirmAsync(text);
+            return ctx.Channel.SendConfirmAsync(text);
         }
 
-        public Task<IUserMessage> ReplyConfirmLocalized(string textKey, params object[] replacements)
+        public Task<IUserMessage> ReplyConfirmLocalizedAsync(string textKey, params object[] replacements)
         {
             var text = GetText(textKey, replacements);
-            return Context.Channel.SendConfirmAsync(Format.Bold(Context.User.ToString()) + " " + text);
+            return ctx.Channel.SendConfirmAsync(Format.Bold(ctx.User.ToString()) + " " + text);
         }
 
         public async Task<bool> PromptUserConfirmAsync(EmbedBuilder embed)
@@ -93,10 +95,10 @@ namespace NadekoBot.Modules
             embed.WithOkColor()
                 .WithFooter("yes/no");
 
-            var msg = await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
+            var msg = await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
             try
             {
-                var input = await GetUserInputAsync(Context.User.Id, Context.Channel.Id).ConfigureAwait(false);
+                var input = await GetUserInputAsync(ctx.User.Id, ctx.Channel.Id).ConfigureAwait(false);
                 input = input?.ToUpperInvariant();
 
                 if (input != "YES" && input != "Y")
@@ -111,12 +113,12 @@ namespace NadekoBot.Modules
                 var _ = Task.Run(() => msg.DeleteAsync());
             }
         }
-        
+
         // TypeConverter typeConverter = TypeDescriptor.GetConverter(propType); ?
         public async Task<string> GetUserInputAsync(ulong userId, ulong channelId)
         {
             var userInputTask = new TaskCompletionSource<string>();
-            var dsc = (DiscordSocketClient)Context.Client;
+            var dsc = (DiscordSocketClient)ctx.Client;
             try
             {
                 dsc.MessageReceived += MessageReceived;
@@ -155,7 +157,7 @@ namespace NadekoBot.Modules
             }
         }
     }
-    
+
     public abstract class NadekoTopLevelModule<TService> : NadekoTopLevelModule where TService : INService
     {
         public TService _service { get; set; }

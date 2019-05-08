@@ -3,10 +3,9 @@ using Discord.Commands;
 using NadekoBot.Common.Attributes;
 using NadekoBot.Core.Modules.Searches.Services;
 using NadekoBot.Extensions;
-using NadekoBot.Modules;
 using System.Threading.Tasks;
 
-namespace NadekoBot.Core.Modules.Searches
+namespace NadekoBot.Modules.Searches
 {
     public partial class Searches
     {
@@ -37,12 +36,12 @@ namespace NadekoBot.Core.Modules.Searches
 
                 if (crypto == null)
                 {
-                    await ReplyErrorLocalized("crypto_not_found").ConfigureAwait(false);
+                    await ReplyErrorLocalizedAsync("crypto_not_found").ConfigureAwait(false);
                     return;
                 }
 
 
-                await Context.Channel.EmbedAsync(new EmbedBuilder()
+                await ctx.Channel.EmbedAsync(new EmbedBuilder()
                     .WithOkColor()
                     .WithTitle($"{crypto.Name} ({crypto.Symbol})")
                     .WithUrl($"https://coinmarketcap.com/currencies/{crypto.Website_Slug}/")

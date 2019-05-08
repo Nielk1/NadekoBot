@@ -1,15 +1,15 @@
 ﻿#if !GLOBAL_NADEKO
 using Discord;
 using Discord.Commands;
-using NadekoBot.Extensions;
-using NadekoBot.Core.Services.Database.Models;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using NadekoBot.Common;
 using NadekoBot.Common.Attributes;
 using NadekoBot.Common.TypeReaders.Models;
+using NadekoBot.Core.Services.Database.Models;
+using NadekoBot.Extensions;
 using NadekoBot.Modules.Administration.Services;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using static NadekoBot.Modules.Administration.Services.LogCommandService;
 
 namespace NadekoBot.Modules.Administration
@@ -28,40 +28,40 @@ namespace NadekoBot.Modules.Administration
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
+            [UserPerm(GuildPerm.Administrator)]
             [OwnerOnly]
             public async Task LogServer(PermissionAction action)
             {
-                await _service.LogServer(Context.Guild.Id, Context.Channel.Id, action.Value).ConfigureAwait(false);
+                await _service.LogServer(ctx.Guild.Id, ctx.Channel.Id, action.Value).ConfigureAwait(false);
                 if (action.Value)
-                    await ReplyConfirmLocalized("log_all").ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("log_all").ConfigureAwait(false);
                 else
-                    await ReplyConfirmLocalized("log_disabled").ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("log_disabled").ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
+            [UserPerm(GuildPerm.Administrator)]
             [OwnerOnly]
             public async Task LogIgnore()
             {
-                var channel = (ITextChannel)Context.Channel;
+                var channel = (ITextChannel)ctx.Channel;
 
-                var removed = _service.LogIgnore(Context.Guild.Id, Context.Channel.Id);
+                var removed = _service.LogIgnore(ctx.Guild.Id, ctx.Channel.Id);
 
-                if (removed)
-                    await ReplyConfirmLocalized("log_ignore", Format.Bold(channel.Mention + "(" + channel.Id + ")")).ConfigureAwait(false);
+                if (!removed)
+                    await ReplyConfirmLocalizedAsync("log_ignore", Format.Bold(channel.Mention + "(" + channel.Id + ")")).ConfigureAwait(false);
                 else
-                    await ReplyConfirmLocalized("log_not_ignore", Format.Bold(channel.Mention + "(" + channel.Id + ")")).ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("log_not_ignore", Format.Bold(channel.Mention + "(" + channel.Id + ")")).ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
+            [UserPerm(GuildPerm.Administrator)]
             [OwnerOnly]
             public async Task LogEvents()
             {
-                _service.GuildLogSettings.TryGetValue(Context.Guild.Id, out LogSetting l);
+                _service.GuildLogSettings.TryGetValue(ctx.Guild.Id, out LogSetting l);
                 var str = string.Join("\n", Enum.GetNames(typeof(LogType))
                     .Select(x =>
                     {
@@ -71,7 +71,7 @@ namespace NadekoBot.Modules.Administration
                         return Format.Bold(x);
                     }));
 
-                await Context.Channel.SendConfirmAsync(Format.Bold(GetText("log_events")) + "\n" +
+                await ctx.Channel.SendConfirmAsync(Format.Bold(GetText("log_events")) + "\n" +
                     str)
                     .ConfigureAwait(false);
             }
@@ -117,16 +117,16 @@ namespace NadekoBot.Modules.Administration
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
+            [UserPerm(GuildPerm.Administrator)]
             [OwnerOnly]
             public async Task Log(LogType type)
             {
-                var val = _service.Log(Context.Guild.Id, Context.Channel.Id, type);
+                var val = _service.Log(ctx.Guild.Id, ctx.Channel.Id, type);
 
                 if (val)
-                    await ReplyConfirmLocalized("log", Format.Bold(type.ToString())).ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("log", Format.Bold(type.ToString())).ConfigureAwait(false);
                 else
-                    await ReplyConfirmLocalized("log_stop", Format.Bold(type.ToString())).ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("log_stop", Format.Bold(type.ToString())).ConfigureAwait(false);
             }
         }
     }

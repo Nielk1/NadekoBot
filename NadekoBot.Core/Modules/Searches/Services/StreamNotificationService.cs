@@ -23,8 +23,9 @@ namespace NadekoBot.Modules.Searches.Services
 {
     public class StreamNotificationService : INService
     {
+#if !GLOBAL_NADEKO
         private bool _firstStreamNotifPass = true;
-
+#endif
         private readonly DbService _db;
         private readonly DiscordSocketClient _client;
         private readonly NadekoStrings _strings;
@@ -35,7 +36,8 @@ namespace NadekoBot.Modules.Searches.Services
         private readonly Random _rng = new NadekoRandom();
         private readonly ConcurrentDictionary<
             (FollowedStream.FType Type, string Username),
-            ConcurrentHashSet<(ulong GuildId, FollowedStream fs)>> _followedStreams;
+            ConcurrentHashSet<(ulong GuildId, FollowedStream fs)>> _followedStreams 
+                = new ConcurrentDictionary<(FollowedStream.FType Type, string Username), ConcurrentHashSet<(ulong GuildId, FollowedStream fs)>>();
         private readonly ConcurrentHashSet<ulong> _yesOffline = new ConcurrentHashSet<ulong>();
 
         public StreamNotificationService(NadekoBot bot, DbService db, DiscordSocketClient client,
@@ -62,7 +64,6 @@ namespace NadekoBot.Modules.Searches.Services
                 .Select(x => x.GuildId));
 
             _cache.SubscribeToStreamUpdates(OnStreamsUpdated);
-
             if (_client.ShardId == 0)
             {
                 var _ = Task.Run(async () =>
@@ -81,11 +82,11 @@ namespace NadekoBot.Modules.Searches.Services
                             await _cache.ClearAllStreamData().ConfigureAwait(false);
                             // get a list of streams which are followed right now.
                             IEnumerable<FollowedStream> fss;
-                            using (var uow = _db.UnitOfWork)
+                            using (var uow = _db.GetDbContext())
                             {
                                 fss = uow.GuildConfigs.GetFollowedStreams()
                                     .Distinct(fs => (fs.Type, fs.Username.ToLowerInvariant()));
-                                uow.Complete();
+                                uow.SaveChanges();
                             }
                             // get new statuses for those streams
                             var newStatuses = (await Task.WhenAll(fss.Select(f => GetStreamStatus(f.Type, f.Username, false))).ConfigureAwait(false))
@@ -166,12 +167,12 @@ namespace NadekoBot.Modules.Searches.Services
         public int ClearAllStreams(ulong guildId)
         {
             int count;
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var gc = uow.GuildConfigs.ForId(guildId, set => set.Include(x => x.FollowedStreams));
                 count = gc.FollowedStreams.Count;
                 gc.FollowedStreams.Clear();
-                uow.Complete();
+                uow.SaveChanges();
             }
             return count;
         }
@@ -245,7 +246,7 @@ namespace NadekoBot.Modules.Searches.Services
         {
             name = name.ToLowerInvariant();
             IEnumerable<FollowedStream> streams;
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 streams = uow.GuildConfigs
                     .ForId(guildId, set => set.Include(x => x.FollowedStreams))
@@ -257,7 +258,7 @@ namespace NadekoBot.Modules.Searches.Services
 
                 stream.Message = message;
 
-                uow.Complete();
+                uow.SaveChanges();
             }
             var newVal = new ConcurrentHashSet<(ulong GuildId, FollowedStream fs)>(streams.Select(x => (x.GuildId, x)));
             _followedStreams.AddOrUpdate((type, name),
@@ -269,13 +270,13 @@ namespace NadekoBot.Modules.Searches.Services
         public bool ToggleStreamOffline(ulong guildId)
         {
             bool val;
-            using (var uow = _db.UnitOfWork)
+            using (var uow = _db.GetDbContext())
             {
                 var config = uow.GuildConfigs
                     .ForId(guildId, set => set);
 
                 val = config.NotifyStreamOffline = !config.NotifyStreamOffline;
-                uow.Complete();
+                uow.SaveChanges();
             }
             if (val)
             {

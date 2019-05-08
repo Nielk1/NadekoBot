@@ -17,7 +17,7 @@ namespace NadekoBot.Modules.Searches
         public class AnimeSearchCommands : NadekoSubmodule<AnimeSearchService>
         {
             [NadekoCommand, Usage, Description, Aliases]
-            public async Task Novel([Remainder] string query)
+            public async Task Novel([Leftover] string query)
             {
                 if (string.IsNullOrWhiteSpace(query))
                     return;
@@ -26,11 +26,12 @@ namespace NadekoBot.Modules.Searches
 
                 if (novelData == null)
                 {
-                    await ReplyErrorLocalized("failed_finding_novel").ConfigureAwait(false);
+                    await ReplyErrorLocalizedAsync("failed_finding_novel").ConfigureAwait(false);
                     return;
                 }
 
-                var embed = new EmbedBuilder().WithColor(NadekoBot.OkColor)
+                var embed = new EmbedBuilder()
+                    .WithOkColor()
                     .WithDescription(novelData.Description.Replace("<br>", Environment.NewLine, StringComparison.InvariantCulture))
                     .WithTitle(novelData.Title)
                     .WithUrl(novelData.Link)
@@ -39,12 +40,12 @@ namespace NadekoBot.Modules.Searches
                     .AddField(efb => efb.WithName(GetText("status")).WithValue(novelData.Status).WithIsInline(true))
                     .AddField(efb => efb.WithName(GetText("genres")).WithValue(string.Join(" ", novelData.Genres.Any() ? novelData.Genres : new[] { "none" })).WithIsInline(true))
                     .WithFooter(efb => efb.WithText(GetText("score") + " " + novelData.Score));
-                await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
+                await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [Priority(0)]
-            public async Task Mal([Remainder] string name)
+            public async Task Mal([Leftover] string name)
             {
                 if (string.IsNullOrWhiteSpace(name))
                     return;
@@ -96,8 +97,7 @@ namespace NadekoBot.Modules.Searches
                         .AddField(efb => efb.WithName(MalInfoToEmoji(info[1].Item1) + " " + info[1].Item1).WithValue(info[1].Item2.TrimTo(20)).WithIsInline(true));
                     if (info.Count > 2)
                         embed.AddField(efb => efb.WithName(MalInfoToEmoji(info[2].Item1) + " " + info[2].Item1).WithValue(info[2].Item2.TrimTo(20)).WithIsInline(true));
-                    //if(info.Count > 3)
-                    //    embed.AddField(efb => efb.WithName(MalInfoToEmoji(info[3].Item1) + " " + info[3].Item1).WithValue(info[3].Item2).WithIsInline(true))
+
                     embed
                         .WithDescription($@"
 ** https://myanimelist.net/animelist/{ name } **
@@ -105,20 +105,11 @@ namespace NadekoBot.Modules.Searches
 **{GetText("top_3_fav_anime")}**
 {favAnime}"
 
-    //**[Manga List](https://myanimelist.net/mangalist/{name})**
-    //💚`Reading:` {stats[5]}
-    //💙`Completed:` {stats[6]}
-    //💔`Dropped:` {stats[8]}
-    //⚪`Plan to read:` {stats[9]}
-
-    //**Top 3 Favorite Manga:**
-    //{favManga}"
-
     )
                         .WithUrl(fullQueryLink)
                         .WithImageUrl(imageUrl);
 
-                    await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
+                    await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
                 }
             }
 
@@ -146,7 +137,7 @@ namespace NadekoBot.Modules.Searches
             public Task Mal(IGuildUser usr) => Mal(usr.Username);
 
             [NadekoCommand, Usage, Description, Aliases]
-            public async Task Anime([Remainder] string query)
+            public async Task Anime([Leftover] string query)
             {
                 if (string.IsNullOrWhiteSpace(query))
                     return;
@@ -155,11 +146,12 @@ namespace NadekoBot.Modules.Searches
 
                 if (animeData == null)
                 {
-                    await ReplyErrorLocalized("failed_finding_anime").ConfigureAwait(false);
+                    await ReplyErrorLocalizedAsync("failed_finding_anime").ConfigureAwait(false);
                     return;
                 }
 
-                var embed = new EmbedBuilder().WithColor(NadekoBot.OkColor)
+                var embed = new EmbedBuilder()
+                    .WithOkColor()
                     .WithDescription(animeData.Synopsis.Replace("<br>", Environment.NewLine, StringComparison.InvariantCulture))
                     .WithTitle(animeData.TitleEnglish)
                     .WithUrl(animeData.Link)
@@ -168,12 +160,12 @@ namespace NadekoBot.Modules.Searches
                     .AddField(efb => efb.WithName(GetText("status")).WithValue(animeData.AiringStatus.ToString()).WithIsInline(true))
                     .AddField(efb => efb.WithName(GetText("genres")).WithValue(string.Join(",\n", animeData.Genres.Any() ? animeData.Genres : new[] { "none" })).WithIsInline(true))
                     .WithFooter(efb => efb.WithText(GetText("score") + " " + animeData.AverageScore + " / 100"));
-                await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
+                await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Manga([Remainder] string query)
+            public async Task Manga([Leftover] string query)
             {
                 if (string.IsNullOrWhiteSpace(query))
                     return;
@@ -182,11 +174,12 @@ namespace NadekoBot.Modules.Searches
 
                 if (mangaData == null)
                 {
-                    await ReplyErrorLocalized("failed_finding_manga").ConfigureAwait(false);
+                    await ReplyErrorLocalizedAsync("failed_finding_manga").ConfigureAwait(false);
                     return;
                 }
 
-                var embed = new EmbedBuilder().WithColor(NadekoBot.OkColor)
+                var embed = new EmbedBuilder()
+                    .WithOkColor()
                     .WithDescription(mangaData.Synopsis.Replace("<br>", Environment.NewLine, StringComparison.InvariantCulture))
                     .WithTitle(mangaData.TitleEnglish)
                     .WithUrl(mangaData.Link)
@@ -196,7 +189,7 @@ namespace NadekoBot.Modules.Searches
                     .AddField(efb => efb.WithName(GetText("genres")).WithValue(string.Join(",\n", mangaData.Genres.Any() ? mangaData.Genres : new[] { "none" })).WithIsInline(true))
                     .WithFooter(efb => efb.WithText(GetText("score") + " " + mangaData.AverageScore + " / 100"));
 
-                await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
+                await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
             }
         }
     }

@@ -51,14 +51,14 @@ namespace NadekoBot.Modules.Administration
             [Priority(0)]
             public async Task LanguageSet()
             {
-                var cul = Localization.GetCultureInfo(Context.Guild);
-                await ReplyConfirmLocalized("lang_set_show", Format.Bold(cul.ToString()), Format.Bold(cul.NativeName))
+                var cul = Localization.GetCultureInfo(ctx.Guild);
+                await ReplyConfirmLocalizedAsync("lang_set_show", Format.Bold(cul.ToString()), Format.Bold(cul.NativeName))
                     .ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            [RequireUserPermission(GuildPermission.Administrator)]
+            [UserPerm(GuildPerm.Administrator)]
             [Priority(1)]
             public async Task LanguageSet(string name)
             {
@@ -67,20 +67,20 @@ namespace NadekoBot.Modules.Administration
                     CultureInfo ci;
                     if (name.Trim().ToLowerInvariant() == "default")
                     {
-                        Localization.RemoveGuildCulture(Context.Guild);
+                        Localization.RemoveGuildCulture(ctx.Guild);
                         ci = Localization.DefaultCultureInfo;
                     }
                     else
                     {
                         ci = new CultureInfo(name);
-                        Localization.SetGuildCulture(Context.Guild, ci);
+                        Localization.SetGuildCulture(ctx.Guild, ci);
                     }
 
-                    await ReplyConfirmLocalized("lang_set", Format.Bold(ci.ToString()), Format.Bold(ci.NativeName)).ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("lang_set", Format.Bold(ci.ToString()), Format.Bold(ci.NativeName)).ConfigureAwait(false);
                 }
                 catch(Exception)
                 {
-                    await ReplyErrorLocalized("lang_set_fail").ConfigureAwait(false);
+                    await ReplyErrorLocalizedAsync("lang_set_fail").ConfigureAwait(false);
                 }
             }
 
@@ -88,7 +88,7 @@ namespace NadekoBot.Modules.Administration
             public async Task LanguageSetDefault()
             {
                 var cul = Localization.DefaultCultureInfo;
-                await ReplyConfirmLocalized("lang_set_bot_show", cul, cul.NativeName).ConfigureAwait(false);
+                await ReplyConfirmLocalizedAsync("lang_set_bot_show", cul, cul.NativeName).ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
@@ -108,18 +108,18 @@ namespace NadekoBot.Modules.Administration
                         ci = new CultureInfo(name);
                         Localization.SetDefaultCulture(ci);
                     }
-                    await ReplyConfirmLocalized("lang_set_bot", Format.Bold(ci.ToString()), Format.Bold(ci.NativeName)).ConfigureAwait(false);
+                    await ReplyConfirmLocalizedAsync("lang_set_bot", Format.Bold(ci.ToString()), Format.Bold(ci.NativeName)).ConfigureAwait(false);
                 }
                 catch (Exception)
                 {
-                    await ReplyErrorLocalized("lang_set_fail").ConfigureAwait(false);
+                    await ReplyErrorLocalizedAsync("lang_set_fail").ConfigureAwait(false);
                 }
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             public async Task LanguagesList()
             {
-                await Context.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
+                await ctx.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
                     .WithTitle(GetText("lang_list"))
                     .WithDescription(string.Join("\n",
                         supportedLocales.Select(x => $"{Format.Code(x.Key), -10} => {x.Value}")))).ConfigureAwait(false);

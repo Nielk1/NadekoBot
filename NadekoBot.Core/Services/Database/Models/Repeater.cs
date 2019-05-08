@@ -30,11 +30,15 @@ namespace NadekoBot.Core.Services.Database.Models
             {
                 if (Interval < 1)
                     Interval = 5;
+
+                if (Interval >= 25001)
+                    Interval = 25001;
             }
         }
 
         public ulong GuildId { get; set; }
         public ulong ChannelId { get; set; }
+        public ulong? LastMessageId { get; set; }
         public string Message { get; set; }
         public TimeSpan Interval { get; set; }
         public TimeSpan? StartTimeOfDay { get; set; }

@@ -33,6 +33,7 @@ namespace NadekoBot.Core.Services
         string VotesToken { get; }
         string BotListToken { get; }
         string TwitchClientId { get; }
+        string RedisOptions { get; }
     }
 
     public class RestartConfig

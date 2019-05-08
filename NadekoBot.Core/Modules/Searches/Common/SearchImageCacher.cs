@@ -1,60 +1,75 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using NadekoBot.Extensions;
+using Newtonsoft.Json;
+using NLog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-using NadekoBot.Common;
-using NadekoBot.Extensions;
-using Newtonsoft.Json;
-using NLog;
 
 namespace NadekoBot.Modules.Searches.Common
 {
     public class SearchImageCacher
     {
-        private readonly NadekoRandom _rng;
-        private readonly ConcurrentDictionary<DapiSearchType, SemaphoreSlim> _locks = new ConcurrentDictionary<DapiSearchType, SemaphoreSlim>();
-
+        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+        private readonly HttpClient _http;
+        private readonly Random _rng;
         private readonly SortedSet<ImageCacherObject> _cache;
         private readonly Logger _log;
-        private readonly IHttpClientFactory _httpFactory;
+        private static readonly List<string> defaultTagBlacklist = new List<string>() {
+            "loli",
+            "lolicon",
+            "shota"
+        };
 
-        public SearchImageCacher(IHttpClientFactory factory)
+        public SearchImageCacher(IHttpClientFactory http)
         {
-            _log = LogManager.GetCurrentClassLogger();
-            _rng = new NadekoRandom();
+            _http = http.CreateClient();
+            _http.AddFakeHeaders();
+            _rng = new Random();
             _cache = new SortedSet<ImageCacherObject>();
-            _httpFactory = factory;
+            _log = LogManager.GetCurrentClassLogger();
         }
 
-        public async Task<ImageCacherObject> GetImage(string tag, bool forceExplicit, DapiSearchType type,
+        public async Task<ImageCacherObject> GetImage(string[] tags, bool forceExplicit, DapiSearchType type,
             HashSet<string> blacklistedTags = null)
         {
-            tag = tag?.ToLowerInvariant();
+            tags = tags.Select(tag => tag?.ToLowerInvariant()).ToArray();
 
             blacklistedTags = blacklistedTags ?? new HashSet<string>();
 
-            if (type == DapiSearchType.E621)
-                tag = tag?.Replace("yuri", "female/female", StringComparison.InvariantCulture);
+            foreach (var item in defaultTagBlacklist)
+            {
+                blacklistedTags.Add(item);
+            }
 
-            var _lock = GetLock(type);
+            blacklistedTags = blacklistedTags.Select(t => t.ToLowerInvariant()).ToHashSet();
+
+            if (tags.Any(x => blacklistedTags.Contains(x)))
+            {
+                // todo localize blacklisted_tag (already exists)
+                throw new Exception("One of the specified tags is blacklisted");
+            }
+
+            if (type == DapiSearchType.E621)
+                tags = tags.Select(tag => tag?.Replace("yuri", "female/female", StringComparison.InvariantCulture))
+                    .ToArray();
+
             await _lock.WaitAsync().ConfigureAwait(false);
             try
             {
                 ImageCacherObject[] imgs;
-                if (!string.IsNullOrWhiteSpace(tag))
+                if (tags.Any())
                 {
-                    imgs = _cache.Where(x => x.Tags.IsSupersetOf(tag.Split('+')) && x.SearchType == type && (!forceExplicit || x.Rating == "e")).ToArray();
+                    imgs = _cache.Where(x => x.Tags.IsSupersetOf(tags) && x.SearchType == type && (!forceExplicit || x.Rating == "e")).ToArray();
                 }
                 else
                 {
-                    tag = null;
                     imgs = _cache.Where(x => x.SearchType == type).ToArray();
                 }
-                imgs = imgs.Where(x => x.Tags.All(t => !blacklistedTags.Contains(t))).ToArray();
+                imgs = imgs.Where(x => x.Tags.All(t => !blacklistedTags.Contains(t.ToLowerInvariant()))).ToArray();
                 ImageCacherObject img;
                 if (imgs.Length == 0)
                     img = null;
@@ -68,20 +83,18 @@ namespace NadekoBot.Modules.Searches.Common
                 }
                 else
                 {
-                    var images = await DownloadImages(tag, forceExplicit, type).ConfigureAwait(false);
+                    var images = await DownloadImagesAsync(tags, forceExplicit, type).ConfigureAwait(false);
                     images = images
-                        .Where(x => x.Tags.All(t => !blacklistedTags.Contains(t)))
+                        .Where(x => x.Tags.All(t => !blacklistedTags.Contains(t.ToLowerInvariant())))
                         .ToArray();
                     if (images.Length == 0)
                         return null;
                     var toReturn = images[_rng.Next(images.Length)];
-#if !GLOBAL_NADEKO
                     foreach (var dledImg in images)
                     {
                         if (dledImg != toReturn)
                             _cache.Add(dledImg);
                     }
-#endif
                     return toReturn;
                 }
             }
@@ -91,21 +104,20 @@ namespace NadekoBot.Modules.Searches.Common
             }
         }
 
-        private SemaphoreSlim GetLock(DapiSearchType type)
+        public async Task<ImageCacherObject[]> DownloadImagesAsync(string[] tags, bool isExplicit, DapiSearchType type)
         {
-            return _locks.GetOrAdd(type, _ => new SemaphoreSlim(1, 1));
-        }
-
-        public async Task<ImageCacherObject[]> DownloadImages(string tag, bool isExplicit, DapiSearchType type)
-        {
-            tag = tag?.Replace(" ", "_", StringComparison.InvariantCulture).ToLowerInvariant();
+            isExplicit = type == DapiSearchType.Safebooru
+                ? false
+                : isExplicit;
+            var tag = "";
+            tag += string.Join('+', tags.Select(x => x.Replace(" ", "_", StringComparison.InvariantCulture).ToLowerInvariant()));
             if (isExplicit)
                 tag = "rating%3Aexplicit+" + tag;
             var website = "";
             switch (type)
             {
                 case DapiSearchType.Safebooru:
-                    website = $"https://safebooru.org/index.php?page=dapi&s=post&q=index&limit=1000&tags={tag}";
+                    website = $"https://safebooru.org/index.php?page=dapi&s=post&q=index&limit=1000&tags={tag}&json=1";
                     break;
                 case DapiSearchType.E621:
                     website = $"https://e621.net/post/index.json?limit=1000&tags={tag}";
@@ -135,35 +147,38 @@ namespace NadekoBot.Modules.Searches.Common
                 if (type == DapiSearchType.Konachan || type == DapiSearchType.Yandere ||
                     type == DapiSearchType.E621 || type == DapiSearchType.Danbooru)
                 {
-                    using (var http = _httpFactory.CreateClient().AddFakeHeaders())
-                    {
-                        var data = await http.GetStringAsync(website).ConfigureAwait(false);
-                        return JsonConvert.DeserializeObject<DapiImageObject[]>(data)
-                            .Where(x => x.FileUrl != null)
-                            .Select(x => new ImageCacherObject(x, type))
-                            .ToArray();
-                    }
+                    var data = await _http.GetStringAsync(website).ConfigureAwait(false);
+                    return JsonConvert.DeserializeObject<DapiImageObject[]>(data)
+                        .Where(x => x.FileUrl != null)
+                        .Select(x => new ImageCacherObject(x, type))
+                        .ToArray();
                 }
 
                 if (type == DapiSearchType.Derpibooru)
                 {
-                    using (var http = _httpFactory.CreateClient().AddFakeHeaders())
-                    {
-                        var data = await http.GetStringAsync(website).ConfigureAwait(false);
-                        return JsonConvert.DeserializeObject<DerpiContainer>(data)
-                            .Search
-                            .Where(x => !string.IsNullOrWhiteSpace(x.Image))
-                            .Select(x => new ImageCacherObject("https:" + x.Image,
-                                type, x.Tags, x.Score))
-                            .ToArray();
-                    }
+                    var data = await _http.GetStringAsync(website).ConfigureAwait(false);
+                    return JsonConvert.DeserializeObject<DerpiContainer>(data)
+                        .Search
+                        .Where(x => !string.IsNullOrWhiteSpace(x.Image))
+                        .Select(x => new ImageCacherObject("https:" + x.Image,
+                            type, x.Tags, x.Score))
+                        .ToArray();
+                }
+
+                if (type == DapiSearchType.Safebooru)
+                {
+                    var data = await _http.GetStringAsync(website).ConfigureAwait(false);
+                    return JsonConvert.DeserializeObject<SafebooruElement[]>(data)
+                        .Select(x => new ImageCacherObject(x.FileUrl, type, x.Tags, x.Rating))
+                        .ToArray();
                 }
 
                 return (await LoadXmlAsync(website, type).ConfigureAwait(false)).ToArray();
             }
             catch (Exception ex)
             {
-                _log.Warn(ex.Message);
+                _log.Warn("Error downloading an image: {Message}", ex.Message);
+                _log.Warn(ex);
                 return Array.Empty<ImageCacherObject>();
             }
         }
@@ -171,8 +186,7 @@ namespace NadekoBot.Modules.Searches.Common
         private async Task<ImageCacherObject[]> LoadXmlAsync(string website, DapiSearchType type)
         {
             var list = new List<ImageCacherObject>();
-            using (var http = _httpFactory.CreateClient().AddFakeHeaders())
-            using (var stream = await http.GetStreamAsync(website).ConfigureAwait(false))
+            using (var stream = await _http.GetStreamAsync(website).ConfigureAwait(false))
             using (var reader = XmlReader.Create(stream, new XmlReaderSettings()
             {
                 Async = true,
@@ -202,46 +216,6 @@ namespace NadekoBot.Modules.Searches.Common
         }
     }
 
-    public class ImageCacherObject : IComparable<ImageCacherObject>
-    {
-        public DapiSearchType SearchType { get; }
-        public string FileUrl { get; }
-        public HashSet<string> Tags { get; }
-        public string Rating { get; }
-
-        public ImageCacherObject(DapiImageObject obj, DapiSearchType type)
-        {
-            if (type == DapiSearchType.Danbooru && !Uri.IsWellFormedUriString(obj.FileUrl, UriKind.Absolute))
-            {
-                this.FileUrl = "https://danbooru.donmai.us" + obj.FileUrl;
-            }
-            else
-            {
-                this.FileUrl = obj.FileUrl.StartsWith("http", StringComparison.InvariantCulture) ? obj.FileUrl : "https:" + obj.FileUrl;
-            }
-            this.SearchType = type;
-            this.Rating = obj.Rating;
-            this.Tags = new HashSet<string>((obj.Tags ?? obj.TagString).Split(' '));
-        }
-
-        public ImageCacherObject(string url, DapiSearchType type, string tags, string rating)
-        {
-            this.SearchType = type;
-            this.FileUrl = url;
-            this.Tags = new HashSet<string>(tags.Split(' '));
-            this.Rating = rating;
-        }
-
-        public override string ToString()
-        {
-            return FileUrl;
-        }
-
-        public int CompareTo(ImageCacherObject other)
-        {
-            return string.Compare(FileUrl, other.FileUrl, StringComparison.InvariantCulture);
-        }
-    }
 
     public class DapiImageObject
     {
@@ -275,5 +249,15 @@ namespace NadekoBot.Modules.Searches.Common
         Rule34,
         Yandere,
         Danbooru,
+    }
+    public class SafebooruElement
+    {
+        public string Directory { get; set; }
+        public string Image { get; set; }
+
+
+        public string FileUrl => $"https://safebooru.org/images/{Directory}/{Image}";
+        public string Rating { get; set; }
+        public string Tags { get; set; }
     }
 }
