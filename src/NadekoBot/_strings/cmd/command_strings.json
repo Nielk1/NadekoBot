@@ -2052,6 +2052,13 @@
       "{0}xkcd latest"
     ]
   },
+  "inspiro": {
+    "Cmd": "inspiro",
+    "Desc": "Show an inspirational quote from InspiroBot.",
+    "Usage": [
+      "{0}inspiro"
+    ]
+  },
   "placelist": {
     "Cmd": "placelist",
     "Desc": "Shows the list of available tags for the `{0}place` command.",
