@@ -21,7 +21,7 @@ namespace NadekoBot.Modules.Utility
                 var units = _service.Units;
                 var res = units.GroupBy(x => x.UnitType)
                                .Aggregate(new EmbedBuilder().WithTitle(GetText("convertlist"))
-                                                            .WithColor(NadekoBot.OkColor),
+                                                            .WithOkColor(),
                                           (embed, g) => embed.AddField(efb =>
                                                                          efb.WithName(g.Key.ToTitleCase())
                                                                          .WithValue(String.Join(", ", g.Select(x => x.Triggers.FirstOrDefault())
@@ -38,7 +38,6 @@ namespace NadekoBot.Modules.Utility
             [Priority(0)]
             public async Task Convert(string origin, string target, decimal value)
             {
-                //todo why am i selecting them every time?
                 var originUnit = _service.Units.FirstOrDefault(x => x.Triggers.Select(y => y.ToUpperInvariant()).Contains(origin.ToUpperInvariant()));
                 var targetUnit = _service.Units.FirstOrDefault(x => x.Triggers.Select(y => y.ToUpperInvariant()).Contains(target.ToUpperInvariant()));
                 if (originUnit == null || targetUnit == null)
