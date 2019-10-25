@@ -49,7 +49,7 @@ namespace NadekoBot.Services.GamesList
         {
             Tuple<string, DateTime> gameData = await TryReadText(filePath, TimeSpan.FromSeconds(5));
 
-            if (string.IsNullOrWhiteSpace(gameData.Item1)) return null;
+            if (gameData == null || string.IsNullOrWhiteSpace(gameData.Item1)) return null;
 
             var LobbyData = JsonConvert.DeserializeObject<Dictionary<string, Lobby>>(gameData.Item1);
             //return new BZ98ServerData()

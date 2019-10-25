@@ -2052,6 +2052,13 @@
       "{0}xkcd latest"
     ]
   },
+  "inspiro": {
+    "Cmd": "inspiro",
+    "Desc": "Show an inspirational quote from InspiroBot.",
+    "Usage": [
+      "{0}inspiro"
+    ]
+  },
   "placelist": {
     "Cmd": "placelist",
     "Desc": "Shows the list of available tags for the `{0}place` command.",
@@ -3184,7 +3191,7 @@
   },
   "say": {
     "cmd": "say",
-    "desc": "Bot will send the message you typed in the specified channel. If you ommit the channel name, it will send the mesasge in the current channel. Supports embeds.",
+    "desc": "Bot will send the message you typed in the specified channel. If you omit the channel name, it will send the message in the current channel. Supports embeds.",
     "usage": [
       "{0}say hi",
       "{0}say #chat hi"
