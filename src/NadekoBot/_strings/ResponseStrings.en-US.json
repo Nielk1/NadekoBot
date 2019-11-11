@@ -6,6 +6,8 @@
   "xp_retroactive_role_reward_norolerewards": "No role rewards found.",
   "xp_retroactive_role_reward_rolespending": "Pending",
   "xp_retroactive_role_reward_done": "Roles rewarded.",
+  "searches_inspiro_query_failed_parse": "Inspiro share code incorrect.",
+  "searches_inspiro_query_not_fount": "Inspiro not found.",
 
   "customreactions_all_stats_cleared": "All custom reaction stats cleared.",
   "customreactions_deleted": "Custom Reaction deleted",
