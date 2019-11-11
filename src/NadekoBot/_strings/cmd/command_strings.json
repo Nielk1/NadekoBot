@@ -2056,7 +2056,9 @@
     "Cmd": "inspiro",
     "Desc": "Show an inspirational quote from InspiroBot.",
     "Usage": [
-      "{0}inspiro"
+      "{0}inspiro",
+      "{0}inspiro a/yZedXWOMen.jpg",
+      "{0}inspiro yZedXWOMen"
     ]
   },
   "placelist": {
