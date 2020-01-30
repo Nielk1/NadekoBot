@@ -175,7 +175,7 @@ namespace NadekoBot.Services.GamesList
                                     string modNameRet = await _steam.GetSteamWorkshopName(mod);
                                     return modNameRet;
                                 });
-                                var modName = modNameTask?.Result ?? raw.WorkshopID;
+                                var modName = modNameTask?.Result ?? mod;
 
                                 if (!string.IsNullOrWhiteSpace(modName))
                                 {
