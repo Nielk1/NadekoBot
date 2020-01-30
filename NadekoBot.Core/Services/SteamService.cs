@@ -125,7 +125,7 @@ namespace NadekoBot.Core.Services
                 }
             }
 
-            return newWorkshopName.Item2;
+            return newWorkshopName?.Item2;
         }
 
     }
