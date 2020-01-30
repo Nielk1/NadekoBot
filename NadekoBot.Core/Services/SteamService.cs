@@ -54,8 +54,15 @@ namespace NadekoBot.Core.Services
             {
                 ISteamWebResponse<PlayerSummaryModel> playerData = await Task.Run(async () =>
                 {
-                    ISteamWebResponse<PlayerSummaryModel> msg = await steamInterface.GetPlayerSummaryAsync(id);
-                    return msg;
+                    try
+                    {
+                        ISteamWebResponse<PlayerSummaryModel> msg = await steamInterface.GetPlayerSummaryAsync(id);
+                        return msg;
+                    }
+                    catch
+                    {
+                        return null;
+                    }
                 });
 
                 if (playerData != null)
