@@ -1,6 +1,6 @@
-﻿using NadekoBot.Extensions;
+﻿using Ayu.Common;
 using Newtonsoft.Json;
-using NLog;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace NadekoBot.Modules.Searches.Common
+#nullable enable
+namespace SearchImagesService.Common
 {
     public class SearchImageCacher
     {
@@ -17,28 +18,30 @@ namespace NadekoBot.Modules.Searches.Common
         private readonly HttpClient _http;
         private readonly Random _rng;
         private readonly SortedSet<ImageCacherObject> _cache;
-        private readonly Logger _log;
+
         private static readonly List<string> defaultTagBlacklist = new List<string>() {
             "loli",
             "lolicon",
             "shota"
         };
 
-        public SearchImageCacher(IHttpClientFactory http)
+        public SearchImageCacher()
         {
-            _http = http.CreateClient();
+            _http = new HttpClient();
             _http.AddFakeHeaders();
             _rng = new Random();
             _cache = new SortedSet<ImageCacherObject>();
-            _log = LogManager.GetCurrentClassLogger();
         }
 
-        public async Task<ImageCacherObject> GetImage(string[] tags, bool forceExplicit, DapiSearchType type,
-            HashSet<string> blacklistedTags = null)
+        public async Task<ImageCacherObject?> GetImage(string[] tags, bool forceExplicit, DapiSearchType type,
+            HashSet<string>? blacklistedTags = null)
         {
-            tags = tags.Select(tag => tag?.ToLowerInvariant()).ToArray();
+            tags = tags
+                .Where(x => !(x is null))
+                .Select(tag => tag.ToLowerInvariant())
+                .ToArray();
 
-            blacklistedTags = blacklistedTags ?? new HashSet<string>();
+            blacklistedTags ??= new HashSet<string>();
 
             foreach (var item in defaultTagBlacklist)
             {
@@ -49,11 +52,11 @@ namespace NadekoBot.Modules.Searches.Common
 
             if (tags.Any(x => blacklistedTags.Contains(x)))
             {
-                throw new Exception("One of the specified tags is blacklisted");
+                return null;
             }
 
             if (type == DapiSearchType.E621)
-                tags = tags.Select(tag => tag?.Replace("yuri", "female/female", StringComparison.InvariantCulture))
+                tags = tags.Select(tag => tag.Replace("yuri", "female/female", StringComparison.InvariantCulture))
                     .ToArray();
 
             await _lock.WaitAsync().ConfigureAwait(false);
@@ -69,7 +72,7 @@ namespace NadekoBot.Modules.Searches.Common
                     imgs = _cache.Where(x => x.SearchType == type).ToArray();
                 }
                 imgs = imgs.Where(x => x.Tags.All(t => !blacklistedTags.Contains(t.ToLowerInvariant()))).ToArray();
-                ImageCacherObject img;
+                ImageCacherObject? img;
                 if (imgs.Length == 0)
                     img = null;
                 else
@@ -176,8 +179,7 @@ namespace NadekoBot.Modules.Searches.Common
             }
             catch (Exception ex)
             {
-                _log.Warn("Error downloading an image: {Message}", ex.Message);
-                _log.Warn(ex);
+                Log.Warning(ex, "Error downloading an image: {Message}", ex.Message);
                 return Array.Empty<ImageCacherObject>();
             }
         }
@@ -213,50 +215,5 @@ namespace NadekoBot.Modules.Searches.Common
         {
             _cache.Clear();
         }
-    }
-
-
-    public class DapiImageObject
-    {
-        [JsonProperty("File_Url")]
-        public string FileUrl { get; set; }
-        public string Tags { get; set; }
-        [JsonProperty("Tag_String")]
-        public string TagString { get; set; }
-        public string Rating { get; set; }
-    }
-
-    public class DerpiContainer
-    {
-        public DerpiImageObject[] Search { get; set; }
-    }
-
-    public class DerpiImageObject
-    {
-        public string Image { get; set; }
-        public string Tags { get; set; }
-        public string Score { get; set; }
-    }
-
-    public enum DapiSearchType
-    {
-        Safebooru,
-        E621,
-        Derpibooru,
-        Gelbooru,
-        Konachan,
-        Rule34,
-        Yandere,
-        Danbooru,
-    }
-    public class SafebooruElement
-    {
-        public string Directory { get; set; }
-        public string Image { get; set; }
-
-
-        public string FileUrl => $"https://safebooru.org/images/{Directory}/{Image}";
-        public string Rating { get; set; }
-        public string Tags { get; set; }
     }
 }

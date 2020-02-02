@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace NadekoBot.Modules.Searches.Common
+namespace SearchImagesService.Common
 {
     public class ImageCacherObject : IComparable<ImageCacherObject>
     {

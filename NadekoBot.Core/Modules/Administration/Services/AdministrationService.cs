@@ -35,10 +35,10 @@ namespace NadekoBot.Modules.Administration.Services
                 .Where(g => g.DeleteMessageOnCommand)
                 .Select(g => g.GuildId));
 
-            DeleteMessagesOnCommandChannels = new ConcurrentDictionary<ulong, bool>(bot.AllGuildConfigs
+            DeleteMessagesOnCommandChannels = bot.AllGuildConfigs
                 .SelectMany(x => x.DelMsgOnCmdChannels)
                 .ToDictionary(x => x.ChannelId, x => x.State)
-                .ToConcurrent());
+                .ToConcurrent();
 
             cmdHandler.CommandExecuted += DelMsgOnCmd_Handler;
         }

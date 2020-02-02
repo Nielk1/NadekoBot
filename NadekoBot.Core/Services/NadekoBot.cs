@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using NadekoBot.Common;
 using NadekoBot.Common.ShardCom;
+using NadekoBot.Core.Common;
 using NadekoBot.Core.Services;
 using NadekoBot.Core.Services.Database.Models;
 using NadekoBot.Core.Services.Impl;
@@ -91,6 +92,7 @@ namespace NadekoBot
                 TotalShards = Credentials.TotalShards,
                 ShardId = shardId,
                 AlwaysDownloadUsers = false,
+                DefaultRetryMode = RetryMode.Retry502,
             });
 
             CommandService = new CommandService(new CommandServiceConfig()
@@ -167,14 +169,8 @@ namespace NadekoBot
 
                 IBotConfigProvider botConfigProvider = new BotConfigProvider(_db, _botConfig, Cache);
 
-//                #region gamesList
-//                var bz98Service = new GameListBZ98Service(Credentials, /*_db,*/ Client);
-//                var bz2Service = new GameListBZ2Service(/*Credentials, _db,*/ Client);
-//                var bzccService = new GameListBZCCService(/*Credentials, _db,*/ Client);
-//
-//                //var gamesListService = new GamesListService(Client, _db, Localization, Strings, bz98Service, bz2Service);
-//                var gamesListService = new GamesListService(Client, /*_db,*/ bz98Service, bz2Service, bzccService);
-//                #endregion
+                // new stuff
+                var searchImagesMicroservice = RemoteService.CreateClient<Nadeko.Microservices.SearchImages.SearchImagesClient>(Credentials.ServicesIp, 25158);
 
                 var s = new ServiceCollection()
                     .AddSingleton<IBotCredentials>(Credentials)
@@ -184,11 +180,7 @@ namespace NadekoBot
                     .AddSingleton(botConfigProvider)
                     .AddSingleton(this)
                     .AddSingleton(uow)
-//                #region gamesList
-//                    .AddManual<GameListBZ98Service>(bz98Service)
-//                    .AddManual<GameListBZ2Service>(bz2Service)
-//                    .AddManual<GamesListService>(gamesListService)
-//                #endregion
+                    .AddSingleton(searchImagesMicroservice)
                     .AddSingleton(Cache);
 
                 s.AddHttpClient();

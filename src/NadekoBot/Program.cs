@@ -1,4 +1,5 @@
 ﻿using NadekoBot.Core.Services;
+using Serilog;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
@@ -8,6 +9,7 @@ namespace NadekoBot
     {
         public static async Task Main(string[] args)
         {
+            SetupLogger();
             if (args.Length == 2
                 && int.TryParse(args[0], out int shardId)
                 && int.TryParse(args[1], out int parentProcessId))
@@ -27,6 +29,15 @@ namespace NadekoBot
                 await Task.Delay(-1);
 #endif
             }
+        }
+
+        private static void SetupLogger()
+        {
+            var log = new LoggerConfiguration()
+                .WriteTo.Console(Serilog.Events.LogEventLevel.Information)
+                .CreateLogger();
+
+            Log.Logger = log;
         }
     }
 }
