@@ -25,11 +25,24 @@
 
 #### Installing the prerequisites
 
-Run this command in Terminal (copy-paste the entire block):  
+Run these commands on Terminal:  
 
-``` bash
-brew install wget git ffmpeg openssl opus opus-tools opusfile libffi libsodium tmux python youtube-dl redis npm \
-brew services start redis \
+```
+brew install wget
+brew install git
+brew install ffmpeg
+brew install openssl
+brew install opus
+brew install opus-tools
+brew install opusfile
+brew install libffi
+brew install libsodium
+brew install tmux
+brew install python
+brew install youtube-dl
+brew install redis
+brew services start redis
+brew install npm
 npm install pm2@3.1.3 -g 
 ```
 
@@ -37,12 +50,10 @@ npm install pm2@3.1.3 -g
 
 - Download [dotNET Core SDK 2.1](https://dotnet.microsoft.com/download/thank-you/dotnet-sdk-2.1.801-macos-x64-installer)
 - Open the `.pkg` file you've downloaded and install it.
-- Run this command in Terminal. There won't be any output. (copy-paste the entire block):
-``` bash
-ln -s /usr/local/share/dotnet/dotnet /usr/local/bin \
-ln -s /usr/local/opt/openssl/lib/libcrypto.1.0.0.dylib /usr/local/lib/ \
-ln -s /usr/local/opt/openssl/lib/libssl.1.0.0.dylib /usr/local/lib/
-```
+- Run the following commands on Terminal (they won't give out any response, that's normal):
+- `ln -s /usr/local/share/dotnet/dotnet /usr/local/bin`
+- `ln -s /usr/local/opt/openssl/lib/libcrypto.1.0.0.dylib /usr/local/lib/`
+- `ln -s /usr/local/opt/openssl/lib/libssl.1.0.0.dylib /usr/local/lib/`
 
 
 #### Downloading and Running Nadeko
