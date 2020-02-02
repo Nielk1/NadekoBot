@@ -9,7 +9,6 @@ using NadekoBot.Modules.Xp.Common;
 using NadekoBot.Modules.Xp.Services;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Threading;
 
 namespace NadekoBot.Modules.Xp
 {

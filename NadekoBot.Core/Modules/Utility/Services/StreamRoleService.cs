@@ -1,18 +1,18 @@
-﻿using Discord;
-using Discord.Net;
-using Discord.WebSocket;
-using NadekoBot.Common.TypeReaders;
-using NadekoBot.Core.Services;
-using NadekoBot.Core.Services.Database.Models;
-using NadekoBot.Extensions;
-using NadekoBot.Modules.Utility.Common;
-using NadekoBot.Modules.Utility.Common.Exceptions;
-using NadekoBot.Modules.Utility.Extensions;
-using NLog;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
+using Discord.WebSocket;
+using NadekoBot.Extensions;
+using NadekoBot.Core.Services;
+using NadekoBot.Core.Services.Database.Models;
+using NLog;
+using NadekoBot.Modules.Utility.Extensions;
+using NadekoBot.Common.TypeReaders;
+using NadekoBot.Modules.Utility.Common;
+using NadekoBot.Modules.Utility.Common.Exceptions;
+using Discord.Net;
 
 namespace NadekoBot.Modules.Utility.Services
 {

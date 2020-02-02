@@ -1,9 +1,11 @@
 ﻿using AngleSharp;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using NadekoBot.Common;
 using NadekoBot.Core.Modules.Searches.Common;
 using NadekoBot.Core.Services;
+using NadekoBot.Core.Services.Database.Models;
 using NadekoBot.Core.Services.Impl;
 using NadekoBot.Extensions;
 using NadekoBot.Modules.Searches.Common;
@@ -50,9 +52,13 @@ namespace NadekoBot.Modules.Searches.Services
         public List<WoWJoke> WowJokes { get; } = new List<WoWJoke>();
         public List<MagicItem> MagicItems { get; } = new List<MagicItem>();
 
+        private readonly ConcurrentDictionary<ulong, SearchImageCacher> _imageCacher = new ConcurrentDictionary<ulong, SearchImageCacher>();
+
         public ConcurrentDictionary<ulong, Timer> AutoHentaiTimers { get; } = new ConcurrentDictionary<ulong, Timer>();
         public ConcurrentDictionary<ulong, Timer> AutoBoobTimers { get; } = new ConcurrentDictionary<ulong, Timer>();
         public ConcurrentDictionary<ulong, Timer> AutoButtTimers { get; } = new ConcurrentDictionary<ulong, Timer>();
+
+        private readonly ConcurrentDictionary<ulong, HashSet<string>> _blacklistedTags = new ConcurrentDictionary<ulong, HashSet<string>>();
 
         public SearchesService(DiscordSocketClient client, IGoogleApiService google,
             DbService db, NadekoBot bot, IDataCache cache, IHttpClientFactory factory,
@@ -68,6 +74,11 @@ namespace NadekoBot.Modules.Searches.Services
             _fonts = fonts;
             _creds = creds;
             _rng = new NadekoRandom();
+
+            _blacklistedTags = new ConcurrentDictionary<ulong, HashSet<string>>(
+                bot.AllGuildConfigs.ToDictionary(
+                    x => x.GuildId,
+                    x => new HashSet<string>(x.NsfwBlacklistedTags.Select(y => y.Tag))));
 
             //translate commands
             _client.MessageReceived += (msg) =>
@@ -321,6 +332,80 @@ namespace NadekoBot.Modules.Searches.Services
             return (await _google.Translate(text, from, to).ConfigureAwait(false)).SanitizeMentions();
         }
 
+        public Task<ImageCacherObject> DapiSearch(string tag, DapiSearchType type, ulong? guild, bool isExplicit = false)
+        {
+            tag = tag ?? "";
+            if (string.IsNullOrWhiteSpace(tag)
+                && (tag.Contains("loli") || tag.Contains("shota")))
+            {
+                return null;
+            }
+
+            var tags = tag
+                .Split('+')
+                .Select(x => x.ToLowerInvariant().Replace(' ', '_'))
+                .ToArray();
+
+            if (guild.HasValue)
+            {
+                var blacklistedTags = GetBlacklistedTags(guild.Value);
+
+                var cacher = _imageCacher.GetOrAdd(guild.Value, (key) => new SearchImageCacher(_httpFactory));
+
+                return cacher.GetImage(tags, isExplicit, type, blacklistedTags);
+            }
+            else
+            {
+                var cacher = _imageCacher.GetOrAdd(guild ?? 0, (key) => new SearchImageCacher(_httpFactory));
+
+                return cacher.GetImage(tags, isExplicit, type);
+            }
+        }
+
+        public HashSet<string> GetBlacklistedTags(ulong guildId)
+        {
+            if (_blacklistedTags.TryGetValue(guildId, out var tags))
+                return tags;
+            return new HashSet<string>();
+        }
+
+        public bool ToggleBlacklistedTag(ulong guildId, string tag)
+        {
+            var tagObj = new NsfwBlacklitedTag
+            {
+                Tag = tag
+            };
+
+            bool added;
+            using (var uow = _db.GetDbContext())
+            {
+                var gc = uow.GuildConfigs.ForId(guildId, set => set.Include(y => y.NsfwBlacklistedTags));
+                if (gc.NsfwBlacklistedTags.Add(tagObj))
+                    added = true;
+                else
+                {
+                    gc.NsfwBlacklistedTags.Remove(tagObj);
+                    var toRemove = gc.NsfwBlacklistedTags.FirstOrDefault(x => x.Equals(tagObj));
+                    if (toRemove != null)
+                        uow._context.Remove(toRemove);
+                    added = false;
+                }
+                var newTags = new HashSet<string>(gc.NsfwBlacklistedTags.Select(x => x.Tag));
+                _blacklistedTags.AddOrUpdate(guildId, newTags, delegate { return newTags; });
+
+                uow.SaveChanges();
+            }
+            return added;
+        }
+
+        public void ClearCache()
+        {
+            foreach (var c in _imageCacher)
+            {
+                c.Value?.Clear();
+            }
+        }
+
         public async Task<string> GetYomamaJoke()
         {
             using (var http = _httpFactory.CreateClient())
@@ -362,6 +447,7 @@ namespace NadekoBot.Modules.Searches.Services
             AutoHentaiTimers.ForEach(x => x.Value.Change(Timeout.Infinite, Timeout.Infinite));
             AutoHentaiTimers.Clear();
 
+            _imageCacher.Clear();
             return Task.CompletedTask;
         }
 
