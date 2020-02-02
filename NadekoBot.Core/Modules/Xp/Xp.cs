@@ -9,7 +9,6 @@ using NadekoBot.Modules.Xp.Common;
 using NadekoBot.Modules.Xp.Services;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Threading;
 
 namespace NadekoBot.Modules.Xp
 {
@@ -348,7 +347,7 @@ namespace NadekoBot.Modules.Xp
                 }).ConfigureAwait(false);
 
                 // this this needed anymore? might be from trying to debug some silly code errors
-                Thread.Sleep(1000); // work around rate-limits, this is an ugly command
+                //Thread.Sleep(1000); // work around rate-limits, this is an ugly command
             }
             
             await msg.ModifyAsync(x =>

@@ -4,7 +4,6 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using NadekoBot.Common;
 using NadekoBot.Common.ShardCom;
-using NadekoBot.Core.Common;
 using NadekoBot.Core.Services;
 using NadekoBot.Core.Services.Database.Models;
 using NadekoBot.Core.Services.Impl;
@@ -92,7 +91,6 @@ namespace NadekoBot
                 TotalShards = Credentials.TotalShards,
                 ShardId = shardId,
                 AlwaysDownloadUsers = false,
-                DefaultRetryMode = RetryMode.Retry502,
             });
 
             CommandService = new CommandService(new CommandServiceConfig()
@@ -169,9 +167,6 @@ namespace NadekoBot
 
                 IBotConfigProvider botConfigProvider = new BotConfigProvider(_db, _botConfig, Cache);
 
-                // new stuff
-                var searchImagesMicroservice = RemoteService.CreateClient<Nadeko.Microservices.SearchImages.SearchImagesClient>(Credentials.ServicesIp, 25158);
-
                 var s = new ServiceCollection()
                     .AddSingleton<IBotCredentials>(Credentials)
                     .AddSingleton(_db)
@@ -180,7 +175,6 @@ namespace NadekoBot
                     .AddSingleton(botConfigProvider)
                     .AddSingleton(this)
                     .AddSingleton(uow)
-                    .AddSingleton(searchImagesMicroservice)
                     .AddSingleton(Cache);
 
                 s.AddHttpClient();

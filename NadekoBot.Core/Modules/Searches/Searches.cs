@@ -5,7 +5,6 @@ using AngleSharp.Html.Parser;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Nadeko.Microservices;
 using NadekoBot.Common;
 using NadekoBot.Common.Attributes;
 using NadekoBot.Common.Replacements;
@@ -36,15 +35,12 @@ namespace NadekoBot.Modules.Searches
         private readonly IGoogleApiService _google;
         private readonly IHttpClientFactory _httpFactory;
         private static readonly NadekoRandom _rng = new NadekoRandom();
-        private new readonly SearchImages.SearchImagesClient _searchImagesService;
 
-        public Searches(IBotCredentials creds, IGoogleApiService google, IHttpClientFactory factory,
-            SearchImages.SearchImagesClient service)
+        public Searches(IBotCredentials creds, IGoogleApiService google, IHttpClientFactory factory)
         {
             _creds = creds;
             _google = google;
             _httpFactory = factory;
-            _searchImagesService = service;
         }
 
         //for anonymasen :^)
@@ -601,14 +597,8 @@ namespace NadekoBot.Modules.Searches
         }
 
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task Safebooru(params string[] tags)
-        {
-            var payload = NSFW.NSFW.GetTagRequest(Context, tags);
-
-            var data = await Rpc(Context, _searchImagesService.SafeBooruAsync, payload);
-
-            await NSFW.NSFW.NsfwReply(Context, data);
-        }
+        public Task Safebooru([Leftover] string tag = null)
+            => InternalDapiCommand(ctx.Message, tag, DapiSearchType.Safebooru);
 
         // done in 3.0
         [NadekoCommand, Usage, Description, Aliases]
@@ -740,6 +730,23 @@ namespace NadekoBot.Modules.Searches
                     .WithTitle($"{v.BookName} {v.Chapter}:{v.Verse}")
                     .WithDescription(v.Text)).ConfigureAwait(false);
             }
+        }
+
+        public async Task InternalDapiCommand(IUserMessage umsg, string tag, DapiSearchType type)
+        {
+            var channel = umsg.Channel;
+
+            tag = tag?.Trim() ?? "";
+
+            var imgObj = await _service.DapiSearch(tag, type, ctx.Guild?.Id).ConfigureAwait(false);
+
+            if (imgObj == null)
+                await channel.SendErrorAsync(umsg.Author.Mention + " " + GetText("no_results")).ConfigureAwait(false);
+            else
+                await channel.EmbedAsync(new EmbedBuilder().WithOkColor()
+                    .WithDescription($"{umsg.Author.Mention} [{tag ?? "url"}]({imgObj.FileUrl})")
+                    .WithImageUrl(imgObj.FileUrl)
+                    .WithFooter(efb => efb.WithText(type.ToString()))).ConfigureAwait(false);
         }
 
         public async Task<bool> ValidateQuery(IMessageChannel ch, string query)

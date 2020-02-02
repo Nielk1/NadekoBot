@@ -105,13 +105,11 @@ namespace NadekoBot.Core.Services
 
             _shardProcesses = new Process[_creds.TotalShards];
 
-            var _nadekoServerShard = 64;
-
 #if GLOBAL_NADEKO
-            var shardIdsEnum = Enumerable.Range(1, _nadekoServerShard - 1)
-                .Concat(Enumerable.Range(_nadekoServerShard + 1, _creds.TotalShards - _nadekoServerShard - 1))
+            var shardIdsEnum = Enumerable.Range(1, 31)
+                .Concat(Enumerable.Range(33, _creds.TotalShards - 33))
                 .Shuffle()
-                .Prepend(_nadekoServerShard)
+                .Prepend(32)
                 .Prepend(0);
 #else
             var shardIdsEnum = Enumerable.Range(1, _creds.TotalShards - 1)
@@ -167,15 +165,6 @@ namespace NadekoBot.Core.Services
             sub.Subscribe(_key + "_die",
                 (ch, x) => Environment.Exit(0),
                 CommandFlags.FireAndForget);
-
-            var _credsReloader = Task.Run(async () =>
-            {
-                while (true)
-                {
-                    await Task.Delay(10000).ConfigureAwait(false);
-                    _creds.Reload();
-                }
-            });
         }
 
         private void OnStop(RedisChannel ch, RedisValue data)
