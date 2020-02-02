@@ -183,8 +183,12 @@ namespace NadekoBot.Services.GamesList
                                 }
                                 else
                                 {
-                                    game.TopInfo.Add("Mod: " + Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={mod}"));
+                                    game.TopInfo.Add($"Mod: [{Format.Sanitize(mod)}](http://steamcommunity.com/sharedfiles/filedetails/?id={mod}");
                                 }
+                            }
+                            else
+                            {
+                                game.TopInfo.Add("Mod: " + mod);
                             }
                         }
 
@@ -336,6 +340,7 @@ namespace NadekoBot.Services.GamesList
                                                 game.Properties.Add(new Tuple<string, string>("Type", $"STRAT"));
                                                 break;
                                             case 13:
+                                            case 41:
                                                 game.Properties.Add(new Tuple<string, string>("Type", $"MPI"));
                                                 break;
                                             default:
@@ -353,7 +358,14 @@ namespace NadekoBot.Services.GamesList
                                     switch (raw.ServerInfoMode)
                                     {
                                         case 1:
-                                            game.Properties.Add(new Tuple<string, string>("Time", $"Not playing or in shell for {raw.GameTimeMinutes.Value} minutes"));
+                                            if (raw.GameTimeMinutes.Value == 255)
+                                            {
+                                                game.Properties.Add(new Tuple<string, string>("Time", $"Not playing or in shell"));
+                                            }
+                                            else
+                                            {
+                                                game.Properties.Add(new Tuple<string, string>("Time", $"Not playing or in shell for {raw.GameTimeMinutes.Value} minutes"));
+                                            }
                                             break;
                                         case 3:
                                             game.Properties.Add(new Tuple<string, string>("Time", $"Playing for {raw.GameTimeMinutes.Value} minutes"));

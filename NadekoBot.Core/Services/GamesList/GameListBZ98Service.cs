@@ -150,8 +150,12 @@ namespace NadekoBot.Services.GamesList
                             }
                             else
                             {
-                                game.TopInfo.Add("Mod: " + Format.Sanitize($"http://steamcommunity.com/sharedfiles/filedetails/?id={raw.WorkshopID}"));
+                                game.TopInfo.Add($"Mod: [{Format.Sanitize(raw.WorkshopID)}](http://steamcommunity.com/sharedfiles/filedetails/?id={raw.WorkshopID}");
                             }
+                        }
+                        else
+                        {
+                            game.TopInfo.Add("Mod: " + raw.WorkshopID);
                         }
                     }
 
