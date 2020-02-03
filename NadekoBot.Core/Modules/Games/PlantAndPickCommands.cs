@@ -66,9 +66,9 @@ namespace NadekoBot.Modules.Games
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [UserPerm(GuildPerm.ManageMessages)]
-#if GLOBAL_NADEKO
+//#if GLOBAL_NADEKO
             [OwnerOnly]
-#endif
+//#endif
             public async Task GenCurrency()
             {
                 bool enabled = _service.ToggleCurrencyGeneration(ctx.Guild.Id, ctx.Channel.Id);
