@@ -168,27 +168,30 @@ namespace NadekoBot.Services.GamesList
                         foreach (string mod in raw.Mods)
                         {
                             ulong workshopIdNum = 0;
-                            if (!string.IsNullOrWhiteSpace(mod) && ulong.TryParse(mod, out workshopIdNum) && workshopIdNum > 0)
+                            if (!string.IsNullOrWhiteSpace(mod) && mod != "0")
                             {
-                                Task<string> modNameTask = Task.Run(async () =>
+                                if (ulong.TryParse(mod, out workshopIdNum) && workshopIdNum > 0)
                                 {
-                                    string modNameRet = await _steam.GetSteamWorkshopName(mod);
-                                    return modNameRet;
-                                });
-                                var modName = modNameTask?.Result ?? mod;
+                                    Task<string> modNameTask = Task.Run(async () =>
+                                    {
+                                        string modNameRet = await _steam.GetSteamWorkshopName(mod);
+                                        return modNameRet;
+                                    });
+                                    var modName = modNameTask?.Result ?? mod;
 
-                                if (!string.IsNullOrWhiteSpace(modName))
-                                {
-                                    game.TopInfo.Add($"Mod: [{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={mod})");
+                                    if (!string.IsNullOrWhiteSpace(modName))
+                                    {
+                                        game.TopInfo.Add($"Mod: [{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={mod})");
+                                    }
+                                    else
+                                    {
+                                        game.TopInfo.Add($"Mod: [{Format.Sanitize(mod)}](http://steamcommunity.com/sharedfiles/filedetails/?id={mod}");
+                                    }
                                 }
                                 else
                                 {
-                                    game.TopInfo.Add($"Mod: [{Format.Sanitize(mod)}](http://steamcommunity.com/sharedfiles/filedetails/?id={mod}");
+                                    game.TopInfo.Add("Mod: " + mod);
                                 }
-                            }
-                            else
-                            {
-                                game.TopInfo.Add("Mod: " + mod);
                             }
                         }
 

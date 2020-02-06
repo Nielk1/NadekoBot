@@ -135,27 +135,30 @@ namespace NadekoBot.Services.GamesList
 
                     {
                         ulong workshopIdNum = 0;
-                        if (!string.IsNullOrWhiteSpace(raw.WorkshopID) && ulong.TryParse(raw.WorkshopID, out workshopIdNum) && workshopIdNum > 0)
+                        if (!string.IsNullOrWhiteSpace(raw.WorkshopID) && raw.WorkshopID != "0")
                         {
-                            Task<string> modNameTask = Task.Run(async () =>
+                            if (ulong.TryParse(raw.WorkshopID, out workshopIdNum) && workshopIdNum > 0)
                             {
-                                string modNameRet = await _steam.GetSteamWorkshopName(raw.WorkshopID);
-                                return modNameRet;
-                            });
-                            var modName = modNameTask?.Result?? raw.WorkshopID;
+                                Task<string> modNameTask = Task.Run(async () =>
+                                {
+                                    string modNameRet = await _steam.GetSteamWorkshopName(raw.WorkshopID);
+                                    return modNameRet;
+                                });
+                                var modName = modNameTask?.Result ?? raw.WorkshopID;
 
-                            if (!string.IsNullOrWhiteSpace(modName))
-                            {
-                                game.TopInfo.Add($"Mod: [{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={raw.WorkshopID})");
+                                if (!string.IsNullOrWhiteSpace(modName))
+                                {
+                                    game.TopInfo.Add($"Mod: [{Format.Sanitize(modName)}](http://steamcommunity.com/sharedfiles/filedetails/?id={raw.WorkshopID})");
+                                }
+                                else
+                                {
+                                    game.TopInfo.Add($"Mod: [{Format.Sanitize(raw.WorkshopID)}](http://steamcommunity.com/sharedfiles/filedetails/?id={raw.WorkshopID}");
+                                }
                             }
                             else
                             {
-                                game.TopInfo.Add($"Mod: [{Format.Sanitize(raw.WorkshopID)}](http://steamcommunity.com/sharedfiles/filedetails/?id={raw.WorkshopID}");
+                                game.TopInfo.Add("Mod: " + raw.WorkshopID);
                             }
-                        }
-                        else
-                        {
-                            game.TopInfo.Add("Mod: " + raw.WorkshopID);
                         }
                     }
 
