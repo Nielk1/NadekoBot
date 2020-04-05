@@ -23,8 +23,9 @@ namespace NadekoBot.Core.Services.Impl
         private readonly IBotCredentials _creds;
         private readonly DateTime _started;
 
-        public const string BotVersion = "2.29.13";
+        public const string BotVersion = "2.29.13 Custom Fork";
         public string Author => "Kwoth#2452";
+        public string ForkAuthor => "Nielk1#0001";
         public string Library => "Discord.Net";
 
         public string Heap => Math.Round((double)GC.GetTotalMemory(false) / 1.MiB(), 2)
