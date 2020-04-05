@@ -895,17 +895,21 @@
     ]
   },
   "addquote": {
-    "Cmd": ".",
+    //"Cmd": ".",
+    "Cmd": "addq",
     "Desc": "Adds a new quote with the specified name and message.",
     "Usage": [
-      "{0}. sayhi Hi"
+      //"{0}. sayhi Hi",
+      "{0}addq sayhi Hi"
     ]
   },
   "showquote": {
-    "Cmd": "..",
+    //"Cmd": "..",
+    "Cmd": "showq q",
     "Desc": "Shows a random quote with a specified name.",
     "Usage": [
-      "{0}.. abc"
+      //"{0}.. abc",
+      "{0}q abc"
     ]
   },
   "quotesearch": {
