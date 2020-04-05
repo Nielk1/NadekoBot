@@ -345,9 +345,6 @@ namespace NadekoBot.Modules.Xp
                     x.Embed = embed.AddField(GetText("retroactive_role_reward_rolespending"), rewardsOutput.Count > 0 ? string.Join("\n", rewardsOutput.Values) : "✅")
                                    .Build();
                 }).ConfigureAwait(false);
-
-                // this this needed anymore? might be from trying to debug some silly code errors
-                //Thread.Sleep(1000); // work around rate-limits, this is an ugly command
             }
             
             await msg.ModifyAsync(x =>

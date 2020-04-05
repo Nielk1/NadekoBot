@@ -974,8 +974,6 @@ namespace NadekoBot.Modules.Xp.Services
                         UserIds.Add(item.UserId);
                     }
                 }
-
-                uow.SaveChanges();
             }
 
             return UserIds;
