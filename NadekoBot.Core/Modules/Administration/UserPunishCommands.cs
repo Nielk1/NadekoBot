@@ -294,7 +294,7 @@ namespace NadekoBot.Modules.Administration
                 var user = await ctx.Guild.GetUserAsync(userId);
                 if (user is null)
                 {
-                    await ctx.Guild.AddBanAsync(userId, 7, ctx.User.ToString() + " | " + msg);
+                    await ctx.Guild.AddBanAsync(userId, 0, ctx.User.ToString() + " | " + msg);
 
                     await ctx.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
                             .WithTitle("⛔️ " + GetText("banned_user"))
@@ -331,7 +331,7 @@ namespace NadekoBot.Modules.Administration
                     }
                 }
 
-                await ctx.Guild.AddBanAsync(user, 7, ctx.User.ToString() + " | " + msg).ConfigureAwait(false);
+                await ctx.Guild.AddBanAsync(user, 0, ctx.User.ToString() + " | " + msg).ConfigureAwait(false);
                 await ctx.Channel.EmbedAsync(new EmbedBuilder().WithOkColor()
                         .WithTitle("⛔️ " + GetText("banned_user"))
                         .AddField(efb => efb.WithName(GetText("username")).WithValue(user.ToString()).WithIsInline(true))
@@ -409,7 +409,7 @@ namespace NadekoBot.Modules.Administration
                     }
                 }
 
-                await ctx.Guild.AddBanAsync(user, 7, ctx.User.ToString() + " | " + msg).ConfigureAwait(false);
+                await ctx.Guild.AddBanAsync(user, 0, ctx.User.ToString() + " | " + msg).ConfigureAwait(false);
                 try { await ctx.Guild.RemoveBanAsync(user).ConfigureAwait(false); }
                 catch { await ctx.Guild.RemoveBanAsync(user).ConfigureAwait(false); }
 
@@ -475,7 +475,7 @@ namespace NadekoBot.Modules.Administration
                 //do the banning
                 await Task.WhenAll(bans
                     .Where(x => x.Id.HasValue)
-                    .Select(x => ctx.Guild.AddBanAsync(x.Id.Value, 7, x.Reason, new RequestOptions()
+                    .Select(x => ctx.Guild.AddBanAsync(x.Id.Value, 0, x.Reason, new RequestOptions()
                     {
                         RetryMode = RetryMode.AlwaysRetry,
                     })))
