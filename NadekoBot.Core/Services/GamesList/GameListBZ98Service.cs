@@ -30,7 +30,7 @@ namespace NadekoBot.Services.GamesList
 
         private readonly SteamService _steam;
 
-        private const string filePath = "C:/Data/BZ98Gamelist.json";
+        private const string filePath = "C:\\inetpub\\sites\\DataShard1\\BZ98Gamelist.json";
 
         private readonly Logger _log;
 
