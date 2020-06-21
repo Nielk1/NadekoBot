@@ -35,7 +35,7 @@ namespace NadekoBot.Services.GamesList
         /// </summary>
         static ConcurrentDictionary<string, Tuple<DateTime, string>> steamWorkshopNameCache = new ConcurrentDictionary<string, Tuple<DateTime, string>>();
 
-        private const string queryUrl = "http://raknetsrv2.iondriver.com/testServer?__gameId=BZCC&__excludeCols=__rowId,__city,__cityLon,__cityLat,__timeoutSec,__geoIP,__gameId,__addr&__pluginShowSource=true&__pluginQueryServers=true&__pluginShowStatus=true";
+        private const string queryUrl = "http://raknetsrv2.iondriver.com/lobbyServer?__pluginShowSource=true&__pluginQueryServers=true&__pluginShowStatus=true";
 
         private readonly Logger _log;
 
